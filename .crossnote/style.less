@@ -1,0 +1,123 @@
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+.admonition {
+  .title {
+    font-size: 1.125em;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px 8px 0px 0px;
+    i {
+      margin-right: 4px;
+    }
+    p {
+      margin: 0px;
+    }
+  }
+
+  .body {
+    padding: 8px 10px 0px;
+  }
+
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+
+  *:last-child {
+    margin-bottom: 4px;
+  }
+}
+
+.markdown-preview.markdown-preview {
+  font-family: 'Open Sans', sans-serif;
+  color: black;
+  background-color: white;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: black;
+    padding-bottom: 8px;
+    border-bottom: 1px solid black;
+    font-weight: medium;
+  }
+
+  p + ul {
+    margin-top: -15px;
+  }
+
+  .definition {
+    &:extend(.admonition);
+    @border-color: #06c406;
+    @titlebar-color: #d9ffd9;
+    .title {
+      &:extend(.admonition .title);
+      background-color: @titlebar-color;
+      i {
+        &:extend(.admonition .title i);
+      }
+      p {
+        &:extend(.admonition .title p);
+      }
+    }
+    .body {
+      &:extend(.admonition .body);
+    }
+    border-color: @border-color;
+
+    *:last-child {
+      &:extend(.admonition *:last-child);
+    }
+  }
+
+  .info {
+    &:extend(.admonition);
+    @border-color: #448aff;
+    @titlebar-color: #ecf3ff;
+    .title {
+      &:extend(.admonition .title);
+      background-color: @titlebar-color;
+      i {
+        &:extend(.admonition .title i);
+      }
+      p {
+        &:extend(.admonition .title p);
+      }
+    }
+    .body {
+      &:extend(.admonition .body);
+    }
+    border-color: @border-color;
+
+    *:last-child {
+      &:extend(.admonition *:last-child);
+    }
+  }
+
+  .proposition {
+    &:extend(.admonition);
+    @border-color: #448aff;
+    @titlebar-color: #ecf3ff;
+    .title {
+      &:extend(.admonition .title);
+      background-color: @titlebar-color;
+      i {
+        &:extend(.admonition .title i);
+      }
+      p {
+        &:extend(.admonition .title p);
+      }
+    }
+    .body {
+      &:extend(.admonition .body);
+    }
+    border-color: @border-color;
+
+    *:last-child {
+      &:extend(.admonition *:last-child);
+    }
+  }
+}

@@ -1,0 +1,84 @@
+<!-- The content below will be included at the end of the <head> element. -->
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function () {
+    let admonitions = {
+      definition: ['fa-solid', 'fa-book'],
+      info: ['fa-solid', 'fa-info-circle'],
+      proposition: ['fa-solid', 'fa-book']
+    }
+
+    let shouldIncludeName = ['proposition']
+
+    function toTitleCase(str) {
+      return str.replace(/\w\S*/g, function (txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+      })
+    }
+
+    function transformDefinitions() {
+      Object.keys(admonitions).forEach((key) => {
+        // Get all elements with tag name corresponding to the key
+        const elements = document.querySelectorAll(key)
+
+        elements.forEach((el) => {
+          // Extract the title attribute
+          const title = el.getAttribute('title')
+          // Determine the icon classes based on the entry in the dictionary
+          const iconClasses = admonitions[key]
+
+          // Create the new structure
+          const newDiv = document.createElement('div')
+          newDiv.classList.add(key)
+
+          const titleDiv = document.createElement('div')
+          titleDiv.classList.add('title')
+
+          // Create the Font Awesome icon element
+          const icon = document.createElement('i')
+          icon.classList.add(...iconClasses)
+          icon.setAttribute('aria-hidden', 'true')
+
+          // Append the icon and title text to the title div
+          titleDiv.appendChild(icon)
+          titleDiv.appendChild(
+            document.createTextNode(
+              ` ${
+                shouldIncludeName.includes(key) ? toTitleCase(key) + ': ' : ''
+              } ${title}`
+            )
+          )
+
+          const bodyDiv = document.createElement('div')
+          bodyDiv.classList.add('body')
+          bodyDiv.innerHTML = el.innerHTML
+
+          // Append title and body to the new div
+          newDiv.appendChild(titleDiv)
+          newDiv.appendChild(bodyDiv)
+
+          // Replace the old element with the new structure
+          el.replaceWith(newDiv)
+        })
+      })
+    }
+
+    function initMutationObserver() {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes) {
+            mutation.addedNodes.forEach((node) => {
+              if (node.tagName && node.tagName.toLowerCase() in admonitions) {
+                transformDefinitions()
+              }
+            })
+          }
+        })
+      })
+
+      observer.observe(document.body, { childList: true, subtree: true })
+    }
+
+    transformDefinitions()
+    initMutationObserver()
+  })
+</script>
