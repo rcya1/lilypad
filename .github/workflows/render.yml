@@ -1,0 +1,35 @@
+name: Render
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  render-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16' # or any other version you need
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run the render script
+        run: yarn start main --single-run
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add rendered/
+          git commit -m 'Automated render and commit'
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
