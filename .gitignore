@@ -1,0 +1,4 @@
+node_modules
+
+# ignore ds store
+.DS_Store

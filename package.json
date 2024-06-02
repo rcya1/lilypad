@@ -1,0 +1,17 @@
+{
+  "name": "lilypad",
+  "version": "1.0.0",
+  "repository": "https://github.com/rcya1/lilypad",
+  "author": "rcya1 <chang.ryan10145@gmail.com>",
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "crossnote": "^0.9.9",
+    "less": "^4.2.0",
+    "recursive-readdir": "^2.2.3"
+  }
+}

@@ -10,7 +10,7 @@ My notetaking and homework setup built on top of Markdown Preview Enhanced and L
 ## TODO
 
 [ ] Port notes from Inkdrop / Notion
-[ ] Add good image support and the rest of the admonitions
+[X] Add good image support and the rest of the admonitions
 [ ] Add my LaTeX macros to KaTeX config
 [ ] Add script to automatically add rendered PDFs (maybe as a precommit hook?)
 [ ] Add some of the LaTeX config files / homework stuff (keep rest in private subrepo)

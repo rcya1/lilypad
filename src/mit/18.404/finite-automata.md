@@ -2,7 +2,7 @@
 
 Model where the size of the memory is fixed / limited compared to the size of the input
 
-<!-- ![clipboard.png #small](inkdrop://file:FB3J2uGfe) -->
+![](img/finite-ex.png)
 
 - States: $q_1, q_2, q_3$
 - Transitions: arrows with labels on them

@@ -23,7 +23,7 @@
   border-radius: 8px;
   margin-bottom: 10px;
 
-  *:last-child {
+  *:not(span)*:last-child {
     margin-bottom: 4px;
   }
 }
@@ -32,6 +32,8 @@
   font-family: 'Open Sans', sans-serif;
   color: black;
   background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 
   h1,
   h2,
@@ -47,6 +49,18 @@
 
   p + ul {
     margin-top: -15px;
+  }
+
+  // img {
+  //   width: 50%;
+  // }
+
+  .image-caption {
+    font-size: 0.8em;
+    color: #494949;
+    text-align: center;
+    margin: -20px auto 10px;
+    width: 100%;
   }
 
   .definition {
