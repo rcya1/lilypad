@@ -1,0 +1,45 @@
+{
+  "katexConfig": {
+    "macros": {
+      "\\integers": "\\mathbb{Z}",
+      "\\naturals": "\\mathbb{N}",
+      "\\rationals": "\\mathbb{Q}",
+      "\\complex": "\\mathbb{C}",
+      "\\vare": "\\varepsilon",
+      "\\set": "\\left\\{ #1 \\right\\}",
+      "\\card": "\\left| #1\\right|",
+      "\\floor": "\\left\\lfloor #1 \\right\\rfloor",
+      "\\ceil": "\\left\\lceil #1 \\right\\rceil",
+      "\\ang": "\\left\\langle #1 \\right\\rangle",
+      "\\bracket": "\\left[#1\\right]",
+      "\\curly": "\\left\\{#1\\right\\}",
+      "\\paren": "\\left( #1 \\right)",
+      "\\prob": "\\text{Pr} \\left[ #1 \\right]",
+      "\\exp": "\\mathbb{E}\\left[ #1 \\right]",
+      "\\expsq": "\\mathbb{E}^2\\left[ #1 \\right]",
+      "\\var": "\\text{Var}\\left[ #1 \\right]",
+      "\\pmod": "\\allowbreak\\mkern12mu({\\rm mod}\\,\\,#1)",
+      "\\percent": "#1\\%",
+      "\\real": "\\Re\\left(#1\\right)",
+      "\\comp": "\\Im\\left(#1\\right)",
+      "\\deriv": "\\frac{d #1}{d #2}",
+      "\\limi": "\\lim_{#1 \\rightarrow \\infty}",
+      "\\limit": "\\lim_{#1 \\rightarrow #2}",
+      "\\vec": "\\mathbf{#1}",
+      "\\veca": "\\begin{bmatrix*}#1\\end{bmatrix*}",
+      "\\trace": "\\text{Tr}\\left(#1\\right)",
+      "\\cov": "\\text{Cov}\\left(#1\\right)"
+    },
+    "displayMode": false
+  },
+
+  "mathjaxConfig": {
+    "tex": {},
+    "options": {},
+    "loader": {}
+  },
+
+  "mermaidConfig": {
+    "startOnLoad": false
+  }
+}

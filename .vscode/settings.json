@@ -1,0 +1,5 @@
+{
+  "pasteImage.showFilePathConfirmInputBox": true,
+  "pasteImage.filePathConfirmInputBoxMode": "onlyName",
+  "pasteImage.path": "${currentFileDir}/img/"
+}

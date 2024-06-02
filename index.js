@@ -19,6 +19,24 @@ async function compileLess() {
   }
 }
 
+async function getHeader(css) {
+  const headFilePath = path.join(__dirname, '.crossnote/head.html')
+  const includeInHeader =
+    (await fs.promises.readFile(headFilePath, 'utf8')) +
+    '<style>' +
+    css +
+    '</style>'
+  return includeInHeader
+}
+
+async function getConfig() {
+  const configFilePath = path.join(__dirname, '.crossnote/config.json')
+  const configContent = await fs.promises.readFile(configFilePath, 'utf8')
+  const config = JSON.parse(configContent)
+
+  return config
+}
+
 function relToAbs(relPath) {
   return path.join(__dirname, relPath)
 }
@@ -98,18 +116,11 @@ async function handleFileAdd(notebook, relPath) {
 async function main() {
   const singleRun = process.argv.includes('--single-run')
 
-  // Read the content of .crossnote/head.html
-  const headFilePath = path.join(__dirname, '.crossnote/head.html')
-  const includeInHeader =
-    (await fs.promises.readFile(headFilePath, 'utf8')) +
-    '<style>' +
-    (await compileLess()) +
-    '</style>'
-
   const notebook = await Notebook.init({
-    notebookDir: '/Users/rcya/Desktop/lilypad',
+    notebookDir: '/Users/rcya/Desktop/lilypad/',
     config: {
-      includeInHeader: includeInHeader
+      includeInHeader: await getHeader(await compileLess()),
+      ...(await getConfig())
     }
   })
 
@@ -175,6 +186,15 @@ async function main() {
     .on('ready', () => {
       console.log('Watching for changes in ./src')
     })
+
+  chokidar.watch('./.crossnote').on('change', async () => {
+    console.log('Detected change in config. Recompiling everything')
+    let newConfig = {
+      includeInHeader: await getHeader(await compileLess()),
+      ...(await getConfig())
+    }
+    notebook.updateConfig(newConfig)
+  })
 }
 
 main()
