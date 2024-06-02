@@ -1,4 +1,8 @@
 node_modules
-
-# ignore ds store
 .DS_Store
+
+out
+dist
+lilypad-extension/.vscode-test/
+lilypad-extension/*.vsix
+
