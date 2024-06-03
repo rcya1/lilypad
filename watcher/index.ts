@@ -11,6 +11,7 @@ async function generateHtml(
   sourcePath: string,
   renderedPath: string
 ): Promise<string> {
+  let start = Date.now()
   let html = await buildHTML(
     sourcePath,
     await fs.readFileSync(sourcePath, 'utf8')
@@ -18,37 +19,63 @@ async function generateHtml(
   ensureDirectoryExist(renderedPath)
   fs.writeFileSync(renderedPath, html)
 
+  console.log('Generated HTML for', sourcePath, 'in', Date.now() - start, 'ms')
+
   return html
 }
 
-async function generatePdf(html: string, renderedPath: string) {
-  const browser = await puppeteer.launch()
-  const page = await browser.newPage()
+async function generatePdf(
+  html: string,
+  sourcePath: string,
+  renderedPath: string
+) {
+  let start = Date.now()
+  let browser: any
+  try {
+    browser = await puppeteer.launch({
+      pipe: true,
+      args: ['--disable-gpu', '--no-sandbox', '--disable-extensions']
+    })
+    const page = await browser.newPage()
 
-  // Set the content of the page to the HTML string
-  await page.setContent(html, {
-    waitUntil: 'domcontentloaded'
-  })
-  ensureDirectoryExist(renderedPath)
+    // Set the content of the page to the HTML string
+    await page.setContent(html, {
+      waitUntil: 'domcontentloaded'
+    })
+    ensureDirectoryExist(renderedPath)
 
-  await page.pdf({
-    path: renderedPath,
-    format: 'A4',
-    printBackground: true
-  })
-
-  await browser.close()
+    await page.pdf({
+      path: renderedPath,
+      format: 'A4',
+      printBackground: true
+    })
+    console.log('Generated PDF for', sourcePath, 'in', Date.now() - start, 'ms')
+  } catch (e) {
+    console.error('\tError generating PDF', e)
+  } finally {
+    if (browser) {
+      await browser.close()
+    }
+  }
 }
 
-async function renderFile(sourcePathRel: string, overrideIfExists = false) {
+async function renderFile(
+  sourcePathRel: string,
+  overrideIfExists = false,
+  generatePdfs = false
+) {
   const sourcePath = relToAbs(sourcePathRel)
   if (sourcePathRel.endsWith('.md')) {
     const renderedPathHtml = getRenderedPath(sourcePath, 'html')
     const renderedPathPdf = getRenderedPath(sourcePath, 'pdf')
 
+    let html = ''
     if (!fs.existsSync(renderedPathHtml) || overrideIfExists) {
-      let html = await generateHtml(sourcePath, renderedPathHtml)
-      generatePdf(html, renderedPathPdf)
+      html = await generateHtml(sourcePath, renderedPathHtml)
+    }
+    if ((!fs.existsSync(renderedPathPdf) || overrideIfExists) && generatePdfs) {
+      if (!html) html = await fs.readFileSync(renderedPathHtml, 'utf8')
+      await generatePdf(html, sourcePathRel, renderedPathPdf)
     }
   } else if (path.dirname(sourcePathRel).endsWith('img')) {
     const renderedPath = getRenderedPath(sourcePath)
@@ -70,7 +97,7 @@ async function main() {
     console.log('Running a single pass')
     recursive('./src', function (_, files) {
       for (let file of files) {
-        renderFile(file)
+        renderFile(file, false, true)
       }
     })
 

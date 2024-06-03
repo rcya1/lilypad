@@ -4,18 +4,20 @@
   "description": "",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.89.0"
+    "vscode": "^1.87.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "*"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "lilypad-extension.helloWorld",
-        "title": "Hello World"
+        "command": "lilypad-extension.showSelectionCount",
+        "title": "Show Selection Count"
       }
     ]
   },
