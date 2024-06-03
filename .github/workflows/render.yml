@@ -27,7 +27,7 @@ jobs:
         run: yarn install
 
       - name: Run the render script
-        run: yarn start render
+        run: yarn run render
 
       - name: Commit and push changes
         run: |
