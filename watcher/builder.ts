@@ -41,8 +41,11 @@ export async function buildHTML(
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    ` + css
-  '<style>\n' + header + '</style>\n</head>\n'
+    ` +
+    header +
+    '<style>\n' +
+    css +
+    '</style>\n</head>\n'
   let markdown = await parseMarkdown(filepath, markdownContent)
 
   return head + '<body>' + markdown + '</body></html>'

@@ -1,4 +1,4 @@
-import { marked } from 'marked'
+import { Marked } from 'marked'
 import markedKatex from 'marked-katex-extension'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -27,6 +27,10 @@ const admonition = {
       let type = firstLine.split(' ')[0]
       let title = firstLine.replace(type, '').trim()
       let body = text.replace(firstLine, '').replace(/\|\|/g, '').trim()
+
+      if (['proposition'].includes(type)) {
+        title = 'Proposition: ' + title
+      }
 
       const token = {
         type: 'admonition',
@@ -110,6 +114,7 @@ export async function parseMarkdown(
   filepath: string,
   content: string
 ): Promise<string> {
+  const marked = new Marked()
   let katexExtension = markedKatex({
     throwOnError: false,
     macros: await getKatexMacros()
@@ -117,7 +122,7 @@ export async function parseMarkdown(
   marked.use(katexExtension)
   marked.use({ extensions: [admonition] })
   marked.use(images(filepath))
-  return await marked(content, {
+  return await marked.parse(content, {
     breaks: true
   })
 }

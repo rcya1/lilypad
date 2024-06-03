@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as chokidar from 'chokidar'
 import recursive from 'recursive-readdir'
 import * as path from 'path'
+import * as puppeteer from 'puppeteer'
 
 import { ensureDirectoryExist, getRenderedPath, relToAbs } from './helper'
 import { buildHTML, init } from './builder'
@@ -21,17 +22,22 @@ async function generateHtml(
 }
 
 async function generatePdf(html: string, renderedPath: string) {
-  // engine
-  //   .chromeExport({
-  //     fileType: 'pdf',
-  //     runAllCodeChunks: true,
-  //     openFileAfterGeneration: false
-  //   })
-  //   .then(() => {
-  //     console.log('PDF generated for', sourcePath)
-  //     ensureDirectoryExist(renderedPath)
-  //     fs.renameSync(sourcePath.replace('.md', '.pdf'), renderedPath)
-  //   })
+  const browser = await puppeteer.launch()
+  const page = await browser.newPage()
+
+  // Set the content of the page to the HTML string
+  await page.setContent(html, {
+    waitUntil: 'domcontentloaded'
+  })
+  ensureDirectoryExist(renderedPath)
+
+  await page.pdf({
+    path: renderedPath,
+    format: 'A4',
+    printBackground: true
+  })
+
+  await browser.close()
 }
 
 async function renderFile(sourcePathRel: string, overrideIfExists = false) {
@@ -56,6 +62,8 @@ async function renderFile(sourcePathRel: string, overrideIfExists = false) {
 }
 
 async function main() {
+  await init()
+
   const singleRun = process.argv.includes('--single-run')
 
   if (singleRun) {
@@ -68,8 +76,6 @@ async function main() {
 
     return
   }
-
-  await init()
 
   chokidar
     .watch('./src')

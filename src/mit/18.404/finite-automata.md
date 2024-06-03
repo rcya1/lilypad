@@ -23,8 +23,7 @@ We want to analyze which strings end in accept and which end in reject
 
 ### Formal Definitions
 
-<definition title="Finite Automata">
-
+||definition Finite Automata
 A finite automaton $M$ is a 5-tuple $M = (Q, \Sigma, \delta, q_0, F)$
 
 - $Q$ - set of states (must be finite)
@@ -32,8 +31,7 @@ A finite automaton $M$ is a 5-tuple $M = (Q, \Sigma, \delta, q_0, F)$
 - $\delta: Q \times \Sigma \rightarrow Q$ - transition function
 - $q_0 \in Q$ - start state
 - $F$ - set of accept states
-
-</definition>
+  ||
 
 For string $w = w_1w_2\dots w_k$ with $w_i \in \Sigma$, we say that $M$ accepts $w$ if there exists a sequence of states $r_0, r_1, r_2, \dots, r_n \in Q$ such that:
 
@@ -41,35 +39,29 @@ For string $w = w_1w_2\dots w_k$ with $w_i \in \Sigma$, we say that $M$ accepts 
 - $r_i = \delta(r_{i-1}, w_i)$ for $1 \leq i \leq n$
 - $r_n \in F$
 
-<definition title="Language">
-
+||definition Language
 A set of strings (finite or infinite)
 
 - $L(M)$ is the language of $M$
 - $L(M) = \{w | M \text{ accepts } w\}$
 - $M$ recognizes $L(M)$
-
-</definition>
+  ||
 
 The empty string $\varepsilon$ is the string with length $0$ and the empty language $\empty$ is the set with no strings.
 
-<definition title="Regular Language">
-
+||definition Regular Language
 A language is **regular** if some finite automaton recognizes it
 
 - $A = \{w|w \text{ contains substring 11}\}$ is regular (see above automaton)
 - $B = \{w|w \text{ has an even number of 1s}\}$ is regular (can make automaton for practice)
 - $C = \{w|w \text{ has equal number of 0s and 1s}\}$ is **not** regular (we will prove)
+  ||
 
-</definition>
-
-<info title="Goal">
+||info Goal
 Understand the regular languages
+||
 
-</info>
-
-<definition title="Regular Operations">
-
+||definition Regular Operations
 Let $A$ and $B$ be languages:
 
 - Union: $A \cup B = \{w|w \in A \text{ or } w \in B\}$
@@ -77,8 +69,7 @@ Let $A$ and $B$ be languages:
 - Star: $A^* = \{x_1\dots x_k | \text{ each } x_i \in A \text{ for } k \geq 0\}$
 
 Note: $\varepsilon \in A^*$
-
-</definition>
+||
 
 Example: $A = \{\text{good}, \text{bad}\}$ and $B = \{\text{boy}, \text{girl}\}$
 
@@ -86,14 +77,12 @@ Example: $A = \{\text{good}, \text{bad}\}$ and $B = \{\text{boy}, \text{girl}\}$
 - $A \circ B = \{\text{goodboy}, \text{goodboy}, \text{badboy}, \text{badgirl}\}$
 - $A^* = \{\varepsilon, \text{good}, \text{bad}, \text{goodgood}, \text{goodbad}, \dots\}$
 
-<definition title="Regular Expressions">
-
+||definition Regular Expressions
 Built from a set of atomic symbols (akin to numbers in arithmetic expressions) that are combined using symbols (arithmetic operations)
 
 Symbols are from $\Sigma$ (any letter in the alphabet) or are either $\empty$ or $\varepsilon$
 These symbols are combined using $\cup, \circ, *$
-
-</definition>
+||
 
 Examples with $\Sigma = \{0, 1\}$:
 
@@ -101,17 +90,13 @@ Examples with $\Sigma = \{0, 1\}$:
 - $\Sigma^*1$ gives all strings that end with $1$
 - $\Sigma^*11\Sigma^*$ gives all strings that contain $11$ = $L(M_1)$
 
-<info title="Goal">
-
+||info Goal
 Show finite automata are equivalent to regular expressions
+||
 
-</info>
-
-<proposition title="Closure under Union">
-
+||proposition Closure under Union
 If $A_1, A_2$ are regular languages, so is $A_1 \cup A_2$
-
-</proposition>
+||
 
 **Proof**:
 Let $M_1 = (Q_1, \Sigma, \delta_1, q_1, F_1)$ recognize $A_1$ and $M_2 = (Q_2, \Sigma, \delta_2, q_2, F_2)$ recognize $A_2$
@@ -123,11 +108,9 @@ We wish to construct $M = (Q, \Sigma, \delta, q_0, F)$ recognizing $A_1 \cup A_2
 - $\delta((q, r), a) = (\delta_1(q, a), \delta_2(r, a))$
   - $F = (F_1 \times Q_2) \cup (Q_1 \times F_2)$
 
-<proposition title="Closure under Concatenation">
-
+||proposition Closure under Concatenation
 If $A_1, A_2$ are regular languages, so is $A_1 \circ A_2$
-
-</proposition>
+||
 
 **Proof**:
 Let $M_1 = (Q_1, \Sigma, \delta_1, q_1, F_1)$ recognize $A_1$ and $M_2 = (Q_2, \Sigma, \delta_2, q_2, F_2)$ recognize $A_2$
