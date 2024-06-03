@@ -15,13 +15,13 @@
     "@types/recursive-readdir": "^2.2.4",
     "chokidar": "^3.6.0",
     "crossnote": "^0.9.9",
+    "image-size": "^1.1.1",
     "less": "^4.2.0",
     "marked": "^12.0.2",
     "marked-katex-extension": "^5.0.1",
     "nodemon": "^3.1.2",
     "puppeteer": "^22.10.0",
     "recursive-readdir": "^2.2.3",
-    "sharp": "^0.33.4",
     "ts-node": "^10.9.2"
   }
 }

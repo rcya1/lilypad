@@ -2,7 +2,7 @@ import { Marked } from 'marked'
 import markedKatex from 'marked-katex-extension'
 import * as path from 'path'
 import * as fs from 'fs'
-import sharp from 'sharp'
+import sizeOf from 'image-size'
 
 async function getKatexMacros() {
   const configFilePath = path.join(process.cwd(), '.config', 'macros.json')
@@ -96,9 +96,10 @@ const images = (filepath: string) => {
           let [key, value] = param.split('=')
           if (key === 'maxwx') {
             let actualHref = token.href.split('?')[0]
-            let image = sharp(path.join(path.dirname(filepath), actualHref))
-            let metadata = await image.metadata()
-            let width = metadata.width
+            let imageDims = await sizeOf(
+              path.join(path.dirname(filepath), actualHref)
+            )
+            let width = imageDims.width
             newParams.push(`maxw=${Math.round(width * parseFloat(value))}`)
           } else {
             newParams.push(param)
