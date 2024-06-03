@@ -1,0 +1,98 @@
+<!-- The content below will be included at the end of the <head> element. -->
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function () {
+    function toTitleCase(str) {
+      return str.replace(/\w\S*/g, function (txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+      })
+    }
+
+    function transformImages() {
+      const images = document.querySelectorAll('img')
+
+      images.forEach((image) => {
+        // Get the alt text of the image
+        const altText = image.alt
+
+        const existingCaption = image.parentNode.querySelector('.image-caption')
+        const modifiers = image.parentNode.innerText
+        if (modifiers.startsWith('[') && modifiers.endsWith(']')) {
+          let tokens = modifiers.slice(1, -1).split(';')
+          for (let token of tokens) {
+            let [key, value] = token.split('=')
+            if (key === 'maxw') {
+              if (image.complete) {
+                image.style.maxWidth = `${value}px`
+              } else {
+                // If the image is not yet loaded, wait for the load event
+                image.addEventListener('load', () => {
+                  image.style.maxWidth = `${value}px`
+                })
+              }
+            } else if (key === 'maxwx') {
+              if (image.complete) {
+                const originalWidth = image.naturalWidth
+                const maxWidth = originalWidth * parseFloat(value)
+                image.style.maxWidth = `${maxWidth}px`
+              } else {
+                // If the image is not yet loaded, wait for the load event
+                image.addEventListener('load', () => {
+                  const originalWidth = image.naturalWidth
+                  const maxWidth = originalWidth * parseFloat(value)
+                  image.style.maxWidth = `${maxWidth}px`
+                })
+              }
+            }
+          }
+          // image.parentNode.innerText = ''
+          image.parentNode.innerHTML = image.parentNode.innerHTML.replace(
+            modifiers,
+            ''
+          )
+        }
+
+        if (altText && !existingCaption) {
+          // Create a new caption element
+          const caption = document.createElement('p')
+          caption.className = 'image-caption'
+          caption.innerText = altText
+
+          // Insert the caption after the image
+          image.parentNode.appendChild(caption)
+        }
+      })
+    }
+
+    function runTransforms() {
+      transformImages()
+    }
+
+    function initMutationObserver() {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes) {
+            mutation.addedNodes.forEach((node) => {
+              if (
+                node.tagName &&
+                (node.tagName.toLowerCase() in admonitions ||
+                  node.tagName === 'i')
+              ) {
+                runTransforms()
+              }
+            })
+          }
+        })
+      })
+
+      observer.observe(document.body, { childList: true, subtree: true })
+    }
+
+    initMutationObserver()
+    runTransforms()
+  })
+</script>
+
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>

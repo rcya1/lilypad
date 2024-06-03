@@ -1,0 +1,123 @@
+import { marked } from 'marked'
+import markedKatex from 'marked-katex-extension'
+import * as path from 'path'
+import * as fs from 'fs'
+import sharp from 'sharp'
+
+async function getKatexMacros() {
+  const configFilePath = path.join(process.cwd(), '.config', 'macros.json')
+  const configContent = await fs.promises.readFile(configFilePath, 'utf8')
+  const config = JSON.parse(configContent)
+
+  return config
+}
+
+const admonition = {
+  name: 'admonition',
+  level: 'block',
+  start(src: string) {
+    return src.match(/\|\|/)?.index
+  },
+  tokenizer(src: string, tokens: any[]) {
+    const rule = /^\|\|([\s\S]*?)\|\|/
+    const match = rule.exec(src)
+    if (match) {
+      let text = match[0].trim()
+      let firstLine = text.split('\n')[0].replace(/\|\|/g, '').trim()
+      let type = firstLine.split(' ')[0]
+      let title = firstLine.replace(type, '').trim()
+      let body = text.replace(firstLine, '').replace(/\|\|/g, '').trim()
+
+      const token = {
+        type: 'admonition',
+        raw: match[0],
+        body,
+        title,
+        admonitionType: type,
+        tokens: Array<string>()
+      }
+      this.lexer.blockTokens(token.body, token.tokens)
+      return token
+    }
+  },
+  renderer(token: any) {
+    let icon = ''
+    switch (token.admonitionType) {
+      case 'info':
+        icon = '<i class="fa fa-info-circle"></i>'
+        break
+      case 'definition':
+      case 'proposition':
+        icon = '<i class="fa fa-book"></i>'
+        break
+    }
+
+    let output = `<div class="admonition ${token.admonitionType}">
+      <div class="title">
+        ${icon + token.title}
+      </div>
+      <div class="body">
+        ${this.parser.parse(token.tokens)}
+      </div>
+    </div>`
+    return output
+  }
+}
+
+const images = (filepath: string) => {
+  return {
+    renderer: {
+      image(href: string, title: string, text: string) {
+        let actualHref = href.split('?')[0]
+        let params = href.split('?')[1].split('&')
+
+        let style = ''
+
+        for (let param of params) {
+          let [key, value] = param.split('=')
+          if (key === 'maxw') {
+            style += `max-width: ${value}px;`
+          }
+        }
+
+        return `<img style="${style}" src="${actualHref}"/>`
+      }
+    },
+    async: true,
+    async walkTokens(token: any) {
+      if (token.type === 'image') {
+        let params = token.href.split('?')[1].split('&')
+        let newParams = []
+        for (let param of params) {
+          let [key, value] = param.split('=')
+          if (key === 'maxwx') {
+            let actualHref = token.href.split('?')[0]
+            let image = sharp(path.join(path.dirname(filepath), actualHref))
+            let metadata = await image.metadata()
+            let width = metadata.width
+            newParams.push(`maxw=${Math.round(width * parseFloat(value))}`)
+          } else {
+            newParams.push(param)
+          }
+        }
+        token.href = token.href.split('?')[0] + '?' + newParams.join('&')
+      }
+    }
+  }
+}
+
+export async function parseMarkdown(
+  filepath: string,
+  content: string
+): Promise<string> {
+  let katexExtension = markedKatex({
+    throwOnError: false,
+    macros: await getKatexMacros()
+  })
+  marked.use(katexExtension)
+  marked.use({ extensions: [admonition] })
+  marked.use(images(filepath))
+  return await marked(content, {
+    breaks: true
+  })
+}

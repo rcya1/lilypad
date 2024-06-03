@@ -1,0 +1,272 @@
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2em calc(50% - 457px + 2em);
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: black;
+    padding-bottom: 8px;
+    border-bottom: 1px solid black;
+    font-weight: 600;
+    margin-top: 1em;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: 2.25em;
+    padding-bottom: 0.3em;
+  }
+
+  h2 {
+    font-size: 1.75em;
+    padding-bottom: 0.3em;
+  }
+
+  h3 {
+    font-size: 1.5em;
+  }
+
+  h4 {
+    font-size: 1.25em;
+  }
+
+  h5 {
+    font-size: 1.1em;
+  }
+
+  h6 {
+    font-size: 1em;
+  }
+
+  p + ul {
+    margin-top: -15px;
+  }
+
+  a:not([href]) {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a {
+    color: #08c;
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: #00a3f5;
+    text-decoration: none;
+  }
+
+  > p {
+    margin-top: 0;
+    margin-bottom: 16px;
+    word-wrap: break-word;
+  }
+
+  > ol,
+  > ul {
+    margin-bottom: 16px;
+  }
+
+  ol,
+  ul {
+    padding-left: 2em;
+  }
+
+  ol ol,
+  ol ul,
+  ul ol,
+  ul ul {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  li {
+    margin-bottom: 0;
+  }
+
+  li > p {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  hr {
+    height: 4px;
+    margin: 32px 0;
+    background-color: #d6d6d6;
+    border: 0 none;
+  }
+
+  table {
+    margin: 10px 0 15px 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+    display: block;
+    width: 100%;
+    overflow: auto;
+    word-break: normal;
+    word-break: keep-all;
+  }
+
+  table th {
+    font-weight: 700;
+    color: #000;
+  }
+
+  table td,
+  table th {
+    border: 1px solid #d6d6d6;
+    padding: 6px 13px;
+  }
+
+  dl {
+    padding: 0;
+  }
+
+  dl dt {
+    padding: 0;
+    margin-top: 16px;
+    font-size: 1em;
+    font-style: italic;
+    font-weight: 700;
+  }
+
+  dl dd {
+    padding: 0 16px;
+    margin-bottom: 16px;
+  }
+
+  ul {
+    list-style: disc;
+  }
+
+  ul ul {
+    list-style: circle;
+  }
+
+  ul ul ul {
+    list-style: square;
+  }
+
+  own-preview ol {
+    list-style: decimal;
+  }
+
+  own-preview ol ol,
+  ul ol {
+    list-style-type: lower-roman;
+  }
+
+  own-preview ol ol ol,
+  own-preview ol ul ol,
+  ul ol ol,
+  ul ul ol {
+    list-style-type: lower-alpha;
+  }
+
+  img {
+    width: 100%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 25px;
+  }
+
+  .image-caption {
+    font-size: 0.8em;
+    color: #494949;
+    text-align: center;
+    margin: -20px auto 10px;
+    width: 100%;
+  }
+
+  .definition {
+    @border-color: #06c406;
+    @titlebar-color: #d9ffd9;
+    .title {
+      background-color: @titlebar-color;
+    }
+    border-color: @border-color;
+  }
+
+  .info {
+    @border-color: #448aff;
+    @titlebar-color: #ecf3ff;
+    .title {
+      background-color: @titlebar-color;
+    }
+    border-color: @border-color;
+  }
+
+  .proposition {
+    @border-color: #448aff;
+    @titlebar-color: #ecf3ff;
+    .title {
+      background-color: @titlebar-color;
+    }
+    border-color: @border-color;
+  }
+}
+
+.admonition {
+  .title {
+    font-size: 1.125em;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px 8px 0px 0px;
+    svg {
+      margin-right: 4px;
+    }
+    p {
+      margin: 0px;
+    }
+  }
+
+  .body {
+    padding: 8px 10px 0px;
+
+    > :first-child {
+      margin-top: 0;
+    }
+
+    > :last-child {
+      margin-bottom: 4px;
+    }
+  }
+
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}

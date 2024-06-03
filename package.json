@@ -6,12 +6,21 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "watch": "nodemon",
+    "render": "ts-node src/index.ts --single-run",
+    "clean": "rm -rf rendered"
   },
   "dependencies": {
+    "@types/less": "^3.0.6",
+    "@types/recursive-readdir": "^2.2.4",
     "chokidar": "^3.6.0",
     "crossnote": "^0.9.9",
     "less": "^4.2.0",
-    "recursive-readdir": "^2.2.3"
+    "marked": "^12.0.2",
+    "marked-katex-extension": "^5.0.1",
+    "nodemon": "^3.1.2",
+    "recursive-readdir": "^2.2.3",
+    "sharp": "^0.33.4",
+    "ts-node": "^10.9.2"
   }
 }

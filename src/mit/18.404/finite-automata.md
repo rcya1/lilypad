@@ -2,7 +2,7 @@
 
 Model where the size of the memory is fixed / limited compared to the size of the input
 
-![](img/finite-ex.png)
+![](img/finite-ex.png?maxwx=1)
 
 - States: $q_1, q_2, q_3$
 - Transitions: arrows with labels on them

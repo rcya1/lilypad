@@ -1,0 +1,6 @@
+{
+  "watch": ["watcher", ".config"],
+  "ext": "ts,json,html,js,less",
+  "ignore": [],
+  "exec": "ts-node ./watcher/index.ts"
+}
