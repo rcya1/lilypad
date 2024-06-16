@@ -16,8 +16,30 @@
   "contributes": {
     "commands": [
       {
-        "command": "lilypad-extension.showSelectionCount",
-        "title": "Show Selection Count"
+        "command": "lilypad-extension.openPreview",
+        "title": "Open HTML Preview",
+        "category": "Lilypad",
+        "icon": {
+          "light": "./folding-expanded.svg",
+          "dark": "./folding-expanded.svg"
+        }
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "editorLangId == markdown",
+          "command": "lilypad-extension.openPreview",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "lilypad-extension.togglePreview",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorLangId == markdown || lilypad-extension.previewFocused"
       }
     ]
   },
