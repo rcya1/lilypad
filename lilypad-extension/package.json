@@ -16,8 +16,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "lilypad-extension.openPreview",
-        "title": "Open HTML Preview",
+        "command": "lilypad-extension.togglePreview",
+        "title": "Toggle HTML Preview",
         "category": "Lilypad",
         "icon": {
           "light": "./folding-expanded.svg",
@@ -29,7 +29,7 @@
       "editor/title": [
         {
           "when": "editorLangId == markdown",
-          "command": "lilypad-extension.openPreview",
+          "command": "lilypad-extension.togglePreview",
           "group": "navigation"
         }
       ]
