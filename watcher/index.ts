@@ -43,6 +43,7 @@ async function generatePdf(
     await page.setContent(html, {
       waitUntil: 'domcontentloaded'
     })
+    await page.evaluate(() => document.body.style.setProperty('zoom', '0.8'))
     ensureDirectoryExist(renderedPath)
 
     await page.pdf({
