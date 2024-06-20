@@ -10,7 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "*"
+    "workspaceContains:**/.config/lilypad"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -20,8 +20,8 @@
         "title": "Toggle HTML Preview",
         "category": "Lilypad",
         "icon": {
-          "light": "./folding-expanded.svg",
-          "dark": "./folding-expanded.svg"
+          "light": "./icon-light.svg",
+          "dark": "./icon-dark.svg"
         }
       }
     ],

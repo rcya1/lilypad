@@ -6,3 +6,4 @@ dist
 lilypad-extension/.vscode-test/
 lilypad-extension/*.vsix
 
+.config/lock

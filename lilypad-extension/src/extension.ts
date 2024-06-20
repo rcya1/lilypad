@@ -2,24 +2,63 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as fs from 'fs'
 
+let HEARTBEAT_INTERVAL_THRESHOLD_MS = 2000 * 1.5
+let TERMINAL_COOLDOWN_MS = 1000
+let lastTimeOpened: Date | undefined = undefined
+
 let panel: vscode.WebviewPanel | undefined = undefined
 let associatedEditor: vscode.TextEditor | undefined = undefined
 let fsWatcher: vscode.FileSystemWatcher | undefined = undefined
 let compileTerminal: vscode.Terminal | undefined = undefined
 
-export function activate({ subscriptions }: vscode.ExtensionContext) {
+async function checkLockFile() {
+  let workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+  if (!workspacePath) {
+    vscode.window.showErrorMessage(
+      'No workspace found to try to launch Lilypad compiler'
+    )
+    return false
+  }
+  const lockPath = path.join(workspacePath, '.config', 'lock')
+  if (fs.existsSync(lockPath)) {
+    const lockContent = await fs.promises.readFile(lockPath, 'utf8')
+    const timestamp = new Date(lockContent.trim())
+    if (Date.now() - timestamp.getTime() < HEARTBEAT_INTERVAL_THRESHOLD_MS) {
+      return false
+    }
+  }
+
+  return true
+}
+
+export function activate({
+  subscriptions,
+  extensionPath
+}: vscode.ExtensionContext) {
   subscriptions.push(
     vscode.commands.registerCommand('lilypad-extension.togglePreview', () => {
       if (
-        (compileTerminal && compileTerminal.exitStatus !== undefined) ||
-        !compileTerminal
+        !lastTimeOpened ||
+        Date.now() - lastTimeOpened.getTime() > TERMINAL_COOLDOWN_MS
       ) {
-        compileTerminal = vscode.window.createTerminal('Compile Lilypad')
-        compileTerminal.sendText('yarn run watch')
-        vscode.window.showInformationMessage(
-          'Running Lilypad compile watcher in background...'
-        )
+        lastTimeOpened = new Date()
+        checkLockFile().then((shouldContinue) => {
+          if (!shouldContinue) {
+            return
+          }
+          if (compileTerminal) {
+            compileTerminal.dispose()
+            compileTerminal = undefined
+          }
+
+          compileTerminal = vscode.window.createTerminal('Compile Lilypad')
+          compileTerminal.sendText('yarn run watch')
+          vscode.window.showInformationMessage(
+            'Running Lilypad compile watcher in background...'
+          )
+        })
       }
+
       if (panel) {
         if (panel.active) {
           if (associatedEditor) {
@@ -50,7 +89,7 @@ export function activate({ subscriptions }: vscode.ExtensionContext) {
         return
       }
 
-      changeToEditor(activeEditor)
+      changeToEditor(activeEditor, extensionPath)
     })
   )
 }
@@ -135,7 +174,7 @@ function readAndProcessHtml(filePath: string) {
   return html.replace('</body>', `${script}</body>`)
 }
 
-function changeToEditor(editor: vscode.TextEditor) {
+function changeToEditor(editor: vscode.TextEditor, extensionPath: string) {
   const filePath = editor.document.fileName
   const fileName = path.parse(filePath).name
 
@@ -161,8 +200,15 @@ function changeToEditor(editor: vscode.TextEditor) {
         enableScripts: true
       }
     )
-    changeActiveCallback =
-      vscode.window.onDidChangeActiveTextEditor(onChangeEditor)
+    panel.iconPath = {
+      light: vscode.Uri.file(path.join(extensionPath, 'icon-light.svg')),
+      dark: vscode.Uri.file(path.join(extensionPath, 'icon-dark.svg'))
+    }
+    changeActiveCallback = vscode.window.onDidChangeActiveTextEditor(
+      (editor) => {
+        onChangeEditor(editor, extensionPath)
+      }
+    )
   } else {
     panel.title = fileName
   }
@@ -232,8 +278,11 @@ function changeToEditor(editor: vscode.TextEditor) {
   })
 }
 
-function onChangeEditor(editor: vscode.TextEditor | undefined) {
+function onChangeEditor(
+  editor: vscode.TextEditor | undefined,
+  extensionPath: string
+) {
   if (editor && editor.document.languageId === 'markdown') {
-    changeToEditor(editor)
+    changeToEditor(editor, extensionPath)
   }
 }

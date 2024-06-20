@@ -6,6 +6,7 @@ import * as puppeteer from 'puppeteer'
 
 import { ensureDirectoryExist, getRenderedPath, relToAbs } from './helper'
 import { buildHTML, init } from './builder'
+import { checkLockFile, updateLockFile, HEARTBEAT_INTERVAL_MS } from './lock'
 
 async function generateHtml(
   sourcePath: string,
@@ -89,11 +90,10 @@ async function renderFile(
 }
 
 async function main() {
-  await init()
-
   const singleRun = process.argv.includes('--single-run')
 
   if (singleRun) {
+    await init()
     console.log('Running a single pass')
     recursive('./src', function (_, files) {
       for (let file of files) {
@@ -103,6 +103,12 @@ async function main() {
 
     return
   }
+
+  await checkLockFile()
+  await updateLockFile()
+  setInterval(updateLockFile, HEARTBEAT_INTERVAL_MS)
+
+  await init()
 
   chokidar
     .watch('./src')
@@ -154,7 +160,10 @@ async function main() {
       console.log('Watching for changes in ../src')
     })
 
-  chokidar.watch('./.config').on('change', async () => {
+  chokidar.watch('./.config').on('change', async (path) => {
+    if (path.endsWith('lock')) {
+      return
+    }
     console.log('Detected change in config')
   })
 }

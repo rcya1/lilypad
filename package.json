@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "watch": "nodemon",
+    "watch": "nodemon --exitcrash",
     "render": "ts-node watcher/index.ts --single-run",
     "clean": "rm -rf rendered"
   },
