@@ -1,14 +1,12 @@
+---
+title: Finite Automata
+date: 2022-09-08
+order: 1
+---
+
 ## Finite Automata
 
 Model where the size of the memory is fixed / limited compared to the size of the input.
-
-| Command      | Output       |
-| ------------ | ------------ |
-| `\reals`     | $\reals$     |
-| `\integers`  | $\integers$  |
-| `\naturals`  | $\naturals$  |
-| `\rationals` | $\rationals$ |
-| `\complex`   | $\complex$   |
 
 ![](img/finite-ex.png?maxwx=1)
 

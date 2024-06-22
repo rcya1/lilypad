@@ -41,7 +41,24 @@
         "mac": "cmd+shift+e",
         "when": "editorLangId == markdown || lilypad-extension.previewFocused"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "lilypad",
+          "title": "Lilypad",
+          "icon": "./icon-light.svg"
+        }
+      ]
+    },
+    "views": {
+      "lilypad": [
+        {
+          "id": "lilypad-extension-browser",
+          "name": "Files"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",
@@ -52,14 +69,17 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.89.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
+    "@types/vscode": "^1.87.0",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
     "@typescript-eslint/parser": "^7.11.0",
-    "eslint": "^8.57.0",
-    "typescript": "^5.4.5",
     "@vscode/test-cli": "^0.0.9",
-    "@vscode/test-electron": "^2.4.0"
+    "@vscode/test-electron": "^2.4.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "front-matter": "^4.0.2"
   }
 }

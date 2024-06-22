@@ -1,6 +1,9 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as fs from 'fs'
+import fm from 'front-matter'
+import { ExplorerProvider } from './explorer'
+import { FrontMatter } from './frontmatter'
 
 let HEARTBEAT_INTERVAL_THRESHOLD_MS = 2000 * 1.5
 let TERMINAL_COOLDOWN_MS = 1000
@@ -35,6 +38,17 @@ export function activate({
   subscriptions,
   extensionPath
 }: vscode.ExtensionContext) {
+  const rootPath =
+    vscode.workspace.workspaceFolders &&
+    vscode.workspace.workspaceFolders.length > 0
+      ? vscode.workspace.workspaceFolders[0].uri.fsPath
+      : undefined
+  if (rootPath) {
+    let srcPath = path.join(rootPath, 'src')
+    vscode.window.createTreeView('lilypad-extension-browser', {
+      treeDataProvider: new ExplorerProvider(srcPath)
+    })
+  }
   subscriptions.push(
     vscode.commands.registerCommand('lilypad-extension.togglePreview', () => {
       if (
@@ -220,6 +234,9 @@ function changeToEditor(editor: vscode.TextEditor, extensionPath: string) {
     false
   )
 
+  let markdown = editor.document.getText()
+  let frontMatter = fm<FrontMatter>(markdown)
+  panel.title = frontMatter.attributes.title || fileName
   panel.webview.html = readAndProcessHtml(renderedPath)
   let webviewListener = panel.webview.onDidReceiveMessage((message) => {
     switch (message) {

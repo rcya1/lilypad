@@ -115,6 +115,10 @@ export async function parseMarkdown(
   filepath: string,
   content: string
 ): Promise<string> {
+  // ignore front matter
+  if (content.startsWith('---')) {
+    content = content.split('---').slice(2).join('---')
+  }
   const marked = new Marked()
   let katexExtension = markedKatex({
     throwOnError: false,

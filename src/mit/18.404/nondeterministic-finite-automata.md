@@ -1,3 +1,9 @@
+---
+title: Nondeterministic Finite Automata
+date: 2022-09-13
+number: 2
+---
+
 ## Nondeterministic Finite Automata
 
 So far, we have been talking about deterministic finite automata (DFA)

@@ -1,3 +1,9 @@
+---
+title: Finite Automata
+date: 2022-09-08
+number: 1
+---
+
 ## Collection of Math Macros
 
 ### Number Sets
