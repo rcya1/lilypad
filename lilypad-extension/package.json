@@ -23,6 +23,21 @@
           "light": "./icon-light.svg",
           "dark": "./icon-dark.svg"
         }
+      },
+      {
+        "command": "lilypad-extension.refreshExplorer",
+        "title": "Refresh Explorer",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "lilypad-extension.addFile",
+        "title": "Add",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "lilypad-extension.delete",
+        "title": "Delete",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -31,6 +46,29 @@
           "when": "editorLangId == markdown",
           "command": "lilypad-extension.togglePreview",
           "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "lilypad-extension.refreshExplorer",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation"
+        },
+        {
+          "command": "lilypad-extension.addFile",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "lilypad-extension.delete",
+          "when": "view == lilypad-extension-browser",
+          "group": "inline"
+        },
+        {
+          "command": "lilypad-extension.delete",
+          "when": "view == lilypad-extension-browser"
         }
       ]
     },
@@ -58,7 +96,13 @@
           "name": "Files"
         }
       ]
-    }
+    },
+    "viewsWelcome": [
+      {
+        "view": "lilypad-extension-browser",
+        "contents": "Lilypad not found in current workspace."
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",

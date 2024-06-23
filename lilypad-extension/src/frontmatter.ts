@@ -1,5 +1,5 @@
 export type FrontMatter = {
   title: string | undefined
-  date: string | undefined
-  order: string | undefined
+  date: Date | undefined
+  order: number | undefined
 }

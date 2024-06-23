@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as fs from 'fs'
 import fm from 'front-matter'
-import { ExplorerProvider } from './explorer'
+import { ExplorerNode, ExplorerProvider } from './explorer'
 import { FrontMatter } from './frontmatter'
 
 let HEARTBEAT_INTERVAL_THRESHOLD_MS = 2000 * 1.5
@@ -43,10 +43,12 @@ export function activate({
     vscode.workspace.workspaceFolders.length > 0
       ? vscode.workspace.workspaceFolders[0].uri.fsPath
       : undefined
+  let explorer: ExplorerProvider | undefined = undefined
   if (rootPath) {
     let srcPath = path.join(rootPath, 'src')
+    explorer = new ExplorerProvider(srcPath)
     vscode.window.createTreeView('lilypad-extension-browser', {
-      treeDataProvider: new ExplorerProvider(srcPath)
+      treeDataProvider: explorer
     })
   }
   subscriptions.push(
@@ -104,7 +106,37 @@ export function activate({
       }
 
       changeToEditor(activeEditor, extensionPath)
-    })
+    }),
+    vscode.commands.registerCommand('lilypad-extension.refreshExplorer', () => {
+      if (explorer) {
+        explorer.refresh()
+      }
+    }),
+    vscode.commands.registerCommand(
+      'lilypad-extension.delete',
+      (node: ExplorerNode) => {
+        vscode.window
+          .showWarningMessage(
+            'Are you sure you want to delete?',
+            { modal: true },
+            'Yes',
+            'No'
+          )
+          .then((value) => {
+            if (value === 'Yes') {
+              node.delete()
+              if (
+                vscode.window.activeTextEditor?.document.fileName === node.path
+              ) {
+                vscode.commands.executeCommand(
+                  'workbench.action.closeActiveEditor'
+                )
+              }
+            }
+          })
+      }
+    ),
+    vscode.commands.registerCommand('lilypad-extension.addFile', () => {})
   )
 }
 
@@ -235,7 +267,9 @@ function changeToEditor(editor: vscode.TextEditor, extensionPath: string) {
   )
 
   let markdown = editor.document.getText()
-  let frontMatter = fm<FrontMatter>(markdown)
+  let frontMatter = fm<FrontMatter>(markdown, {
+    allowUnsafe: true
+  })
   panel.title = frontMatter.attributes.title || fileName
   panel.webview.html = readAndProcessHtml(renderedPath)
   let webviewListener = panel.webview.onDidReceiveMessage((message) => {

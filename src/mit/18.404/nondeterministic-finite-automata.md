@@ -1,7 +1,7 @@
 ---
 title: Nondeterministic Finite Automata
 date: 2022-09-13
-number: 2
+order: 2
 ---
 
 ## Nondeterministic Finite Automata
