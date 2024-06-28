@@ -13,6 +13,8 @@ let panel: vscode.WebviewPanel | undefined = undefined
 let associatedEditor: vscode.TextEditor | undefined = undefined
 let fsWatcher: vscode.FileSystemWatcher | undefined = undefined
 let compileTerminal: vscode.Terminal | undefined = undefined
+let explorerProvider: ExplorerProvider | undefined = undefined
+let treeView: vscode.TreeView<ExplorerNode> | undefined = undefined
 
 async function checkLockFile() {
   let workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath
@@ -43,12 +45,11 @@ export function activate({
     vscode.workspace.workspaceFolders.length > 0
       ? vscode.workspace.workspaceFolders[0].uri.fsPath
       : undefined
-  let explorer: ExplorerProvider | undefined = undefined
   if (rootPath) {
     let srcPath = path.join(rootPath, 'src')
-    explorer = new ExplorerProvider(srcPath)
-    vscode.window.createTreeView('lilypad-extension-browser', {
-      treeDataProvider: explorer
+    explorerProvider = new ExplorerProvider(srcPath)
+    treeView = vscode.window.createTreeView('lilypad-extension-browser', {
+      treeDataProvider: explorerProvider
     })
   }
   subscriptions.push(
@@ -108,8 +109,8 @@ export function activate({
       changeToEditor(activeEditor, extensionPath)
     }),
     vscode.commands.registerCommand('lilypad-extension.refreshExplorer', () => {
-      if (explorer) {
-        explorer.refresh()
+      if (explorerProvider) {
+        explorerProvider.refresh()
       }
     }),
     vscode.commands.registerCommand(
@@ -136,7 +137,18 @@ export function activate({
           })
       }
     ),
-    vscode.commands.registerCommand('lilypad-extension.addFile', () => {})
+    vscode.commands.registerCommand('lilypad-extension.addFile', () => {}),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      let fsPath = editor?.document.uri.fsPath
+      if (!fsPath) {
+        return
+      }
+      let node = explorerProvider?.getNode(fsPath)
+      if (!node) {
+        return
+      }
+      treeView?.reveal(node)
+    })
   )
 }
 

@@ -10,7 +10,52 @@ import { FrontMatter } from './frontmatter'
 // Drag and drop to reorder within folder
 // Drag and drop to move between folders
 export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
-  constructor(private srcPath: string) {}
+  pathMap: Map<string, ExplorerNode>
+  watcher: vscode.FileSystemWatcher
+
+  constructor(private srcPath: string) {
+    this.pathMap = new Map()
+    let recurse = (pa: string, parent: ExplorerNode | undefined) => {
+      let stats = fs.statSync(pa)
+      let node = new ExplorerNode(
+        path.basename(pa),
+        stats.isDirectory()
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.None,
+        pa,
+        this.pathMap,
+        parent
+      )
+      node.changed = () => {
+        this._onDidChangeTreeData.fire(node)
+      }
+      if (!stats.isDirectory()) {
+        return
+      }
+
+      fs.readdirSync(pa).forEach((name) => {
+        recurse(path.join(pa, name), node)
+      })
+    }
+    recurse(srcPath, undefined)
+
+    this.watcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(srcPath, '**/*')
+    )
+    this.watcher.onDidCreate((uri) => {
+      let parent = this.pathMap.get(path.dirname(uri.fsPath))
+      recurse(uri.fsPath, parent)
+      this._onDidChangeTreeData.fire(parent)
+    })
+    this.watcher.onDidChange((uri) => {
+      let parent = this.pathMap.get(path.dirname(uri.fsPath))
+      this._onDidChangeTreeData.fire(parent)
+    })
+    this.watcher.onDidDelete((uri) => {
+      let parent = this.pathMap.get(path.dirname(uri.fsPath))
+      this._onDidChangeTreeData.fire(parent)
+    })
+  }
 
   getTreeItem(element: ExplorerNode): vscode.TreeItem {
     return element
@@ -58,7 +103,6 @@ export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
     })
     childrenFiles.sort((a, b) => {
       let res0
-      console.log(a[0], b[0], typeof a[0], typeof b[0])
       if (a[0] && b[0]) {
         res0 = a[0] - b[0]
       } else if (a[0]) {
@@ -85,36 +129,15 @@ export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
     return Promise.resolve(
       folders
         .map((p) => {
-          let node = new ExplorerNode(
-            path.basename(p),
-            vscode.TreeItemCollapsibleState.Collapsed,
-            p,
-            element
-          )
-
-          node.changed = () => {
-            this._onDidChangeTreeData.fire(node)
-          }
-
-          return node
+          return this.pathMap.get(p)
         })
         .concat(
           childrenFiles.map((info) => {
             let [_date, _order, p] = info
-            let node = new ExplorerNode(
-              path.basename(p),
-              vscode.TreeItemCollapsibleState.None,
-              p,
-              element
-            )
-
-            node.changed = () => {
-              this._onDidChangeTreeData.fire(node)
-            }
-
-            return node
+            return this.pathMap.get(p)
           })
         )
+        .filter((n) => n !== undefined) as ExplorerNode[]
     )
   }
 
@@ -128,6 +151,15 @@ export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
   refresh(): void {
     this._onDidChangeTreeData.fire()
   }
+
+  getParent(element: ExplorerNode): vscode.ProviderResult<ExplorerNode> {
+    return element.parent
+  }
+
+  getNode(path: string): ExplorerNode | undefined {
+    console.log(path, this.pathMap)
+    return this.pathMap.get(path)
+  }
 }
 
 export class ExplorerNode extends vscode.TreeItem {
@@ -137,7 +169,8 @@ export class ExplorerNode extends vscode.TreeItem {
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly path: string,
-    private readonly parent?: ExplorerNode
+    pathMap: Map<String, ExplorerNode>,
+    public readonly parent?: ExplorerNode
   ) {
     super(label, collapsibleState)
     let isFolder =
@@ -154,6 +187,8 @@ export class ExplorerNode extends vscode.TreeItem {
           title: 'Open File',
           arguments: [vscode.Uri.file(this.path)]
         }
+
+    pathMap.set(path, this)
   }
 
   setChanged(changed: () => void) {
@@ -162,8 +197,5 @@ export class ExplorerNode extends vscode.TreeItem {
 
   delete() {
     fs.unlinkSync(this.path)
-    if (this.parent) {
-      this.parent.changed()
-    }
   }
 }
