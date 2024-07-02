@@ -4,18 +4,18 @@ import * as path from 'path'
 import fm from 'front-matter'
 import { FrontMatter } from './frontmatter'
 
-// TODO: active text editor should reveal the open file in the explorer
-// Implement add file
-// Updating a file should update just that folder's thing
+// TODO:
 // Drag and drop to reorder within folder
 // Drag and drop to move between folders
 export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
+  rootNode: ExplorerNode
   pathMap: Map<string, ExplorerNode>
   watcher: vscode.FileSystemWatcher
+  recurse: (pa: string, parent: ExplorerNode | undefined) => ExplorerNode
 
   constructor(private srcPath: string) {
     this.pathMap = new Map()
-    let recurse = (pa: string, parent: ExplorerNode | undefined) => {
+    this.recurse = (pa: string, parent: ExplorerNode | undefined) => {
       let stats = fs.statSync(pa)
       let node = new ExplorerNode(
         path.basename(pa),
@@ -24,35 +24,47 @@ export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
           : vscode.TreeItemCollapsibleState.None,
         pa,
         this.pathMap,
+        this.recurse,
         parent
       )
       node.changed = () => {
         this._onDidChangeTreeData.fire(node)
       }
       if (!stats.isDirectory()) {
-        return
+        return node
       }
 
       fs.readdirSync(pa).forEach((name) => {
-        recurse(path.join(pa, name), node)
+        this.recurse(path.join(pa, name), node)
       })
+
+      return node
     }
-    recurse(srcPath, undefined)
+    this.rootNode = this.recurse(srcPath, undefined)
 
     this.watcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(srcPath, '**/*')
     )
     this.watcher.onDidCreate((uri) => {
       let parent = this.pathMap.get(path.dirname(uri.fsPath))
-      recurse(uri.fsPath, parent)
+      this.recurse(uri.fsPath, parent)
+      if (parent === this.rootNode) {
+        parent = undefined
+      }
       this._onDidChangeTreeData.fire(parent)
     })
     this.watcher.onDidChange((uri) => {
       let parent = this.pathMap.get(path.dirname(uri.fsPath))
+      if (parent === this.rootNode) {
+        parent = undefined
+      }
       this._onDidChangeTreeData.fire(parent)
     })
     this.watcher.onDidDelete((uri) => {
       let parent = this.pathMap.get(path.dirname(uri.fsPath))
+      if (parent === this.rootNode) {
+        parent = undefined
+      }
       this._onDidChangeTreeData.fire(parent)
     })
   }
@@ -157,30 +169,38 @@ export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
   }
 
   getNode(path: string): ExplorerNode | undefined {
-    console.log(path, this.pathMap)
     return this.pathMap.get(path)
+  }
+
+  getRoot(): ExplorerNode {
+    return this.rootNode
   }
 }
 
 export class ExplorerNode extends vscode.TreeItem {
+  isFolder: boolean
   changed: () => void = () => {}
 
   constructor(
     public readonly label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
     public readonly path: string,
-    pathMap: Map<String, ExplorerNode>,
+    public readonly pathMap: Map<String, ExplorerNode>,
+    public readonly recurse: (
+      pa: string,
+      parent: ExplorerNode | undefined
+    ) => ExplorerNode,
     public readonly parent?: ExplorerNode
   ) {
     super(label, collapsibleState)
-    let isFolder =
+    this.isFolder =
       this.collapsibleState === vscode.TreeItemCollapsibleState.Collapsed
-    let icon = isFolder
+    let icon = this.isFolder
       ? new vscode.ThemeIcon('folder', new vscode.ThemeColor('icon.foreground'))
       : vscode.ThemeIcon.File
     this.iconPath = icon
     this.resourceUri = vscode.Uri.file(this.path)
-    this.command = isFolder
+    this.command = this.isFolder
       ? undefined
       : {
           command: 'vscode.open',
@@ -196,6 +216,90 @@ export class ExplorerNode extends vscode.TreeItem {
   }
 
   delete() {
-    fs.unlinkSync(this.path)
+    fs.rmSync(this.path, {
+      recursive: true
+    })
+  }
+
+  async addFile() {
+    let folderPath = this.isFolder ? this.path : this.parent?.path
+    if (!folderPath) {
+      return
+    }
+
+    // create file in the file path corresponding to path
+    let name = await vscode.window.showInputBox({ prompt: 'Enter file name' })
+    if (!name) {
+      return
+    }
+    if (!name.endsWith('.md')) {
+      name += '.md'
+    }
+
+    const currentDate = new Date()
+    const year = currentDate.getFullYear()
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+    const day = String(currentDate.getDate()).padStart(2, '0')
+
+    const formattedDate = `${year}-${month}-${day}`
+
+    // read all md files in the folder, get the order in the front matter of each of them, and 1 + the max order
+    let order = 1
+    fs.readdirSync(folderPath).forEach((name) => {
+      let p = path.join(folderPath, name)
+      let stat = fs.statSync(p)
+      if (stat.isDirectory()) {
+        return
+      }
+      let fileContents = fs.readFileSync(p, 'utf8')
+      let frontMatter = fileContents
+        ? fm<FrontMatter>(fileContents, {
+            allowUnsafe: true
+          })
+        : {
+            attributes: { title: undefined, date: undefined, order: undefined }
+          }
+      if (typeof frontMatter.attributes.order === 'number') {
+        order = Math.max(order, frontMatter.attributes.order + 1)
+      }
+    })
+
+    let fileContents = `---
+title: ${name.replace('.md', '')}
+date: ${formattedDate}
+order: ${order}
+---
+`
+
+    fs.writeFile(path.join(folderPath, name), fileContents, (err) => {
+      if (err) {
+        vscode.window.showErrorMessage('Error creating file: ' + err)
+      }
+    })
+
+    // open the file in the editor
+    let doc = await vscode.workspace.openTextDocument(
+      path.join(folderPath, name)
+    )
+    await vscode.window.showTextDocument(doc)
+  }
+
+  async addFolder() {
+    let folderPath = this.isFolder ? this.path : this.parent?.path
+    if (!folderPath) {
+      return
+    }
+
+    let name = await vscode.window.showInputBox({ prompt: 'Enter folder name' })
+    if (!name) {
+      return
+    }
+
+    fs.mkdirSync(path.join(folderPath, name))
+    let parent = this.pathMap.get(folderPath)
+    this.recurse(path.join(folderPath, name), parent)
+    parent?.changed()
+    let node = this.pathMap.get(path.join(folderPath, name))
+    return node
   }
 }

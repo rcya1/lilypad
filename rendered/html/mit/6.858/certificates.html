@@ -1,0 +1,358 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Certificates</h2>
+<ul>
+<li>Alternative:<ul>
+<li>Trust on first use</li>
+<li>When we receive a public key for the first time, we assume there is no attack and then remember it</li>
+<li>Like when you ssh for the first time and you have to answer yes / no</li>
+</ul>
+</li>
+<li>We want to avoid having to do this TOFU every time</li>
+</ul>
+<hr>
+<ul>
+<li>Certificate authority:<ul>
+<li>Stores mapping from server names to public keys</li>
+<li>Provides signed certificates to the server that the server can send with its public key</li>
+<li>The certificate verifies that this server truly corresponds to that public key</li>
+</ul>
+</li>
+<li>CA doesn&#39;t talk directly with the client; it just signs things and the server is in charge of sending it out</li>
+</ul>
+<h2>Issuing Certificates</h2>
+<ul>
+<li>Domain validator</li>
+<li>ACME: challenge to prove control over domain</li>
+</ul>
+<ol>
+<li>Server generates PK and SK</li>
+<li>Server requests a certificate from CA</li>
+<li>CA challenges by asking the server to put a specific nonce on their website</li>
+<li>You put the file there and then tell the CA you are ready</li>
+<li>CA then checks this URL to see if that nonce was put in</li>
+</ol>
+<ul>
+<li>This is known as domain-validated certificates<ul>
+<li>Depends on DNS / IP working properly</li>
+<li>These are designed to defend against people who are able to subvert DNS / IP</li>
+<li>Good CAs will access the domain from multiple points to ensure that they are not being fooled by local DNS / IP re-routing</li>
+</ul>
+</li>
+<li>Alternative: extended validation<ul>
+<li>CA vets not just domain control but tries to ensure they are communicating with a legitimate representative</li>
+<li>Very expensive and most users don&#39;t know the difference</li>
+</ul>
+</li>
+</ul>
+<h3>Auditing</h3>
+<ul>
+<li>CAs store receipts for all certificates issued so people can go back and look at which certificates are issued in their name<ul>
+<li>Certificate Transparency Log</li>
+</ul>
+</li>
+<li>Server operators can see if anyone is issuing certificates on their behalf / if their certificate was able to make it out in time</li>
+<li>Allows operators to catch these problems after the fact even if the CA wasn&#39;t able to find it in time</li>
+</ul>
+<h3>CA Trustworthiness</h3>
+<ul>
+<li>Problem: some CAs can be untrustworthy</li>
+<li>There are hundreds of CAs and they can each generate certificates for any website<ul>
+<li>Multiple CAs can have certificates which is desirable if a website wants to switch CAs</li>
+<li>But attackers can trick CAs if they are sloppy / maybe bribe / coerce them</li>
+</ul>
+</li>
+</ul>
+<h2>Revoking Certificates</h2>
+<ul>
+<li><p>First tool: certificates have expiration dates</p>
+</li>
+<li><p>How does a CA revoke a certificate if all it does is give out certificates and clients don&#39;t talk to the CA?</p>
+</li>
+<li><p>Answer 1: CA issues a CRL which are sent daily and include a list of all revoked certificates</p>
+<ul>
+<li>They can also be sent immediately after a certificate has been revoked</li>
+<li>Problem: often incredibly large and browsers ignore them</li>
+</ul>
+</li>
+<li><p>Answer 2: CA runs a service called OCSP (online certificate status protocol) that you can query for whether a certificate is valid</p>
+<ul>
+<li>Can be down, causing availability to suffer</li>
+<li>Browsers can cache these responses for a week but then that&#39;s the problem of not checking very often</li>
+</ul>
+</li>
+<li><p>New solution:</p>
+<ul>
+<li>Proprietary, browser-specific CRLs<ul>
+<li>Examples include Mozilla&#39;s CRLite and Chrome&#39;s CRLSets</li>
+</ul>
+</li>
+<li>Basic concept involves browser vendors centrally downloading and processing CRLs into smaller formats like Bloom filters</li>
+<li>Compressed objects then pushed to all browser instances via rapid update mechanisms<ul>
+<li>Firefox updates pushed as frequently as every 6 hours</li>
+</ul>
+</li>
+<li>Enables browsers to download revocation lists in advance, maintaining fast page loads</li>
+<li>Localizes revocation checks, bypassing delays associated with OCSP caches</li>
+<li>Immediate updates take effect without waiting for OCSP cache expiration</li>
+</ul>
+</li>
+<li><p><a href="https://letsencrypt.org/2022/09/07/new-life-for-crls.html">A New Life for Certificate Revocation Lists - Let&#39;s Encrypt</a></p>
+</li>
+</ul>
+</body></html>

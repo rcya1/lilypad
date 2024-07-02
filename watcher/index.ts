@@ -147,13 +147,13 @@ async function main() {
         const absPath = relToAbs(sourcePathRel)
         const renderedPathHtml = getRenderedPath(absPath, 'html')
         const renderedPathPdf = getRenderedPath(absPath, 'pdf')
-        fs.unlinkSync(renderedPathHtml)
-        fs.unlinkSync(renderedPathPdf)
+        if (fs.existsSync(renderedPathHtml)) fs.unlinkSync(renderedPathHtml)
+        if (fs.existsSync(renderedPathPdf)) fs.unlinkSync(renderedPathPdf)
         console.log('Deleted HTML and PDF for', sourcePathRel)
       } else if (path.dirname(sourcePathRel).endsWith('img')) {
         const absPath = relToAbs(sourcePathRel)
         const renderedPath = getRenderedPath(absPath)
-        fs.unlinkSync(renderedPath)
+        if (fs.existsSync(renderedPath)) fs.unlinkSync(renderedPath)
         console.log('Deleted', sourcePathRel)
       }
     })
@@ -166,6 +166,7 @@ async function main() {
       return
     }
     console.log('Detected change in config')
+    await init()
   })
 }
 

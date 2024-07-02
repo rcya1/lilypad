@@ -1,0 +1,431 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Message Security</h2>
+<ul>
+<li>So far: TLS which gives a channel to teh server<ul>
+<li>Big assumption: both parties are online at the same time which gives us fresh keys based on the handshake</li>
+</ul>
+</li>
+<li>Problem: messaging is asynchronous<ul>
+<li>Want to send messages even if another if the other person is offline</li>
+</ul>
+</li>
+<li>Most popular protocol: Signal protcol<ul>
+<li>WhatsApp</li>
+<li>FB messenger</li>
+<li>iMessage</li>
+</ul>
+</li>
+</ul>
+<h3>Strawman</h3>
+<ul>
+<li>Send from A to B using the public key of B<ul>
+<li>Also signed with the signing key of A so B can ensure it is A&#39;s</li>
+<li>If the signature from A to B is sent separate from the ciphertext, this is bad<ul>
+<li>How do you know that the ciphertext was sent by A?</li>
+<li>Anyone could sign the ciphertext and replace A&#39;s signature with it</li>
+<li>This is a new problem in the asynchronous context b/c otherwise before you would know that the two messages are coming from the same source</li>
+</ul>
+</li>
+<li>There is a sophisticated way to include the signature in some way inside of the ciphertext</li>
+</ul>
+</li>
+</ul>
+<h3>Authenticated Key Exchange</h3>
+<ul>
+<li>Idea is we want to somehow do some key exchange asynchronously<ul>
+<li>After this, both A and B will have some shared stream of keys that they can use to decrypt messages</li>
+<li>How we actually encrypt each message is not really talked about too much</li>
+<li>More concerned with just generating these shared keyse</li>
+</ul>
+</li>
+</ul>
+<h3>Forward Secrecy</h3>
+<ul>
+<li>Provide some security even after someone is compromised</li>
+<li>All previous traffic should not be compromised<ul>
+<li>TLS solved this more easily with ephemeral session keys because both computers were alive during the connection</li>
+</ul>
+</li>
+</ul>
+<h3>Signal&#39;s Approach:</h3>
+<ul>
+<li>Both A and B have PK and SK for their identity</li>
+<li>When A wants to send a message to B, it generates a new ephemeral key<ul>
+<li>Combines ESK_A (ephemeral secret key) with PK_B to get K_1</li>
+<li>Sends message encrypted with K_1<ul>
+<li>Also sends the the EPK_A so B can construct K_1 on their side</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Deleting the ephemeral key will not allow us to recover this</li>
+<li>Problem: compromising B compromises these messages</li>
+<li>Solution: B also needs ephemeral keys<ul>
+<li>When signing up for Signal app, they pregenerate a bunch of ephemeral keys and send them to the server</li>
+<li>When A wants to talk, they ask the server for public key for B and one of B&#39;s ephemeral keys<ul>
+<li>They then combine B&#39;s ESK with SK_A to get K_2</li>
+<li>K_1 and K_2 are then combined to get K<ul>
+<li>Using some hash and stuff (key combining function)</li>
+</ul>
+</li>
+<li>This is used to send message to B</li>
+</ul>
+</li>
+<li>B deletes ephemeral key after it receives a message using it</li>
+</ul>
+</li>
+<li>We will see on Thursday how we can be transparent about public keys / A can ensure they have the correct public key for B<ul>
+<li>If the server is malicious and gives out fake ephemeral keys, they will be bogus<ul>
+<li>B will not be able to decrypt them</li>
+<li>Server won&#39;t be able to decrypt either since the key will require B&#39;s secret key</li>
+</ul>
+</li>
+<li>There is a problem where what if the server does this and then later they break into B&#39;s server<ul>
+<li>Solution: medium term keys</li>
+<li>Essentially there is some medium term key that is prepared by B that is signed</li>
+<li>This is also used to encrypt the message to ensure B only knows about this</li>
+<li>So multiple people will be sharing these medium term keys and B will swap them out every once in a while to ensure that a server cannot give out fake ephemeral keys and then later break into B&#39;s server years later</li>
+<li>This generates a third key that is combined with the other two</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Problem: what if you compromise <strong>both</strong> A and B<ul>
+<li>Compute a fourth key K_4 that is combination of ephemeral keys from both sides</li>
+<li>K can then be computed by concatenating all three of these</li>
+<li>K1 ensures only A can read</li>
+<li>K2 ensures only B can read</li>
+<li>K3 ensures server can&#39;t read</li>
+<li>K4 ensures forward secrecy</li>
+</ul>
+</li>
+<li>Problem: what if the server runs out of ephemeral keys<ul>
+<li>You still have the medium term key used to sign so you just omit the K4</li>
+<li>If B gets messages with the medium term key, it can maybe try deleting it</li>
+</ul>
+</li>
+</ul>
+<p><img style="" src="inkdrop://file:-hsXstxpE"/></p>
+<ul>
+<li>So far: this has generated one key for a single message<ul>
+<li>We need a plan to derive more: ratchets</li>
+</ul>
+</li>
+</ul>
+<h3>Multiple Messages</h3>
+<ul>
+<li>If we just reuse the shared key we just derived then that&#39;s bad because then you have to keep this stored</li>
+<li>We can generate a chain of keys using a key generation function<ul>
+<li>Both sides will do this and generate the same keys</li>
+<li>After a key is used, it can be deleted</li>
+<li>You only need to store the top of your current chain<ul>
+<li>After sending a message, you can ratchet forwards and then skip</li>
+</ul>
+</li>
+<li>Its a one way hash function so you can&#39;t recover the previous ones</li>
+</ul>
+</li>
+</ul>
+<h3>Post Compromise Security</h3>
+<ul>
+<li>What signal tries to provide with asynchronous ratchet<ul>
+<li>We so far have told you about synchronous ratchet</li>
+</ul>
+</li>
+<li>Problem: if someone breaks into phone, they can compromise all future keys<ul>
+<li>Just go forward with the chain</li>
+</ul>
+</li>
+<li>Idea: if B is compromised they should have an opportunity to inject some randomness / entropy back in to get rid of the compromise<ul>
+<li>Build on top of the symmetric ratchet</li>
+<li>A and B first agree on a key K</li>
+<li>They then have an asymmetric ratchet<ul>
+<li>A generates a private / public key pair and sends public it to B</li>
+<li>B generates a private / public key pair and then combines private with previous public from A and sends the new public to A</li>
+<li>A and B can then use this with DH to generate a shared secret</li>
+<li>They can continue generating new public / private key pairs and sending them to each other to form this asynchronous ratchet of shared secrets that are entirely ephemeral</li>
+</ul>
+</li>
+<li>They combine this shared secret from their asynchronous ratchet with the K to form a chain key<ul>
+<li>Each time their asynchronous ratchet shifts, they make a new chain key</li>
+<li>These chain keys are used to encrypt a set of messages that a person sends without a response</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Therefore if a party is momentarily compromised and one of these chain keys gets leaked, on the next round trip it will be reset</li>
+</ul>
+<p><img style="" src="inkdrop://file:O64UkV0SM"/></p>
+<h3>Deniability</h3>
+<ul>
+<li>We want the ability for anyone to be able to spoof a conversation transcript<ul>
+<li>We don&#39;t want a trace of this conversation to be leaked and then be proven that it actually happened</li>
+<li>We can deny that a conversation happened</li>
+</ul>
+</li>
+<li>Typically, a SK can sign, which is used as proof that someone sent something<ul>
+<li>This would be bad to use in a message</li>
+</ul>
+</li>
+<li>Instead Signal uses MAC addresses to designate where a meessage came from and B verifies a message came from A based on decrypting and finding the MAC inside of it<ul>
+<li>MAC addresses are computable by anyone</li>
+</ul>
+</li>
+</ul>
+</body></html>

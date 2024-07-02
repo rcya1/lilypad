@@ -72,24 +72,28 @@ const images = (filepath: string) => {
   return {
     renderer: {
       image(href: string, title: string, text: string) {
-        let actualHref = href.split('?')[0]
-        let params = href.split('?')[1].split('&')
-
+        let actualHref
         let style = ''
 
-        for (let param of params) {
-          let [key, value] = param.split('=')
-          if (key === 'maxw') {
-            style += `max-width: ${value}px;`
-          }
-        }
+        if (href.includes('?')) {
+          actualHref = href.split('?')[0]
+          let params = href.split('?')[1].split('&')
 
+          for (let param of params) {
+            let [key, value] = param.split('=')
+            if (key === 'maxw') {
+              style += `max-width: ${value}px;`
+            }
+          }
+        } else {
+          actualHref = href
+        }
         return `<img style="${style}" src="${actualHref}"/>`
       }
     },
     async: true,
     async walkTokens(token: any) {
-      if (token.type === 'image') {
+      if (token.type === 'image' && token.href.includes('?')) {
         let params = token.href.split('?')[1].split('&')
         let newParams = []
         for (let param of params) {

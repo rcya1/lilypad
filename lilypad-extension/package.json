@@ -31,8 +31,13 @@
       },
       {
         "command": "lilypad-extension.addFile",
-        "title": "Add",
+        "title": "Add Item",
         "icon": "$(file-add)"
+      },
+      {
+        "command": "lilypad-extension.addFolder",
+        "title": "Add Folder",
+        "icon": "$(new-folder)"
       },
       {
         "command": "lilypad-extension.delete",
@@ -58,6 +63,11 @@
           "command": "lilypad-extension.addFile",
           "when": "view == lilypad-extension-browser",
           "group": "navigation"
+        },
+        {
+          "command": "lilypad-extension.addFolder",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -69,6 +79,16 @@
         {
           "command": "lilypad-extension.delete",
           "when": "view == lilypad-extension-browser"
+        },
+        {
+          "command": "lilypad-extension.addFile",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation"
+        },
+        {
+          "command": "lilypad-extension.addFolder",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation"
         }
       ]
     },

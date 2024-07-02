@@ -137,8 +137,51 @@ export function activate({
           })
       }
     ),
-    vscode.commands.registerCommand('lilypad-extension.addFile', () => {}),
+    vscode.commands.registerCommand(
+      'lilypad-extension.addFile',
+      (node?: ExplorerNode) => {
+        let selectedNode = node
+          ? node
+          : treeView?.selection
+          ? treeView.selection[0]
+          : undefined
+        if (selectedNode) {
+          selectedNode.addFile()
+        } else {
+          explorerProvider?.getRoot()?.addFile()
+        }
+      }
+    ),
+    vscode.commands.registerCommand(
+      'lilypad-extension.addFolder',
+      async (node?: ExplorerNode) => {
+        let selectedNode = node
+          ? node
+          : treeView?.selection
+          ? treeView.selection[0]
+          : undefined
+
+        let folderNode
+        if (selectedNode) {
+          folderNode = await selectedNode.addFolder()
+        } else {
+          folderNode = await explorerProvider?.getRoot()?.addFolder()
+        }
+        if (folderNode) {
+          await treeView?.reveal(folderNode, {
+            select: false,
+            focus: true,
+            expand: true
+          })
+        }
+      }
+    ),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
+      // check if lilypad explorer is open
+      if (!treeView?.visible) {
+        return
+      }
+
       let fsPath = editor?.document.uri.fsPath
       if (!fsPath) {
         return

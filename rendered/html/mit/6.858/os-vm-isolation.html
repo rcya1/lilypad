@@ -1,0 +1,375 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Existing Options</h2>
+<ul>
+<li>Serverless model attractive:<ul>
+<li>Automatic scaling</li>
+<li>Pay for use pricing</li>
+<li>Reduced cost of operations</li>
+<li>Improved hardware utilization</li>
+</ul>
+</li>
+<li>Multitenancy presents significant challenges in isolating workloads<ul>
+<li>Workloads cannot access / infer data belonging to another</li>
+<li>Noisy neighbors cannot cause others to run more slowly</li>
+</ul>
+</li>
+<li>Hypervisor-based virtualization<ul>
+<li>High overhead</li>
+</ul>
+</li>
+<li>Linux containers<ul>
+<li>Built into Linux but limits to only using Linux and also restricts system calls</li>
+<li>Leads to a tradeoff between security and code compatability</li>
+</ul>
+</li>
+<li>QEMU: type 2 hypervisor that emulates hardware but to emulate CPUs it has to emulate every instruction<ul>
+<li>Also: VirtualBox / VMWARE</li>
+</ul>
+</li>
+<li>KVM: type 1 hypervisor that is a Linux kernel module that uses modern CPU features to directly run vCPU instructions on the CPU</li>
+<li>chroot:<ul>
+<li>Command used to make a subprocess treat a different directory as its root directory</li>
+</ul>
+</li>
+</ul>
+<h3>Isolation Options</h3>
+<ul>
+<li>Previously, each customer would get a single VM and all of their functions would run in that<ul>
+<li>Made it hard to efficiently pack workloads</li>
+</ul>
+</li>
+<li>Desired features:<ul>
+<li>Isolation</li>
+<li>Overhead and density: run thousands of functions with minimal waste</li>
+<li>Performance: similar to native performance and is consistent</li>
+<li>Compatability: allow arbitrary Linux binaries / libraries without code changes</li>
+<li>Fast switching: start / clean up functions quickly</li>
+<li>Soft allocation: can over commit CPU and have functions consume only resources it needs, not that it is entitlted to</li>
+</ul>
+</li>
+<li>Linux options:<ul>
+<li>Containers - all workloads share kernel and kernel mechanisms isolate them<ul>
+<li>Does this primarily by limiting the syscalls a workload can use, which hurts compatability</li>
+</ul>
+</li>
+<li>Virtualization - all workloads run in a VM under a hypervisor<ul>
+<li>Leads to higher overhead / lower density because the VMM and kernel associated with each VM leads to overhead</li>
+<li>Could use smaller kernels to mitigate this but that hurts compatability</li>
+</ul>
+</li>
+<li>Language VM isolation - use something like JVM to isolate but this is difficult to run arbitrary code on</li>
+</ul>
+</li>
+</ul>
+<h3>Firecracker</h3>
+<ul>
+<li>Builds on top of KVM but replaces QEMU</li>
+<li>Built specifically for serverless and container applications<ul>
+<li>Does not offer a BIOS, cannot boot arbitrary kernels (i.e. Windows)</li>
+<li>Doesn&#39;t offer VM orchestration / packaging (instead handled by Docker / Kubernetes / others)</li>
+</ul>
+</li>
+<li>A single Firecracker process runs per MicroVM, which is a minimal virtual machine offered by KVM</li>
+<li>Builds substantially on top of Linux functionality that limits the compatability but offers comfort and insurance that this has good security</li>
+<li>Each process runs in a &quot;jailed&quot; environment with namespaces, limited files / permissions, etc. to prevent access to other things</li>
+<li>Uses simplified block filesystem</li>
+<li>Memory safe via Rust</li>
+<li>Exploitable by:<ul>
+<li>Bugs in KVM</li>
+<li>Bugs in Firecracker hypervisor</li>
+</ul>
+</li>
+</ul>
+<h2>gVisor</h2>
+<ul>
+<li>An application kernel that implements much of Linux syscall interface to provide isolation between applications and operating system</li>
+<li>Two previous methods:<ul>
+<li>Machine level virtualization (VMs) which emulate hardware and a new kernel to provide strong isolation<ul>
+<li>Large resource footprint</li>
+</ul>
+</li>
+<li>Rule-based execution: limit available system calls<ul>
+<li>Hard to apply universally to arbitrary applications</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>gVisor acts between the application and host kernel<ul>
+<li>Basically acts as a guest kernel without the need for virtualized hardware</li>
+</ul>
+</li>
+<li>May provide poor performance for system call heavy workloads</li>
+<li>Two main components:<ul>
+<li>Sentry<ul>
+<li>Intercepts all system calls and then does the necessary work to service it</li>
+<li>Does not directly pass through system calls</li>
+<li>Cannot open files directly that are not pipes / internal files</li>
+</ul>
+</li>
+<li>Gopher has access to file system resources and communicates with sentry over a secure channel</li>
+</ul>
+</li>
+<li>Each process interacts with a separate Sentry proess so even if one is compromised, it doesn&#39;t give you access to the entire kernel</li>
+</ul>
+<h2>Comparisons</h2>
+<ul>
+<li>Main key: reduce system calls that hit the host kernel</li>
+<li>All use seccomp, which is used to limit the system calls a process can make</li>
+</ul>
+</body></html>
