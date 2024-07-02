@@ -12,4 +12,10 @@ Run `yarn` and `yarn run watch` to begin the watcher, which will automatically r
 - `./rendered` - rendered notes (both PDFs and HTML pages)
 - `./watcher` - notes compiler
 - `.config` - config files for compiler
-- `./lilypad-extension` - VS Code extension for easily previewing rendered HTML while opening markdown and browsing notes by creation date order (WIP)
+- `./lilypad-extension` - VS Code extension for easily previewing rendered HTML while opening markdown, automatically running the watcher, and browsing notes by the desired order
+
+## TODO
+
+- Add the rest of my notes from college
+- Improve watcher to check modification dates to see when to rebuild files
+- Create index pages for folders and host HTML
