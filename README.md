@@ -1,6 +1,8 @@
 # Lilypad
 
-My notetaking and homework setup built on top of [remark](https://github.com/remarkjs/remark) and a custom VSCode extension for browsing notes.
+My notetaking setup built on top of [remark](https://github.com/remarkjs/remark) and a custom VSCode extension for browsing notes.
+
+All of my notes source files are stored in `/src` and are rendered automatically via GitHub actions to `/rendered`.
 
 ## Usage
 
