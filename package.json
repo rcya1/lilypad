@@ -15,6 +15,7 @@
     "@types/recursive-readdir": "^2.2.4",
     "chokidar": "^3.6.0",
     "crossnote": "^0.9.9",
+    "front-matter": "^4.0.2",
     "image-size": "^1.1.1",
     "less": "^4.2.0",
     "marked": "^12.0.2",

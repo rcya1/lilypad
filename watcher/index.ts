@@ -7,6 +7,7 @@ import * as puppeteer from 'puppeteer'
 import { ensureDirectoryExist, getRenderedPath, relToAbs } from './helper'
 import { buildHTML, init } from './builder'
 import { checkLockFile, updateLockFile, HEARTBEAT_INTERVAL_MS } from './lock'
+import { buildFs } from './fs'
 
 async function generateHtml(
   sourcePath: string,
@@ -100,6 +101,7 @@ async function main() {
       for (let file of files) {
         renderFile(file, false, true)
       }
+      buildFs()
     })
 
     return
@@ -115,6 +117,7 @@ async function main() {
     .watch('./src')
     .on('add', (sourcePathRel) => {
       renderFile(sourcePathRel)
+      buildFs()
     })
     .on('addDir', (sourcePathRel) => {
       if (!sourcePathRel.endsWith('img')) {
@@ -133,6 +136,7 @@ async function main() {
           console.log('Copying', path.join(sourcePathRel, file))
         }
       })
+      buildFs()
     })
     .on('change', (sourcePathRel) => {
       console.log(
@@ -156,6 +160,7 @@ async function main() {
         if (fs.existsSync(renderedPath)) fs.unlinkSync(renderedPath)
         console.log('Deleted', sourcePathRel)
       }
+      buildFs()
     })
     .on('ready', () => {
       console.log('Watching for changes in ../src')
