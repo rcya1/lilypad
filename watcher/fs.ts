@@ -13,6 +13,8 @@ export function buildFs() {
 
   // @ts-ignore
   let recurse = (p: string) => {
+    let id = p.split(path.sep).join(path.posix.sep)
+    id = id.replace('src/', '')
     let stat = fs.statSync(p)
     if (!stat.isDirectory()) {
       if (!p.endsWith('.md')) return
@@ -27,7 +29,7 @@ export function buildFs() {
             attributes: { title: undefined, date: undefined, order: undefined }
           }
       return {
-        id: p,
+        id: id,
         name: frontMatter.attributes.title ? frontMatter.attributes.title : p
       }
     } else {
@@ -38,7 +40,7 @@ export function buildFs() {
           ? {}
           : JSON.parse(fs.readFileSync(path.join(p, 'info.json'), 'utf-8'))
       return {
-        id: p,
+        id: id,
         name: info.name,
         // @ts-ignore
         children: children
@@ -47,8 +49,8 @@ export function buildFs() {
       }
     }
   }
-
   let data = recurse('./src/').children
 
   fs.writeFileSync(outputFile, JSON.stringify(data))
+  console.log('fs.json updated for browser')
 }

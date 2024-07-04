@@ -8,7 +8,8 @@
   "scripts": {
     "watch": "nodemon --exitcrash",
     "render": "ts-node watcher/index.ts --single-run",
-    "clean": "rm -rf rendered"
+    "clean": "rm -rf rendered && rm -rf docs",
+    "build-browser": "cd browser && yarn build && cd .. && mkdir -p docs && cp -r browser/dist/* docs/ && cp -r rendered/html/* docs/"
   },
   "dependencies": {
     "@types/less": "^3.0.6",

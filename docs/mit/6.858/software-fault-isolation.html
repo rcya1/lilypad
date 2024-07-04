@@ -1,0 +1,325 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>WASM</h2>
+<ul>
+<li>Goal: run fast code in web applications</li>
+<li>Javascript is universally supported but not a great fit in some cases<ul>
+<li>Need high performance and want global support for many different languages</li>
+</ul>
+</li>
+<li>Challenge: code must be isolated<ul>
+<li>Code from one website cannot tamper with data from another site / on the computer</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>In the last lecture we saw many ways that the OS can be used to add isolation<ul>
+<li>They require special privileges and some only run on certain browsers</li>
+<li>VMs don&#39;t work well on CPUs without direct hardware VM support</li>
+</ul>
+</li>
+</ul>
+<h3>Software Fault Isolation</h3>
+<ul>
+<li>Limits the effects of buggy code just to the application itself<ul>
+<li>Can limit effect to just a user-defined boundary (i.e. module / library)</li>
+</ul>
+</li>
+<li>Does not rely on hardware / OS support</li>
+<li>Requires cooperation between developers and devices<ul>
+<li>Cannot take existing binary and run it in isolation</li>
+<li>On the other hand, containers / VMs can run existing Linux applications</li>
+</ul>
+</li>
+</ul>
+<h3>WASM Description</h3>
+<ul>
+<li>Can take functions written in any language and compile it into wasm</li>
+<li>Many browsers can run wasm with some wasm runtime to natively execute it</li>
+<li>Looks very much like machine code</li>
+<li>General approach: sandbox which memory the wasm code can access<ul>
+<li>This occurs when the wasm runtime is converting wasm code into native instructions</li>
+<li>add / sub are directly translated to native instructions</li>
+<li>load / store just needs to check if address is within bounds<ul>
+<li>Just adds an if statement before the load / store</li>
+</ul>
+</li>
+<li>jumps are more challenging because we could jump past instrumentation / these if statements so we need to make sure we only jump to instrumented code<ul>
+<li>To get around this, we define a table of all possible jump locations and then all indirect jumps just supply the index to jump to</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>These checks for the indirect jumps can also be done at compile time, but having these if statements hurts performance</li>
+<li>For global / local variables just figure out how many there are and then we can keep an array of them and just make loading them as simple as load with an offset<ul>
+<li>The compiler in the wasm runtime has to verify these are all correct before it translates into x86 and runs it</li>
+</ul>
+</li>
+<li>For the stack, we can figure out how much its stack will potentially grow to and then also just use indexing to grab the proper stack module</li>
+<li>Heap accesses still have to just check against the total size allocated to the sandbox<ul>
+<li>This is the biggest overhead to wasm code</li>
+<li>Some optimizations:<ul>
+<li>Batch these checks if you have multiple load statements</li>
+<li>We could also use page tables to optimize this by mapping the possible region into virtual memory</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</body></html>

@@ -9,12 +9,14 @@ import './App.css'
 function Node({ node, style, dragHandle }) {
   return (
     <div
-      className="cursor-pointer hover:bg-gray-100 rounded p-0.5"
+      className="cursor-pointer hover:bg-gray-100 rounded-md p-1 text-black text-lg"
       style={style}
       ref={dragHandle}
       onClick={() => {
         if (!node.isLeaf) {
           node.toggle()
+        } else {
+          window.open('./' + node.id.replace('.md', '.html'))
         }
       }}
     >
@@ -53,6 +55,11 @@ const useResize = (myRef) => {
 function App() {
   const ref = useRef(null)
   const { width } = useResize(ref)
+
+  let initialOpenState = {}
+  fs.forEach((node) => {
+    initialOpenState[node.id] = true
+  })
   return (
     <>
       <div className="max-w-screen-md" ref={ref}>
@@ -63,9 +70,11 @@ function App() {
             initialData={fs}
             disableDrag={true}
             disableEdit={true}
-            rowHeight={28}
+            rowHeight={32}
             width={Math.max(width, 768)}
             height={1000}
+            initialOpenState={initialOpenState}
+            openByDefault={false}
           >
             {Node}
           </Tree>

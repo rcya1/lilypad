@@ -1,0 +1,410 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Buffer Overflows</h2>
+<ul>
+<li>Buggy C code can write beyond end of buffer / array</li>
+<li>Ideal solution is to use a language that enforces bounds (i.e. Python / Java)<ul>
+<li>C is used for many valuable applications / libraries so we can&#39;t abandon it and we can&#39;t avoid writing new C code easily</li>
+</ul>
+</li>
+<li>Perfect programming would check bounds 100% of the time, but no one is perfect</li>
+<li>We need defenses that make buffer overflows hard to exploit</li>
+</ul>
+<h3>Classic Stack Buffer Overflows</h3>
+<ul>
+<li>Attack<ul>
+<li>Write instructions into buffer on stack</li>
+<li>Overwrite return PC to point to attacker&#39;s instructions</li>
+</ul>
+</li>
+<li>Defense:<ul>
+<li>OS tells hardware not to execute on the stack</li>
+<li>I.e. OS can set no execute bit on each bit of the stack page</li>
+</ul>
+</li>
+<li>There&#39;s way to get around non-executable stack (i.e. find a ROP gadget like we did previously)</li>
+<li>Another defense: stack canaries<ul>
+<li>Detects modification of return PC on stack before it is used by RET</li>
+<li>Compiler generates code that pushes a canary value on stack and checks if that value has been modified before using the RET</li>
+<li>Sits between variables and the return address</li>
+<li>We should use a random number chosen at program start for the canary so attacker can&#39;t just learn to avoid it</li>
+</ul>
+</li>
+<li>Another defense: address space layour randomization (ASLR)<ul>
+<li>Place process memory at random addresses</li>
+<li>Adversary does not know precise address of application stack / code / heap</li>
+</ul>
+</li>
+<li>Buffer overflows can still:<ul>
+<li>SOmehow get access to the canary</li>
+<li>Overwrite other variables on the stack</li>
+<li>Overflow global variables into one another</li>
+<li>Overflow a heap-allocated buffer</li>
+</ul>
+</li>
+</ul>
+<h3>Heap Attacks</h3>
+<ul>
+<li>Can attacker use overflowing heap-allocated buffers?<ul>
+<li>They would have to predict what is after p in memory, which requires knowing how free / used malloc blocks work</li>
+</ul>
+</li>
+<li>If the attacker overflows a malloc()ed free block:<ul>
+<li>Attacker can modify the next / prev pointers in the next block to be prev = x, next = y</li>
+<li>When malloc allocates a free block b, it does b-&gt;next-&gt;prev = b-&gt;prev and b-&gt;prev-&gt;next = b-&gt;next</li>
+<li>If this happens to choose the block we just contaminated, we now have b-&gt;next-&gt;prev = b-&gt;prev<ul>
+<li>Accessing -&gt;prev essentially just accesses at offset 0 (if prev is the first pointer listed in the block)</li>
+<li>Therefore this is just doing <code>*y = x</code> which is very powerful since we can use this to overwrite return PC</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Attackers</h3>
+<ul>
+<li>Attackers have to:<ul>
+<li>Find a buffer overflow bug</li>
+<li>Find a way to get the program to execute the buggy code so attacker bytes overflow buffer</li>
+<li>Understand malloc() implementation</li>
+<li>Find a code pointer and guess its address</li>
+<li>Guess the address of the buffer to run the attacker instructions</li>
+</ul>
+</li>
+<li>Attacks require effort / skill and understand corner pieces and have to assembly a lot of fragile pieces</li>
+<li>But clever enough attackers with enough small bugs can exploit programs</li>
+</ul>
+<h2>Automatic Array Bounds Checking</h2>
+<ul>
+<li>Paper: shows how one can retrofit automatic array bounds checking to existing C programs<ul>
+<li>We need to modify the compiler, recompile applications, and perhaps modify the applications</li>
+</ul>
+</li>
+</ul>
+<h3>Fat Pointers</h3>
+<ul>
+<li>Straightforward, but not practical</li>
+<li>Each pointer contains start / end / current pointer value</li>
+<li>Malloc has to be modified to set these and during dereference, have to check these bounds upon dereference</li>
+<li>Problems:<ul>
+<li>Checks can be expensive</li>
+<li>Not compatible with unmodified libraries</li>
+<li>Changes data structure sizes</li>
+<li>Updates to fat pointers are no longer atomic since they span multiple words (32 bits)</li>
+</ul>
+</li>
+</ul>
+<h3>Separate Table</h3>
+<ul>
+<li>Keep bounds information in a separate table so we don&#39;t have to change pointer representation</li>
+<li>For each allocated pointer, store start and size of the object<ul>
+<li>malloc() or compiler generated code keeps track of this table</li>
+<li>If the pointer leaves the object, set an OOB bit in the pointer</li>
+<li>If the pointer is dereferenced with OOB bit set, then the compiler panics</li>
+</ul>
+</li>
+<li>Challenges:<ul>
+<li>We have to be able to index into this table with both the original pointer start <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span> and also other valid locations in that pointer (i.e. $p + 10$)</li>
+<li>Is arithmetic modifies <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span> to return back to its original object, we have to detect that and clear the OOB<ul>
+<li>After it leaves the object, we have to know what the original object was</li>
+</ul>
+</li>
+<li>Prevent table from being huge / expensive to access</li>
+</ul>
+</li>
+</ul>
+<h3>Baggy Bounds</h3>
+<ul>
+<li>Uses power-of-two trick to optimize the bounds table</li>
+<li>Each table entry holds just a size in it as a log base 2, so it can fit in a single byte<ul>
+<li>I.e. storing 20 in a table entry means there is an allocation of 1 megabyte</li>
+</ul>
+</li>
+<li>To make this work, we only allocate power-of-two sizes on that same power-of-two boundaries<ul>
+<li>I.e. if we allocate something of size 256, it has to go on a 256 boundary</li>
+<li>Compiled code computes start an object from the pointer and table entry by just clearing the the lower <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mrow><mi>log</mi><mo>⁡</mo></mrow><mn>2</mn></msub><mo stretchy="false">(</mo><mi>s</mi><mi>i</mi><mi>z</mi><mi>e</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\log_2(size)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mop"><span class="mop">lo<span style="margin-right:0.01389em;">g</span></span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.207em;"><span style="top:-2.4559em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2441em;"><span></span></span></span></span></span></span><span class="mopen">(</span><span class="mord mathnormal">s</span><span class="mord mathnormal">i</span><span class="mord mathnormal">ze</span><span class="mclose">)</span></span></span></span> bits</li>
+</ul>
+</li>
+<li>Each table entry covers slot_size = 16 bytes, so the table isn&#39;t huge<ul>
+<li>A 64 byte object at address x uses 4 table entries starting at table[x / 16]</li>
+</ul>
+</li>
+<li>To make OOB pointers crash on dereference, we make the MSB the OOB bit<ul>
+<li>We then make pages in the upper half of the address space inaccessible</li>
+</ul>
+</li>
+<li>The OOB mark means that the ptr is within slot_size / 2 of the oriignal object<ul>
+<li>If we move more than slot_size / 2 away, then we panic as well</li>
+<li>This way, we can always recover what the actual valid region is because we just check if we are OOB and if we are, we look at which border we are closest to</li>
+</ul>
+</li>
+</ul>
+<h4>Problems</h4>
+<ul>
+<li>Baggy bounds can panic even when the code is legal<ul>
+<li>If C code casts pointers to integers, then this can break due to the OOB bit</li>
+</ul>
+</li>
+<li>Overflow bugs baggy bounds might not catch:<ul>
+<li>Overflow of array inside a larger malloc()&#39;d struct</li>
+<li>Cast pointer to int, modify, and then cast back</li>
+<li>Application might implement its own allocator</li>
+<li>Dangling pointers to re-allocated memory (use-after-free)</li>
+</ul>
+</li>
+</ul>
+</body></html>

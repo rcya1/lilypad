@@ -1,5 +1,5 @@
 ---
-title: Finite Automata
+title: Math Commands
 date: 2022-09-08
 number: 1
 ---

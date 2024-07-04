@@ -1,0 +1,329 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Timing Attacks</h2>
+<ul>
+<li>TENEX Operating System:<ul>
+<li>Logging in was a system call</li>
+<li>Checking the password was done through a loop through characters that terminated early</li>
+<li>Timing can be used to brute force the password</li>
+<li>Noise:<ul>
+<li>You could run the test multiple times</li>
+<li>Or you could align the string to a page boundary so that the character after the unknown character is on a new page<ul>
+<li>You then run the system out of memory to unload all pages from memory</li>
+<li>Page fault will then take longer, so we can measure that very clearly</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>dm-crypt timing attack<ul>
+<li>Had an encryption process called AES that used a key</li>
+<li>Combined the key with the user data to index into a table (1 kb) to get the encrypted data</li>
+<li>What we could do:<ul>
+<li>Create a huge buffer B of 0s to fill up the entire cache</li>
+<li>Ask for B to be encrypted</li>
+<li>The AES algorithm will then go through and access certain array indices with indices equal to the key, evicting parts of B</li>
+<li>We then scan through B and can use timing to find out which accesses are slow, telling us what the key is</li>
+</ul>
+</li>
+<li>Fixes:<ul>
+<li>Intel implemented instructions that directly perform AES operations that avoid the cache</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Meltdown</h2>
+<ul>
+<li>Exploits <strong>speculative execution</strong></li>
+<li>Adversary is running in user space and kernel wants to keep some secret key safe</li>
+<li>Adversary allocates a buffer B<ul>
+<li>Again, we will time how long it takes to access locations in this buffer</li>
+</ul>
+</li>
+<li>We will execute instructions that will try to load the key and then use it to index B<ul>
+<li>Speculative execution causes our buffer to be accessed even though the load key wil cause a trap and fail</li>
+<li>Our code will abort, but the speculative execution will load into the cache</li>
+</ul>
+</li>
+<li>We then scan through B to see based on timings which bytes were loaded, allowing us to read the key</li>
+<li>Key characteristic: bypass permission checks with speculative execution<ul>
+<li>CPUs don&#39;t fully rollback all of the sideeffects of the speculative execution</li>
+<li>Some solutions: move the permission check earlier, but this causes a performance hit, flush parts of the CPU cache after the permission fails</li>
+</ul>
+</li>
+</ul>
+<h2>Spectre</h2>
+<ul>
+<li>Exploits <strong>branch prediction</strong></li>
+<li>Example code for PHT variant of spectre:</li>
+</ul>
+<pre><code class="language-C">if (i &lt; sz) {
+  char x = array1[i];
+  char y = array2[x];
+}
+</code></pre>
+<ul>
+<li>We could supply a large value of i, and the CPU could speculatively guess it passes (even though it doesn&#39;t)</li>
+<li>Even though this code should never run, it will end up reading <code>array2[x]</code> into the cache and we can then do the same idea to time the cache</li>
+</ul>
+</body></html>
