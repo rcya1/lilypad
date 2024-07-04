@@ -9,7 +9,7 @@
     "watch": "nodemon --exitcrash",
     "render": "ts-node watcher/index.ts --single-run",
     "clean": "rm -rf rendered && rm -rf docs",
-    "build-browser": "cd browser && yarn build && cd .. && mkdir -p docs && cp -r browser/dist/* docs/ && cp -r rendered/html/* docs/"
+    "build-browser": "rm -rf docs && cd browser && yarn build && cd .. && mkdir -p docs && cp -r browser/dist/* docs/ && cp -r rendered/html/* docs/ && sed -i '' 's/\\/assets/\\.\\/assets/g' docs/index.html"
   },
   "dependencies": {
     "@types/less": "^3.0.6",
