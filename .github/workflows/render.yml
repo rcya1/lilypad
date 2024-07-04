@@ -29,6 +29,9 @@ jobs:
       - name: Run the render script
         run: yarn run render
 
+      - name: Install dependncies for browser
+        run: cd browser && yarn install && cd ..
+
       - name: Run the build-browser script
         run: yarn run build-browser
 
