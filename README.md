@@ -20,4 +20,3 @@ Run `yarn` and `yarn run watch` to begin the watcher, which will automatically r
 
 - Add the rest of my notes from college
 - Improve watcher to check modification dates to see when to rebuild files
-- Create index pages for folders and host HTML
