@@ -87,6 +87,9 @@ export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
     let folders: string[] = []
     let childrenFiles: [number | undefined, Date | undefined, string][] = []
     fs.readdirSync(elementPath).forEach((name) => {
+      if (name.endsWith('.DS_Store')) {
+        return
+      }
       let p = path.join(elementPath, name)
       let stat = fs.statSync(p)
       if (stat.isDirectory()) {
