@@ -265,7 +265,7 @@ export class ExplorerNode extends vscode.TreeItem {
     })
 
     let fileContents = `---
-title: ${name.replace('.md', '')}
+title: ${formatName(name.replace('.md', ''))}
 date: ${formattedDate}
 order: ${order}
 ---
@@ -296,10 +296,26 @@ order: ${order}
     }
 
     fs.mkdirSync(path.join(folderPath, name))
+    fs.writeFileSync(
+      path.join(folderPath, name, 'info.json'),
+      `
+{
+  "name": "${formatName(name)}",
+  "description": "TODO"
+}
+`
+    )
     let parent = this.pathMap.get(folderPath)
     this.recurse(path.join(folderPath, name), parent)
     parent?.changed()
     let node = this.pathMap.get(path.join(folderPath, name))
     return node
   }
+}
+
+function formatName(name: string): string {
+  return name
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
 }
