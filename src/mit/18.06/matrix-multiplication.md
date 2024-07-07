@@ -1,5 +1,5 @@
 ---
-title: matrix-multiplication
+title: Matrix Multiplication
 date: 2024-07-06
 order: 3
 ---

@@ -1,5 +1,5 @@
 ---
-title: lu-factorization
+title: LU Factorization
 date: 2024-07-06
 order: 2
 ---
