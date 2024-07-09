@@ -185,9 +185,9 @@ export class ExplorerNode extends vscode.TreeItem {
   changed: () => void = () => {}
 
   constructor(
-    public readonly label: string,
+    public label: string,
     public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-    public readonly path: string,
+    public path: string,
     public readonly pathMap: Map<String, ExplorerNode>,
     public readonly recurse: (
       pa: string,
@@ -222,6 +222,29 @@ export class ExplorerNode extends vscode.TreeItem {
     fs.rmSync(this.path, {
       recursive: true
     })
+  }
+
+  async rename(newName: string) {
+    let oldPath = this.path
+    let newPath = path.join(path.dirname(this.path), newName)
+    fs.renameSync(oldPath, newPath)
+    this.label = newName
+    this.path = newPath
+    this.resourceUri = vscode.Uri.file(newPath)
+    this.changed()
+
+    let newPathMap = new Map()
+    this.pathMap.forEach((node, path) => {
+      newPathMap.set(path.replace(oldPath, newPath), node)
+    })
+    this.pathMap.clear()
+    newPathMap.forEach((node, path) => {
+      this.pathMap.set(path, node)
+    })
+
+    // open the file in the editor
+    let doc = await vscode.workspace.openTextDocument(newPath)
+    await vscode.window.showTextDocument(doc)
   }
 
   async addFile() {

@@ -1,0 +1,353 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Bitcoin</h1>
+<h2>Introduction</h2>
+<ul>
+<li>We want a system of financial payments without having to rely on a financial institution to process payments<ul>
+<li>We want a system that is non-reversible since that requires mediation which has costs, which in turn lead to increased transaction costs</li>
+<li>Merchants need to be wary of customers since they are not sure if they will be scammed by reversed payments</li>
+</ul>
+</li>
+<li>We want to use irreversible transactions to protect sellers and routine escrow mechanisms to protect buyers<ul>
+<li>Escrow mechanism is something that prevents money from being sent until the goods have been received</li>
+</ul>
+</li>
+<li>The system is secure as long as honest nodes collectively control more CPU power than any cooperating group of attacker nodes</li>
+</ul>
+<h2>Transactions</h2>
+<ul>
+<li>We define our coin as a chain of digital signatures<ul>
+<li>Each owner transfers the coin to the next by digitally signing a hash of the previous transaction and the public key of the next owner</li>
+<li>To verify this chain, a payee can just check each signature</li>
+</ul>
+</li>
+</ul>
+<p><img style="max-width: 425px;" src="img/bitcoin.png"/></p>
+<ul>
+<li>We need to verify that one of the owners did not double-spend their coin<ul>
+<li>One common solution is for a central authority to take all coins spent and then create new coins that are given to the recipients</li>
+<li>But then this adds a central authority</li>
+</ul>
+</li>
+<li>We therefore need a way for a payee to know that previous owners for a coin did not sign off this coin earlier<ul>
+<li>Therefore, we need each payee to be aware of all transactions and they can just check the whole chain</li>
+<li>The first transfer is the one that matters (all after are consider void)</li>
+</ul>
+</li>
+<li>We therefore need a system for participants to agree on a single history of the order in which transactions are received<ul>
+<li>The solution proposed is to use a sense of timestamps where each block includes in it the hash of the previous block<ul>
+<li>This idea is known as a timestamp server</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Proof of Work</h2>
+<ul>
+<li>To implement a distributed timestamp server, we need a proof-of-work system<ul>
+<li>In each block, we have a &quot;nonce&quot; value for the sole purpose that if we change this nonce value, it will change the resulting hash of the block</li>
+<li>We scan for a nonce value that when hashed, the hash begins with a certain amount of zero bits</li>
+</ul>
+</li>
+<li>Once the CPU effort has been expended to make this block and attach it to the chain, the block cannot be changed without redoing the work<ul>
+<li>Therefore to change the transaction history, we have to redo a lot of blocks</li>
+</ul>
+</li>
+<li>We take the longest chain as the source of truth<ul>
+<li>If an attacker wanted to change a past transaction, they would have to catch up to the honest nodes</li>
+</ul>
+</li>
+</ul>
+<h2>Network</h2>
+<ol>
+<li>New transactions are broadcast to all nodes</li>
+<li>Each node collects new transactions into a block</li>
+<li>Each node works on finding the proof-of-work for its block</li>
+<li>When a node finds a proof-of-work, it broadcasts the block to all nodes</li>
+<li>Nodes accept the block only if all transactions in it are valid and not spent</li>
+<li>Nodes express their acceptance of the block by working on creating the next block in the chain</li>
+</ol>
+<ul>
+<li>It is possible that branches will diverge, but one node becomes longer, nodes will start to use that one instead</li>
+</ul>
+<hr>
+<h2>Incentive</h2>
+<ul>
+<li>By convention, the first transaction in a block is a special transaction that creates anew coin owned by the creator of the block<ul>
+<li>This incentivizes nodes to support the network and adds coins into circulation</li>
+<li>This does add a bit of inflation, but we can also provide incentive with transaction fees<ul>
+<li>We can make the output value of a transaction less than the input value and give the extra to the block creator</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>The incentive may help encourage nodes to stay honest because if a greedy attacker is able to assemble a large amount of CPU power, they would have to choose between using it honestly and gaining incentive or trying to attack the entire chain and modify transactions<ul>
+<li>It is more profitable to just join the honest nodes</li>
+</ul>
+</li>
+</ul>
+<h2>Random</h2>
+<ul>
+<li>We can use a Merkle tree to compress processed transactions to compress the chain</li>
+<li>When a transaction involves multiple coins, we can use transactions with multiple inputs and outputs</li>
+<li>This does have an issue of privacy since all payment histories are made public<ul>
+<li>We solve this by keeping public keys anonymous and using a different public key pair for each owner</li>
+</ul>
+</li>
+</ul>
+</body></html>

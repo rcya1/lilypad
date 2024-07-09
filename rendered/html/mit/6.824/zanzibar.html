@@ -1,0 +1,367 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Zanzibar</h1>
+<h2>Overview</h2>
+<ul>
+<li>System for determining whether users are authorized to access digital objects</li>
+<li>Allows clients to create, modify, and evaluate access control lists (ACLs)<ul>
+<li>Of the form user U has relation R to object O</li>
+<li>The user U can also be a set of users (i.e. another relationship)</li>
+<li>Examples:<ul>
+<li>doc:readme#owner@10 - User 10 is an owner of doc:readme</li>
+<li>group:eng#member@11 - User 11 is a member of group:eng</li>
+<li>doc:readme@viewer@group:eng#member = members of group:eng are viewers of doc:readme</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>ACL checks are just of the form:<ul>
+<li>check(object, user, action) -&gt; yes/no</li>
+<li>In ACL database, Zanzibar looks in its DB for all ACL entries starting with object, action<ul>
+<li>I.e. doc:readme#owner</li>
+</ul>
+</li>
+<li>Due to groups, it prob won&#39;t find the specific user, but it will find group names<ul>
+<li>It then does a search down these groups</li>
+<li>An ACL check can take a lot of work depending on these groups</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Data is stored in a Spanner deployment specifically for Zanzibar<ul>
+<li>Uses ~1500 Spanner servers but to get 200M reads per second to get the throughput they want, they would need 15,000<ul>
+<li>This assumes perfect load balance and that hot spots aren&#39;t a problem</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>We also split up work among multiple aclservers to process client requests<ul>
+<li>Using consistent hash of the object we are searching for, we shard among the aclservers</li>
+<li>Searches down the group tree require communication among the aclservers</li>
+<li>Helps with hot-spots by bringing together simultaneous accesses for a given object<ul>
+<li>Cache for RPC results will then hit more often<ul>
+<li>10% for RPC results, which is low due to random access but still helps with hotspots</li>
+</ul>
+</li>
+<li>We can also prefetch objects that are being commonly used</li>
+<li>The aclserver also has a cache of Spanner data that is prob higher hit rate</li>
+</ul>
+</li>
+<li>Using this we can go from 10M client requests requiring 20M instead of 200M spanner reads</li>
+</ul>
+</li>
+</ul>
+<h2>Consistency</h2>
+<ul>
+<li>Zanzibar is <strong>not</strong> linearizable<ul>
+<li>Spanner replicas may have not seen latest writes</li>
+<li>aclserver caches would have to be kept up to date which can be hard</li>
+</ul>
+</li>
+<li>What we want:<ul>
+<li>ACL checks must respect order in which users modify ACLs</li>
+<li>ACLs update order should be maintained<ul>
+<li>If someone is removed from the ACL of a folder, then they should not be able to see any new contents of that folder (but may still be able to access the old contents depending on the ACL)<ul>
+<li>If the ordering of the changes is neglected, then the ACL check may say that person can access those new contents</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>ACLs should not see stale data<ul>
+<li>If someone is removed from the ACL of a folder, it should not be possible to get old info that says that person can still access said folder</li>
+</ul>
+</li>
+<li>Two key consistency properties:<ul>
+<li>External consistency:<ul>
+<li>We can assign timestamps to each ACL / content update so that two causally related updates will have timestamps that respect said ordering</li>
+<li>If a read observes an update x, then it must observe all updates that happen causally before x</li>
+</ul>
+</li>
+<li>Snapshot reads with bounded staleness:<ul>
+<li>Whenever our content is updated at some timestamp, we need to make sure that whatever we read is at least up to date with that timestamp so we know how much this person had permission to see at that point in time</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>This means that if a person is removed from a document, they will still be able to see it for some time, but must not be allowed to see any content updates after they are removed</li>
+</ul>
+<hr>
+<ul>
+<li>ACLs are stored in Spanner which has a TrueTime mechanism that assigns each ACL with a timestamp<ul>
+<li>We evaluate each ACL check at a single snapshot timestamp<ul>
+<li>Only writes with timestamps up to that query timestamp are visible</li>
+</ul>
+</li>
+<li>If read time is too recent, then we are forced to wait (but Zanzibar would prefer to avoid this)</li>
+</ul>
+</li>
+<li>We could use always the latest snapshot but this would yield high latency<ul>
+<li>Instead, we use a protocol that allows most checks to be evaluated on replicated data</li>
+<li>A Zanzibar client requests an opaque consistency token called a zookie for each content version via a content-change ACL check when the content modification is about to be saved<ul>
+<li>Zanzibar gives this zookie a global timestamp and ensures that all ACL writes prior to this content change have lower timestamps</li>
+<li>Client stores the zookie in an atomic write to client storage</li>
+</ul>
+</li>
+<li>The client sends this zookie in subsequent ACL check requests to ensure that the check snapshot is at least as fresh as the timestamp for the content version</li>
+<li>This allows us to only use this timestamp and not have to wait for Spanner to catch up</li>
+</ul>
+</li>
+</ul>
+</body></html>

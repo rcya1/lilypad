@@ -1,0 +1,485 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Memcached at Facebook</h1>
+<h2>Overview</h2>
+<ul>
+<li>memcached is an open source implementation of in-memory hash table that Facebook used to construct a distributed kv store<ul>
+<li>Processes billions of requests per second</li>
+<li>Stores trillions of items</li>
+<li>Default memcached only provides a single-machine in-memory hash table</li>
+</ul>
+</li>
+<li>Properties that influenced design:<ul>
+<li>Users consume significantly more data than they create, indicating caching has signifiant advantages</li>
+<li>Read operations fetch data from a variety of sources, so caching strategy should be flexible</li>
+</ul>
+</li>
+<li>memcached will refer to source code on a running binary, memcache will refer to the distributed system they built</li>
+<li>Two uses:<ul>
+<li>Query cache:<ul>
+<li>When web server needs data, first asks memcache for key<ul>
+<li>If it does not exist, query is made and cache populates</li>
+</ul>
+</li>
+<li>When write requests are made, it updates database and then deletes from cache (doesn&#39;t repopulate)<ul>
+<li>It doesn&#39;t repopulate because if memcache updates go in the wrong order as database updates, this can cause memcache to become permanently out of sync until the next write</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Generic cache:<ul>
+<li>Use memcache as a general kv store to store pre-computed results from applications</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Scaling in a Cluster</h2>
+<h3>Reducing Latency</h3>
+<ul>
+<li>At this scale, most efforts focus on reducing latency of fetching cached data or the load imposed due to a cache miss</li>
+<li>They provision hundreds of memcached servers in a cluster and use consistent hashing to shard the kv store<ul>
+<li>As a result, all web servers have to communicate with every memcached server in a short period of time</li>
+<li>This can lead to a single server becoming a bottleneck for many webservers</li>
+<li>Data replication can help but leads to significant memory inefficiency</li>
+</ul>
+</li>
+<li>To reduce latency, mainly focus on the memcache client that runs on each webserver<ul>
+<li>Create a DAG representing data needed to be fetched and use it to maximize the amount of parallel requests</li>
+<li>For GET requests, use UDP to communicate with servers which is much faster and doesn&#39;t require setup / maintaining connection<ul>
+<li>We can drop packets and get out of order, but that&#39;s fine</li>
+</ul>
+</li>
+<li>For SET / DELETE, use TCP since we need the reliable data to be sent</li>
+<li>Clients use a sliding window to avoid incast congestion / overloading the servers<ul>
+<li>Use something similar to TCP&#39;s congestion control where the size of this sliding window grows upon success and shrinks upon fail</li>
+<li>This sliding window applies to all of a client&#39;s requests to any server, not just to a specific one</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Reducing Load</h3>
+<ul>
+<li>We want to reduce frequency of fetching data along more expensive paths</li>
+<li>Leases:<ul>
+<li>We have two main problems:<ul>
+<li>Stale sets: a web server sets a value in memcache that isn&#39;t the most up to date one (due to concurrent updates that get reordered weirdly)</li>
+<li>Thundering herd: a specific key undergoes heavy read / write activity which causes cache to stale fast</li>
+</ul>
+</li>
+<li>To fix both of these, we use a lease system<ul>
+<li>When the client has a cache miss, the client is given a lease to set data</li>
+<li>We can only make queries to the DB and consequently write to cache while we have this lease<ul>
+<li>This removes problem of stale set</li>
+</ul>
+</li>
+<li>We also add a limit to the rate at which the server gives leases (i.e. once every 10 seconds)<ul>
+<li>This mitigates thundering herds</li>
+</ul>
+</li>
+<li>If stale values are more or less fine in a given application, we can set a setting that allows clients to access recently deleted items and serve them instead (so it serves data it knows is stale, but that&#39;s fine)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Memcache Pools<ul>
+<li>Separate keys based on their characteristics into different Memcache pools / clusters</li>
+<li>For instance, designate one pool (named wildcard) as the default<ul>
+<li>Designate other pools whose presence in wildcard can be problematic</li>
+<li>I.e. a small pool for keys accessed frequently but have inexpensive cache miss</li>
+<li>Large pool for infrequently accessed keys whose cache misses are very very expensive</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Replication within pools<ul>
+<li>For some pools, use replication when:<ul>
+<li>The app routine fetches many keys simultaneously</li>
+<li>The entire data fits in 1-2 memcached servers</li>
+<li>The request rate is much higher than the throughput of a single server</li>
+</ul>
+</li>
+<li>In this case, we want to use replication over dividing the key space</li>
+</ul>
+</li>
+</ul>
+<h3>Handling Failures</h3>
+<ul>
+<li>If an entire cluster has to be taken offline, we divert user web reqests to another cluster which removes all load from memcache within that cluster</li>
+<li>For small outages, after a few minutes, we use a small set of machines named Gutter to take over the responsibilities of a few failed servers<ul>
+<li>The client, upon receiving no response from memcached, just goes to the Gutter machine instead</li>
+<li>We shunt load to idle servers to avoid the risk of rehashing keys amount remaining memcached servers because of non-uniform key access frequency (a hot key might cause another server to be overloaded)</li>
+<li>One key is that Gutter servers do not delete from their cache, they just expire fast<ul>
+<li>This is because it would require too much overhead to delete from Gutter since Gutter machines can store any key, so every write to the DB would have to invalidate all Gutter machines&#39; cache</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Scaling in a Region</h2>
+<ul>
+<li>Just buying more servers to scale a cluster doesn&#39;t work because highly requested items only become more popular as more webservers are added</li>
+<li>Instead we split a cluster into smaller clusters, which defines a region<ul>
+<li>We have multiple frontend clusters and then a storage cluster</li>
+</ul>
+</li>
+<li>Storage cluster holds authoritative copy of data<ul>
+<li>User demand may replicate data into frontend clusters</li>
+<li>Storage cluster has to invalidate cached data to keep frontend clusters consistent</li>
+<li>To do this, a user write request has to also delete from its local memcached cache after modifying the storage cluster</li>
+<li>Uses daemons called mcsqueal that analyze the committed SQL statements and broadcasts these updates to the memcache deployment in every frontend cluster<ul>
+<li>To reduce the packet rate of these updates, we batch these updates and send them to intermediate instances that then send disperse these updates</li>
+<li>Chose to use this option over web servers notifying because the mcsqueal pipeline is more efficient at batching deletes and also prevents errors</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Each frontend cluster independently caches data based on the user requests sent to it<ul>
+<li>However, this replicates some data in the cache, so we can have multiple frontend clusters share the same set of memcached servers</li>
+<li>They form a regional pool</li>
+</ul>
+</li>
+<li>When clusters are first brought back online, the caches have poor hit rates<ul>
+<li>To mitigate this, we first retrieve data from a &quot;warm cluster&quot; to get a cluster back to full capacity instead of a few days</li>
+<li>We get data from an existing cluster but we set the data into the cache of the new cluster</li>
+</ul>
+</li>
+</ul>
+<h2>Across Regions</h2>
+<ul>
+<li>Each region consists of a storage cluster and several frontend clusters<ul>
+<li>We designate one region to hold the master databases and others to contain read-only replicas</li>
+<li>Use MySQL&#39;s replication to keep replica databases up-to-date with masters</li>
+</ul>
+</li>
+<li>Maintaining consistency between data in memcache and persistent storage is primary challenge because replica databases can lag behind the master<ul>
+<li>Facebook aims for best-effort eventual consistency</li>
+</ul>
+</li>
+<li>When we write from the master region, the fact that the daemons that handle invalidiating caches analyze the SQL database for this helps avoid the race condition in which an invalidation arrives before the data has been replicated</li>
+<li>Writes from a non-master region cause issues because what if a user makes another request that doesn&#39;t see the recent change because of replication lag<ul>
+<li>To min probability of reading stale data, use a remote marker that indicates the data in local replica is potentially stale and the query should be directed to master region</li>
+<li>When a web server wants to update data, it has to set a remote marker, then performs write to master, and then deletes data in local cluster<ul>
+<li>On a subsequent request, the web server will miss cache, and then see the remote marker when it asks replica database, and then ask the master</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Single Server Optimizations</h2>
+<ul>
+<li>Automatically expand the hash table to avoid lookup times drifting to <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span></li>
+<li>Make server multi-threaded with a global lock</li>
+<li>Give each thread its own UDP port</li>
+<li>Other things...</li>
+</ul>
+<pre><code>Q: What is the &quot;stale set&quot; problem in 3.2.1, and how do leases solve it?
+
+A: Here&#39;s an example of the &quot;stale set&quot; problem that could occur if
+there were no leases:
+
+1. Client C1 asks memcache for k; memcache says k doesn&#39;t exist.
+2. C1 asks MySQL for k, MySQL replies with value 1.
+   C1 is slow at this point for some reason...
+3. Someone updates k&#39;s value in MySQL to 2.
+4. MySQL/mcsqueal/mcrouter send an invalidate for k to memcache,
+   though memcache is not caching k, so there&#39;s nothing to invalidate.
+5. C2 asks memcache for k; memcache says k doesn&#39;t exist.
+6. C2 asks MySQL for k, mySQL replies with value 2.
+7. C2 installs k=2 in memcache.
+8. C1 installs k=1 in memcache.
+
+Now memcache has a stale version of k, and it may never be updated.
+
+The paper&#39;s leases fix the example:
+
+1. Client C1 asks memcache for k; memcache says k doesn&#39;t exist,
+   returns lease L1 to C1, and remembers the lease.
+2. C1 asks MySQL for k, MySQL replies with value 1.
+   C1 is slow at this point for some reason...
+3. Someone updates k&#39;s value in MySQL to 2.
+4. MySQL/mcsqueal/mcrouter send an invalidate for k to memcache,
+   though memcache is not caching k, so there&#39;s nothing to invalidate.
+   But memcache does invalidate C1&#39;s lease L1 (deletes L1 from its set
+   of valid leases).
+5. C2 asks memcache for k; memcache says k doesn&#39;t exist,
+   and returns lease L2 to C2 (since there was no current lease for k).
+6. C2 asks MySQL for k, mySQL replies with value 2.
+7. C2 installs k=2 in memcache, supplying valid lease L2.
+8. C1 installs k=1 in memcache, supplying invalid lease L1,
+   so memcache ignores C1.
+
+Now memcache is left caching the correct k=2.
+
+Q: What is the &quot;thundering herd&quot; problem in 3.2.1, and how do leases
+solve it?
+
+A: The thundering herd problem:
+
+* key k is very popular -- lots of clients read it.
+* ordinarily clients read k from memcache, which is fast.
+* but suppose someone writes k, causing it to be invalidated in memcache.
+* for a while, every client that tries to read k will miss in memcache.
+* they will all ask MySQL for k.
+* MySQL may be overloaded with too many simultaneous requests.
+
+The paper&#39;s leases solve this problem by allowing only the first
+client that misses to ask MySQL for the latest data.
+</code></pre>
+</body></html>

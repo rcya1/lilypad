@@ -1,0 +1,436 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>SUNDR</h1>
+<h2>Overview</h2>
+<ul>
+<li>SUNDR (Secure Untrusted Data Repository) is a network file system (NFS) designed to store data securely on untrusted servers<ul>
+<li>Allows clients to detect any attempts at unauthorized file modification by malicious server operators or users</li>
+</ul>
+</li>
+<li>Achieves fork consistency:<ul>
+<li>Guarantees clients can detect any integrity or consistency failures as long as they see each other&#39;s file modifications</li>
+</ul>
+</li>
+<li>We want to be able to protect against the case where server is fully controlled by malicious adversary<ul>
+<li>It will intentionally try to trick users and not follow any rules / protocol</li>
+<li>We assume the server cannot break cryptography</li>
+</ul>
+</li>
+<li>We want:<ul>
+<li>Confidentiality: adversary can&#39;t read file contents</li>
+<li>Integrity: adversary can&#39;t trick clients into getting wrong file contents</li>
+<li>Availability: adversary can&#39;t prevent clients from accessing their files</li>
+</ul>
+</li>
+<li>Need integrity:<ul>
+<li>Prevent all illegitimate modifications</li>
+<li>Ensure legitimate modifications all appear in the right order</li>
+</ul>
+</li>
+</ul>
+<h2>Design Motivation</h2>
+<ul>
+<li>Naive design: use existing NFS and each file contains signature made from the data itself and the writer<ul>
+<li>When user reads a file, the client checks the signature which will fail if the data isn&#39;t exactly the same</li>
+</ul>
+</li>
+<li>With this, the malicious server could just send a different file instead of the data we requested<ul>
+<li>Possible solution: include filename in signature<ul>
+<li>But then we could send old contents of files<ul>
+<li>Even worse, intersperse new content for some files, old for others</li>
+</ul>
+</li>
+<li>Can claim a file doesn&#39;t exist</li>
+</ul>
+</li>
+<li>We need more sophisticated design to ensure we have:<ul>
+<li>Consistent, latest versions</li>
+<li>Integrity of directory contents: should not be missing any files</li>
+<li>Permissions</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Big idea in SUNDR:<ul>
+<li>Every update to any file includes a signature that encapsulates the entire current state visible to that updating user</li>
+<li>This way a signature will include reference to other updates so we will know if we have been served content of different versions</li>
+</ul>
+</li>
+<li>We go through three designs, the last of which is SUNDR</li>
+</ul>
+<h2>Strawman Design</h2>
+<ul>
+<li>Very inefficient design but shows the general idea</li>
+<li>We first serialize all operations via a global lock</li>
+<li>File system state is determined by log of operations by users, which server has to store<ul>
+<li>Each log entry contains whether it is fetch vs modify, user who made the entry, and the signature<ul>
+<li>Signature covers the entire log up to that point</li>
+</ul>
+</li>
+<li>Clients download the entire log and makes sure correct signatures in every entry<ul>
+<li>Then it constructs the filesystem state</li>
+<li>Then it makes its new log entry, signs it, and then uploads the log</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>For an adversary to sign a fake log entry, it would have to know the private key of an authorized user<ul>
+<li>This is used to actually generate the signatures</li>
+<li>The file system itself stores the public keys of other root file / directory owners</li>
+</ul>
+</li>
+<li>We must log fetch entries because otherwise we could have stale views across different files:<ul>
+<li>The server could give us different log prefixes when we look at different files and we would have no clue</li>
+<li>We need to have our fetches in our log to make sure the server doesn&#39;t do something sneaky like this</li>
+<li>This way we can make sure that our previous fetches were in the log</li>
+</ul>
+</li>
+</ul>
+<h2>Forks</h2>
+<ul>
+<li>Let&#39;s say server C made a fetch operation<ul>
+<li>The server could potentially hide modifications from user A and user B from a user C by just sending a prefix of the log</li>
+<li>But then C can never see any subsequent operations from user A or user B again since their signatures won&#39;t include C&#39;s fetch</li>
+</ul>
+</li>
+<li>The server can continue serving C&#39;s requests, but to do so, it must serve them on a separate fork from A and B since it has to hide all of those operations from C<ul>
+<li>It must also hide C&#39;s operations from A and B</li>
+</ul>
+</li>
+<li>This leads to fork consistency: we can fork clients, but once it forks, the server can never show operations from one fork to clients in the other fork<ul>
+<li>This is pretty nice for a file system since it is very obvious if you have a fork if users have external communication</li>
+</ul>
+</li>
+<li>We can automate fork detection with a separate trusted timestamp box<ul>
+<li>A designated user is responsible for updating some file every 5 seconds</li>
+<li>If client sees these updates, it&#39;s in the same fork as the timestamp box</li>
+<li>If not, then we have forked!</li>
+</ul>
+</li>
+</ul>
+<h2>Refined Design</h2>
+<ul>
+<li>Problem: Strawman is not practical since the log grows too long and interpreting it also takes too long<ul>
+<li>We&#39;ll fix the global lock problem later</li>
+<li>We want to instead sign file system snapshots</li>
+</ul>
+</li>
+<li>Block store stores mapping from the hash of blocks to the actual block data<ul>
+<li>This makes it easier to verify data when we request data with a specific hash</li>
+</ul>
+</li>
+<li>Every file is identified by a &lt;principal, i-number&gt; pair<ul>
+<li>principal is the user or group allowed to write the file</li>
+<li>i-number is per-principal inode number</li>
+</ul>
+</li>
+<li>Each principal has a i-table map<ul>
+<li>User i-table maps from i-number to the hash of the corresponding inode (allowing us to retrieve from block store)</li>
+<li>Group i-table maps a group i-number onto a &lt;user, user i-number&gt; pair</li>
+<li>Stored as a B+-tree where elements in the tree store hashes of their children</li>
+<li>The hash of the B+-tree root is the i-handle</li>
+</ul>
+</li>
+<li>Each inode contains a list of hash of file data blocks and indirect blocks so they can be retrieved</li>
+</ul>
+<p><img style="max-width: 911px;" src="img/sundr.png"/></p>
+<ul>
+<li>Blocks are immutable and since they are keyed by their hash, as long as the client knows the key that they want, they can check that the block hashes to that key</li>
+<li>We update by:<ul>
+<li>When client C writes a file, it constructs a new tree reflecting its modification</li>
+<li>New tree mostly shares the same blocks as the old tree<ul>
+<li>Only needs to change to new blocks on path from root of tree to modified content</li>
+</ul>
+</li>
+<li>This means that each modification leads to a new i-handle</li>
+</ul>
+</li>
+<li>A malicious server could give out old i-handles, concealing recent updates<ul>
+<li>We want each new i-handle to encode what came before it (both fetches and modifications)</li>
+</ul>
+</li>
+<li>Idea: signed version structure (VS) for each user that is stored in the server<ul>
+<li>Contains:<ul>
+<li>i-handle after user&#39;s last opeartion</li>
+<li>Version vector (for each user, how many operations that user has performed)</li>
+<li>Public key signature by user</li>
+</ul>
+</li>
+<li>This allows clients to detect old operations and attempts by the server to hide modifications (merge forks)</li>
+</ul>
+</li>
+<li>With this, to execute an operation:<ul>
+<li>Get all user&#39;s VSs from server</li>
+<li>Validate<ul>
+<li>Check that the version vector can be totally ordered (&lt;= operation in all indices)</li>
+</ul>
+</li>
+<li>Modify the i-tables and i-handle accordingly</li>
+<li>Change the i-handle of the VS and increment the version number</li>
+</ul>
+</li>
+</ul>
+<h2>Concurrent SUNDR</h2>
+<ul>
+<li>The previous version required us to wait for all previous clients to finish so that it could read their proper version numbers</li>
+<li>Ideally, we want the only time a client should have to wait for another is when it is reading a file the other is writing<ul>
+<li>Concurrent SUNDR can do this</li>
+</ul>
+</li>
+</ul>
+</body></html>

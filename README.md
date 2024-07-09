@@ -20,3 +20,5 @@ Run `yarn` and `yarn run watch` to begin the watcher, which will automatically r
 
 - Add the rest of my notes from college
 - Improve watcher to check modification dates to see when to rebuild files
+- If the image parser cannot find the image; put a custom warning / admonition
+- Add the drag and drop for the explorer

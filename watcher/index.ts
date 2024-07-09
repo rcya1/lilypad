@@ -85,8 +85,18 @@ async function renderFile(
     ensureDirectoryExist(renderedPath)
 
     if (!fs.existsSync(renderedPath)) {
-      fs.copyFileSync(sourcePath, renderedPath)
       console.log('Copying', sourcePath)
+      let copied = false
+      while (!copied) {
+        try {
+          fs.copyFileSync(sourcePath, renderedPath)
+          copied = true
+        } catch (e) {
+          console.error('Error copying', sourcePath)
+          console.error(e)
+          console.error('Retrying copying', sourcePath)
+        }
+      }
     }
   }
 }

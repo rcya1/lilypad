@@ -1,0 +1,373 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Zookeeper</h1>
+<h2>Introduction</h2>
+<ul>
+<li>Key idea in the past was to try to develop primitives to solve coordination<ul>
+<li>For example, some services in the past focus specifically on queues, leader election, configuration, locks</li>
+</ul>
+</li>
+<li>ZooKeeper attempts to move away from implementing primitives and instead give an API to enable developers to implement their own primitives<ul>
+<li>Doesn&#39;t use blocking primitives like locks</li>
+<li>Uses wait free data objects in a hierarchy</li>
+<li>Provides order guarantees for operations:<ul>
+<li>FIFO client ordering<ul>
+<li>This allows clients to issue multiple outstanding operations at a time</li>
+<li>Achieves through a pipelined architecture</li>
+</ul>
+</li>
+<li>Linearizable writes<ul>
+<li>Uses Zab, a leader-based atomic broadcast protocol to order updates</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Not optimized for high frequency writes</li>
+<li>Allows clients to watch data and receive messages when there are updates, which allows clients to keep caches</li>
+<li>Very fast though (tens of thousands of reads per second)<ul>
+<li>Our Raft implementations only support 10s</li>
+</ul>
+</li>
+<li>Used primarily for configuration / coordination, not storing global data<ul>
+<li>General idea is that this is used for storing mission critical data (i.e. configuration / progress) while non-fault-tolerant programs read from this data and attempt to carry out tasks</li>
+<li>I.e. GFS coordinator uses Zookeeper to update configs and manage everything and all of the workers read from Zookeeper and update job progress</li>
+</ul>
+</li>
+<li>Different style of making distributed systems<ul>
+<li>Adds fault tolerance to your state rather than the entire computation (which is what Raft does)</li>
+<li>Making your application with Raft requires major restructuring that can be a pain</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Service Overview</h2>
+<ul>
+<li>Definitions:<ul>
+<li>client = user of ZooKeeper</li>
+<li>server = process providing ZooKeeper</li>
+<li>znode = data node in ZooKeeper</li>
+<li>data tree - hierarchical namespace containing znodes</li>
+<li>session - clients establish these when they connect and use them to issue requests</li>
+</ul>
+</li>
+<li>znodes:<ul>
+<li>Uses standard UNIX notation for file paths to access data tree</li>
+<li>Can store data but not meant for general data storage<ul>
+<li>Instead, the existence of the znodes is meant to signify information</li>
+<li>Some znodes in common locations can be used to carry metadata</li>
+</ul>
+</li>
+<li>Two types:<ul>
+<li>Regular: clients create and delete them explicitly</li>
+<li>Ephemeral: clients create them and can either delete them or have them expire when session ends</li>
+</ul>
+</li>
+<li>Can have a sequential flag which attaches to their name a monotonically increasing counter</li>
+<li>Watches are initiated by issuing a read with a watch flag<ul>
+<li>One-time triggers that are unregistered once triggered or session closes</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>API:<ul>
+<li><code>create(path, data, flags)</code></li>
+<li><code>delete(path, version)</code></li>
+<li><code>exists(path, watch)</code></li>
+<li><code>getData(path, watch)</code></li>
+<li><code>setData(path, data, version)</code></li>
+<li><code>getChildren(path, watch)</code></li>
+<li><code>sync(path)</code> - waits for all updates pending at start of operation to propagate to the server the client is connected to (path argument is ignored)</li>
+<li>All of the above have synchronous and asynchronous versions</li>
+<li>Update methods take a version number which can be used to perform conditional updates<ul>
+<li>If version is -1, then no checking</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Guarantees<ul>
+<li>Updates are linearizable while reads are not, so reads are done at replicas and can return data that may have been updated by other clients</li>
+<li>However a client&#39;s requests are in FIFO order so they will see the writes they make</li>
+</ul>
+</li>
+<li>Can be used to keep track of a server configuration:<ul>
+<li>When a new leader is elected, it can delete a &quot;ready&quot; znode, make all of its changes, and then recreate &quot;ready&quot;</li>
+<li>Since client operations are FIFO, these will execute in order</li>
+<li>This means that a process will know that a new configuration is ready iff the ready node is there</li>
+</ul>
+</li>
+<li>If only a single znode is used to store configuration, we could also just use a watch to achieve the same effect<ul>
+<li>Watches only tell you that data is stale, not the new data, so it doesn&#39;t matter if multiple updates occur after the watch is fired because you have to read the data yourself anyway and then you can just set another watch</li>
+</ul>
+</li>
+<li>Group membership can be accomplished via ephemeral nodes</li>
+<li>Simple locks can be implemented with ephemeral nodes<ul>
+<li>Herd effect can occur with simple implementation because a bunch of people are waiting for the same lock and will all fight for it the second it is deleted<ul>
+<li>We can get around this by having each client come in and join a queue using the sequential tag and only attempt to get the lock when it sees it is lowest in queue (by watching the person who is next lowest)</li>
+</ul>
+</li>
+<li>Read / write locks can be implemented similarly to above<ul>
+<li>Write locks work exactly as the herd locks do</li>
+<li>Read locks will just wait until the next lowest write lock is deleted</li>
+<li>This is because reads have to block until the write is done and afterwards can then be done concurrently</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</body></html>

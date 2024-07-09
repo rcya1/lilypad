@@ -1,0 +1,400 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h3>Introduction</h3>
+<ul>
+<li>Leases are widely used technique that is a promise that some aspect of a system will not change during its duration</li>
+<li>Important for achieving good performance since they allow leaders to make decisions without having to contact replicas to confirm they are still the leader</li>
+<li>Challenging to use correctly when interacting with crash recovery / reconfiguration<ul>
+<li>We have to make sure leases expire before we can choose a new leader</li>
+<li>When executing operations, a lease may expire in the middle of it</li>
+</ul>
+</li>
+<li>Grove is a library based on concurrent separation logic for reasoning about distributed systems<ul>
+<li>CSL decomposes a system&#39;s state into parts called resources that are owned by different threads</li>
+<li>First library to handle time-based leases</li>
+</ul>
+</li>
+<li>Paper introduces Grove, GroveKV, and an evaluation of GroveKV&#39;s proof effort</li>
+</ul>
+<h3>GroveKV</h3>
+<ul>
+<li>Simple primary / backup replication with a configuration service</li>
+<li>Primary has to backup to all replicas before responding</li>
+<li>We divide our time into epochs where most epochs will have a corresponding configuration<ul>
+<li>Some will not if they were never actually running</li>
+<li>When reconfiguration happens, it seals one of the servers from the old epoch to ensure the system does not make any progress</li>
+<li>Prevents split brain by only ever looking at the configuration manager&#39;s highest number epoch</li>
+</ul>
+</li>
+<li>Leases are used to execute read-only operations without replication<ul>
+<li>Config server hands out a lease (possibly to multiple servers), promising not to change the configuration while the lease is out<ul>
+<li>The issue if you don&#39;t use a lease is that a reconfiguration could cause this server to no longer be part of the network but it still serves requests</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Backups only serve reads when they know what they have is committed (the primary therefore has to tell backups what is committed)</li>
+<li>Primary only serves reads that it knows all of the backups have applied (waits / tells client to retry otherwise)</li>
+</ul>
+<h3>Formal Verification</h3>
+<ul>
+<li>Idea is that you write a spec, code, and some proof code<ul>
+<li>Spec and proof code are written in some other language</li>
+<li>You then run it with a proof checker like coqc that verifies if the proof is ok</li>
+</ul>
+</li>
+<li>Grove verifies system by going line by line</li>
+</ul>
+<h3>Grove</h3>
+<ul>
+<li>Specs are made up of pre and postconditions (Hoare logic)<ul>
+<li>I.e. a sort function takes in a list and returns a sorted list</li>
+<li>This isn&#39;t super simple though for GroveKV because how do we deal with concurrent operations</li>
+</ul>
+</li>
+<li>We deal with this through concurrent separation logic (CSL)<ul>
+<li>This was originally designed for concurrent (non-distributed) programs</li>
+<li>Grove extends this to distributed systems</li>
+</ul>
+</li>
+</ul>
+<h4>CSL</h4>
+<p><img style="max-width: 447px;" src="img/grove1.png"/></p>
+<ul>
+<li>If this shows up in a condition, it means that the currently running code has x and knows what value it points to (some v) for the firs tline</li>
+<li>Second line indicates that it has two variables x and y and they are disjoint and we know what both of them point to</li>
+</ul>
+<p><img style="max-width: 455px;" src="img/grove2.png"/></p>
+<ul>
+<li>This is an example of a weak spec that doesn&#39;t quite have linearizability because this assumes that you have sole ownership of a key at a given time<ul>
+<li>We ideally want linearizability where it allows us to make multiple calls to the same key at the same time</li>
+<li>We&#39;ll go with this simplified spec for now</li>
+</ul>
+</li>
+<li>To model some of the more complex operations, we can use this idea of a ghost resource<ul>
+<li>This doesn&#39;t actually have a physical representation in the code that we can look at, but the idea is that it is something the proof can add to / manipulate as it goes through</li>
+<li>One example is an append-only list which is used in GroveKV to represent the log</li>
+</ul>
+</li>
+</ul>
+<p><img style="max-width: 495px;" src="img/grove3.png"/></p>
+<ul>
+<li>Knowledge is something that can be passed around arbitrarily without needing ownership of the original resource<ul>
+<li>This works for append-only list because if lists can only be appended to, we know the lower-bound will never change</li>
+</ul>
+</li>
+<li>Frozen lists are useful for when we do the sealing state for configuration change<ul>
+<li>It guarantees that the list will never change</li>
+</ul>
+</li>
+<li>In the proof for GroveKV, we have each server maintain a list for every epoch of what they have accepted<ul>
+<li>There is then an overall committed list that contains everything the client should see</li>
+</ul>
+</li>
+</ul>
+<p><img style="max-width: 477px;" src="img/grove4.png"/></p>
+<ul>
+<li>The replication invariant is that every server has to have accepted the committed list as a prefix</li>
+</ul>
+<p><img style="max-width: 493px;" src="img/grove5.png"/></p>
+<ul>
+<li>The way locks work in the proof is that they guard access to some resources<ul>
+<li>After calling lock, you can now get ownership of those</li>
+<li>When we call unlock, we lose access to ownership, but if we got knowledge before losing access, then we can retain that knowledge</li>
+<li>This knowledge is something that we have to be sure is true, so it can&#39;t really do something about exact state of something, just something about its prefix or a bound on it</li>
+</ul>
+</li>
+</ul>
+<p><img style="max-width: 734px;" src="img/grove6.png"/></p>
+<ul>
+<li>I.e. in this case, we have knowledge after releasing the lock that accepted has this new operation added to it at this particular index<ul>
+<li>The spec of ApplyAsBackupRPC allows us to get knowledge later that each of these accepted ghost entries has a prefix of this</li>
+</ul>
+</li>
+<li>At the end we can open up the replication invariant and use it to update committed<ul>
+<li>Idea is that we can gain ownership of the invariant box and mess around with it but when we close it we must have the invariant still satisfied</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>We also have an idea of time-bounded invariants, which captures the idea that we have this lease that is valid for this amount of time and we know this thing during that lease<ul>
+<li>This allows us to conclude what the current epoch number is, which then allows us to open up the replication invariant box and conclude that we have all committed operations, allowing us to serve reads</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>The way the proof handles what if situations is that we define these exact operations that only allow you to do these certain things<ul>
+<li>As long as your proof code matches up with your actual code, we are fine</li>
+<li>I.e. we can&#39;t delete from append only lists, so backups can&#39;t lose operations</li>
+<li>An old primary can&#39;t do a put because after we move to a new configuration, one of the old lists will now be frozen<ul>
+<li>But the old primary has to have done a put by contacting all replicas, which means we would have ran into an issue</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>There&#39;s a large overhead of writing proof code<ul>
+<li>1.6k lines of actual Go code while 20k lines of proof code for GroveKV</li>
+</ul>
+</li>
+</ul>
+</body></html>

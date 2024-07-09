@@ -1,0 +1,479 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Frangipani / Cache Consistency</h1>
+<h2>Premise</h2>
+<ul>
+<li>We want to build a distributed file system that:<ul>
+<li>Gives users a consistent view of the same set of files</li>
+<li>Scalable by just adding more servers</li>
+<li>Fault tolerant without intervention</li>
+<li>Can be backed up</li>
+</ul>
+</li>
+<li>Frangipani builds on top of Petal, which is a distributed storage service<ul>
+<li>Petal provides:<ul>
+<li>A virtual disk to clients that is written in blocks</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mn>64</mn></msup></mrow><annotation encoding="application/x-tex">2^{64}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">64</span></span></span></span></span></span></span></span></span></span></span></span> bytes of storage</li>
+<li>Optionally replicate data for availability</li>
+<li>Snapshots for consistent backups</li>
+</ul>
+</li>
+<li>The scalability and fault tolerance comes primarily from Petal</li>
+<li>Multiple disks can be used to make up the physical space behind the humongous Petal virtual disk, but everything appears as if they were on the same disk</li>
+<li>Frangipani builds on top of Petal to add:<ul>
+<li>A file-like interface instead of disk-like interface</li>
+<li>Coordination / sharing of the file system across different clients</li>
+</ul>
+</li>
+<li>Frangipani can then use multiple Petal virtual disks for even more space<ul>
+<li>All of this is abstracted away by the Petal driver</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>Also builds on a distributed locking service for synchronizing access to files<ul>
+<li>Provides multiple-reader, single-writer locks to clients</li>
+</ul>
+</li>
+<li>Designed to run in a cluster of machines all under the same administrator (relies on being able to trust each server)<ul>
+<li>The network connections must be made private</li>
+<li>Outside programs should not be able to send instructions to Petal</li>
+</ul>
+</li>
+<li>Generally the Petal and Frangipani can be run on the same machines<ul>
+<li>The distributed lock service is independent of the rest of the system, but they can still be run on the same machines</li>
+</ul>
+</li>
+<li>The user can view Frangipani as just a normal mountable UNIX filesystem with the inodes that represent files or directories</li>
+<li>Downsides of using Frangipani as built on top of Petal:<ul>
+<li>Logging occurs twice, once in Frangipani and another in Petal</li>
+<li>Frangipani can&#39;t use physical disk location information in placing data because Petal virtualizes it</li>
+<li>Frangipani locks entire files and directories rather than blocks</li>
+</ul>
+</li>
+</ul>
+<h2>Petal Disk Layout</h2>
+<ul>
+<li>Petal has <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mn>64</mn></msup></mrow><annotation encoding="application/x-tex">2^{64}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">64</span></span></span></span></span></span></span></span></span></span></span></span> bytes of address space<ul>
+<li>Only commits physical space to virtual addresses that are written to</li>
+<li>Provides a decommit primitive to free physical space backing virtual addresses</li>
+<li>Commits and decommits space in chunks of 64 KB</li>
+</ul>
+</li>
+<li>Frangipani divides up the virtual disk space as:<ul>
+<li>1 TB for configuration parameters<ul>
+<li>In reality, only a few kilobytes are used</li>
+</ul>
+</li>
+<li>1 TB for logs, spread among 256 regions<ul>
+<li>Each server will use one of these regions</li>
+<li>This technically limits to 256 servers but this can easily be changed</li>
+</ul>
+</li>
+<li>3 TB for allocation bitmaps to specify which blocks in the remaining regions are free<ul>
+<li>Each server uses a portion of this space for exclusive use</li>
+<li>Allocation bitmaps point to both space for inodes and point to space in the rest of memory that is free for storing file data</li>
+</ul>
+</li>
+<li>1 TB for inode space<ul>
+<li>Each inode is 512 bytes long, which is the same size as a disk block<ul>
+<li>This avoids conflicts of two servers attempting to access inodes in the same block</li>
+<li>Has space for <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mn>31</mn></msup></mrow><annotation encoding="application/x-tex">2^{31}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">31</span></span></span></span></span></span></span></span></span></span></span></span> inodes</li>
+</ul>
+</li>
+<li>The allocation bitmap maps bits there to inodes here<ul>
+<li>This mapping is fixed, so each server only allocates inodes in its part of the allocation bitmap</li>
+<li>This doesn&#39;t mean servers can&#39;t modify other inodes, it just means that each server when making new inodes only does it through here</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mn>47</mn></msup></mrow><annotation encoding="application/x-tex">2^{47}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">47</span></span></span></span></span></span></span></span></span></span></span></span> bytes for small blocks<ul>
+<li>Each small block is 4 KB ($2^{12}$ bytes)</li>
+<li>The first 64 KB of a file is stored in small blocks</li>
+<li>Anything past that is stored in a large block</li>
+</ul>
+</li>
+<li>The rest of the space is for large blocks<ul>
+<li>Each large block is 1 TB</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>This leads to the following limitations:<ul>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mn>24</mn></msup><mo>≈</mo><mn>16</mn><mi>M</mi></mrow><annotation encoding="application/x-tex">2^{24} \approx 16M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">24</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord">16</span><span class="mord mathnormal" style="margin-right:0.10903em;">M</span></span></span></span> large files</li>
+<li>A file can be no larger than 1TB + 64KB</li>
+<li>This can be easily modified</li>
+<li>Each Frangipani file system uses only 1 Petal virtual disk, but multiple Frangipani file systems can be mounted by a single user</li>
+</ul>
+</li>
+</ul>
+<h2>Logging and Recovery</h2>
+<ul>
+<li>Each Frangipani server stores a log in Petal that stores metadata updates<ul>
+<li>When a server needs to make update, it first creates a record describing the update and appends it to its log</li>
+<li>These log records are periodically written to Petal in the same order that they were requested<ul>
+<li>Rather than writing these periodically, we could allow them to be written synchronously, which offers better failure semantics at the cost of increased latency</li>
+<li>Only after a log record is written to Petal does the server modify the metadata</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Logs are limited to be at most 128 KB in the given implementation<ul>
+<li>This is maintained as a circular buffer, so Frangipani reclaims the oldest 25% of log space whenever the log fills</li>
+<li>All of these entries must be written to Petal before they are reclaimed</li>
+</ul>
+</li>
+<li>If a server crashes, the system eventually detects the failure and runs recovery<ul>
+<li>Failure can be detected by either a client or by the lock service</li>
+<li>Recovery then receives ownership of the log and locks and then carries out all log operations to ensure they are done</li>
+<li>After log processing, the recovery demon releases all locks and frees the log</li>
+<li>As long as Petal remains available, the system can tolerate any number of Frangipani failures</li>
+</ul>
+</li>
+<li>Locking ensures that updates to the same data are serialized</li>
+<li>We keep a version number on every metadata block to ensure that we never replay a log record for an already completed update</li>
+</ul>
+<h2>Synchronization and Cache Coherence</h2>
+<ul>
+<li>We use multiple-reader / single-writer locks to implement synchronization<ul>
+<li>A read lock allows a server to read the associated data and then cache it<ul>
+<li>If a server is asked to release a read-lock, it must invalidate its cache entry before doing so</li>
+</ul>
+</li>
+<li>A write lock allows a server to read or write the associated data and then cache it<ul>
+<li>A server&#39;s cached copy of a disk can only be different from the on-disk version if it holds the write lock</li>
+<li>This data must be written to disk before it can release the lock<ul>
+<li>Can keep the entry in its cache if it is downgrading to reader</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Each log is a single lockable segment</li>
+<li>Bitmap space is divided into segments that are also locked<ul>
+<li>This protects space that hasn&#39;t been allocated yet</li>
+</ul>
+</li>
+<li>Each file / directory / symbolic link is locked across the entire file</li>
+<li>Deadlock is avoided by globally ordering locks and acquiring them in two phases:<ul>
+<li>First a server determines what locks it needs (i.e. by looking up files in a directory, which may acquiring and releasing other locks)</li>
+<li>Second it attempts to acquire all of the locks it needs in order</li>
+<li>Afterwards, it checks if any of the objects it examined in phase 1 (i.e. directory contents) were modified after the lock was released<ul>
+<li>If they were modified, it releases all locks and restarts</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Lock Service</h2>
+<ul>
+<li>Generally all locks will be sticky<ul>
+<li>A lock will be held until it is asked to be released</li>
+<li>This helps improve performance on rare locks</li>
+</ul>
+</li>
+<li>Client failure is dealt with leases<ul>
+<li>When a client (Frangipani server) contacts the lock service, it obtains a lease with an expiration time</li>
+<li>This must be renewed or else the lock service will consider the client as failed</li>
+</ul>
+</li>
+<li>If a network failure occurs and a Frangipani cannot renew its lease, then the server has to discard all locks / data in its cache<ul>
+<li>If the cache was dirty, then all subsequent requests from the user must return an error</li>
+</ul>
+</li>
+<li>The lock service must be fault tolerant to avoid issues</li>
+<li>There is one small hazard when a server lease expires:<ul>
+<li>If the server did not actually crash, it may try to access Petal even after its lease has expired</li>
+<li>A Frangipani server checks that its lease is still valid before attempting any write to Petal</li>
+<li>Petal doesn&#39;t do any checking when a write request arrives</li>
+<li>Therefore if a lease check occurs, the write request is sent, the network is partitioned, write request is very delayed, then the write request could arrive when the lease had expired<ul>
+<li>What the authors did to bandaid fix this was to set a huge margin of time so we only send when we still have 15 seconds remaining in our lease</li>
+<li>This doesn&#39;t fully solve the issue, which would require something like putting timestamps on write requests so Petal can ignore expired ones</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Adding / Removing Frangipani Servers</h2>
+<ul>
+<li>Very simple</li>
+<li>Added server is told which Petal virtual disk to use and where to find lock service<ul>
+<li>Afterwards, the lock service provides lease, and this ID is used to find where to work in Petal</li>
+</ul>
+</li>
+<li>Removed server can just be shut off<ul>
+<li>Preferable if all dirty data is flushed and locks released</li>
+<li>If not, then the recovery service will just grab this</li>
+</ul>
+</li>
+<li>Petal and lock servers can be added as described in their implementations</li>
+</ul>
+<h2>Consistency Guarantees</h2>
+<ul>
+<li>One possibility of a write saying that it is successful but not actually going off is if the write only goes to the cache<ul>
+<li>In Frangipani, the cache is only written to the Petal log when we lose the writer lock or periodically the cache is flushed</li>
+<li>If the system crashes while still holding the writer lock, then this write could be loss forever</li>
+</ul>
+</li>
+</ul>
+</body></html>

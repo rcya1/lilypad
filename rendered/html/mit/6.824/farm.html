@@ -1,0 +1,435 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>FaRM</h1>
+<h2>Overview</h2>
+<ul>
+<li>Another version of getting strongly consistent / available distributed transactions</li>
+<li>FaRM is a main-memory distributed computing platform<ul>
+<li>Provides distributed ACID transactions with high availability, high throughput, low latency</li>
+</ul>
+</li>
+<li>All in one data center, uses configuration manager (i.e. ZooKeeper) to choose primaries / backups</li>
+<li>Sharded with primary / backup replication<ul>
+<li>Can recover as long as each shard has at least one replica alive</li>
+</ul>
+</li>
+<li>Exploits performance potential of RDMA NICs<ul>
+<li>NIC - Network Interface Card (connects computer to the network)</li>
+<li>RDMA - feature on some modern NICs that looks for special command packets over the network and executes those commands itself instead of giving them to the CPU<ul>
+<li>The NIC can also look into its own CPU&#39;s memory and write to it<ul>
+<li>This allows us to bypass the kernel and driver code and just write stuff to memory we want the CPU to send and the NIC can then send this out</li>
+<li>The NIC can also just write incoming messages to the CPU and we can just read it</li>
+</ul>
+</li>
+<li>Gives hardware ACKs to application code</li>
+<li>One-sided RDMA are when one computer can use RDMA NICs to read/write memory in another computer without that computer&#39;s CPU</li>
+</ul>
+</li>
+<li>Normally the CPU handling network things is a huge performance bottleneck<ul>
+<li>Has to handle socket buffers, system calls, driver code, interrupts</li>
+<li>RPCs norm can&#39;t deliver more than 100k per second</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Keeps everything in the RAM (so no disk reads)<ul>
+<li>However they use non-volatile RAM (NVRAM) to ensure it stays intact after crash</li>
+<li>Normally RAM loses content in power failure or crash<ul>
+<li>We can&#39;t just write to RAM of all machines and call it a day because power failure is not independent and can cause all machines to go down</li>
+</ul>
+</li>
+<li>We have batteries in every rack which can power machines for a few min after failure<ul>
+<li>After failure, this halts all transaction processing, writes the RAM to SSD, and then shuts down</li>
+</ul>
+</li>
+<li>Crashes prevent writing to SSD, but this is why we have the replication<ul>
+<li>We assume that crashes are independent if they&#39;re not from power failure</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>All of this for millions of distributed transactions per second<ul>
+<li>Much faster than Spanner</li>
+<li>We also only get a single datacenter</li>
+</ul>
+</li>
+<li>However, we need some form of concurrency control</li>
+</ul>
+<h2>Concurrency Control</h2>
+<ul>
+<li>Pessimistic concurrency control (two-phase locking) waits for lock on first use of object and holds them until commit / abort<ul>
+<li>Conflicts cause delays</li>
+</ul>
+</li>
+<li>Instead we&#39;ll discuss Optimistic Concurrency Control<ul>
+<li>We read objects without locking but don&#39;t install writes until we commit</li>
+<li>When we try to commit, we validate to see if any other transactions conflicted<ul>
+<li>If not, then we commit, otherwise abort</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>If we want the performance increase of FaRM using one-sided RDMA reads, then we can&#39;t have the foreign server actively participate in reads through something like locking<ul>
+<li>Therefore, we have to use OCC</li>
+</ul>
+</li>
+<li>This works best if few conflicts</li>
+</ul>
+<h2>Transaction Protocol Description</h2>
+<ul>
+<li><p>Primary / Backups replicate the primary log</p>
+<ul>
+<li>So when things are being added to the primary&#39;s log, they are replicated across everything</li>
+</ul>
+</li>
+<li><p>Execute Phase</p>
+<ul>
+<li>Client reads objects it needs from servers (including records that it will write) without locking<ul>
+<li>Always reads from primaries</li>
+</ul>
+</li>
+<li>Remembers the version numbers of what it reads</li>
+<li>Buffers the writes locally</li>
+</ul>
+</li>
+<li><p>Commit Phase</p>
+<ul>
+<li>LOCK<ul>
+<li>Transaction coordinator (TC) sends a new log entry using RDMA to the primary of each written object<ul>
+<li>TC is the client</li>
+<li>LOCK record contains memory location, version number, new value</li>
+</ul>
+</li>
+<li>On receipt of a LOCK (by polling the log entries), we:<ul>
+<li>Check if the object is locked or if the version number is out of date<ul>
+<li>If so, then we respond &quot;no&quot;</li>
+</ul>
+</li>
+<li>Otherwise, we reply &quot;yes&quot; and set the object&#39;s lock</li>
+<li>We don&#39;t modify the data</li>
+<li>All of these actions are atomic using CPU locks</li>
+<li>TC waits for all LOCK reply messages and if any fail, then we abort<ul>
+<li>Append ABORT to primary logs so they release locks and then returns &quot;no&quot;</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>VALIDATE<ul>
+<li>For objects that are read only, we do a one-sided RDMA to check to make sure that things we read still have the same version numbers and are not locked</li>
+</ul>
+</li>
+<li>COMMIT BACKUP<ul>
+<li>Tells the backups the new value(s)</li>
+<li>TC waits to send COMMIT-PRIMARY until all LOCKs and COMMIT-BACKUPS are complete</li>
+<li>This is just put in the NVRAM logs, but since NVRAM is fault-tolerant, then just putting it there is enough</li>
+</ul>
+</li>
+<li>COMMIT PRIMARY<ul>
+<li>TC appends COMMIT-PRIMARY to primaries&#39; logs<ul>
+<li>TC just waits for RDMA hardware to acknowledge that this went through (doesn&#39;t wait for primary to process log entry)</li>
+<li>TC then returns yes to say the commit succeeded</li>
+</ul>
+</li>
+<li>When the primary processes COMMIT-PRIMARY, it copies new value, increments version, and clears lock</li>
+<li>The commit point is when the first COMMIT-PRIMARY is written since at that point the transactions results are all good<ul>
+<li>This means that even if the transaction requires multiple shards, we can still return the commit after a single COMMIT-PRIMARY ACK</li>
+<li>We need to wait for one ACK because if the TC crashes as well as all backups, we need to some evidence that our transaction actually went through, which can be found in a primary</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>This provides serializability because with locks we check if transactions are going to be bad / conflicting because of the different version numbers or the locks</p>
+<ul>
+<li>Read/write transactions are serializable by point where all write locks are acquired</li>
+<li>Read-only transactions are serializable at point of last read</li>
+</ul>
+</li>
+<li><p>Reads are guaranteed to be serializable:</p>
+<ul>
+<li>Two concerns about reads:<ul>
+<li>If we have a large object with multiple blocks of data, then we might have the object modified while we&#39;re reading<ul>
+<li>Each block of data has a version number and reading it is atomic (norm a block is a single cache line)</li>
+<li>Therefore we read the whole object and if the version numbers don&#39;t match for the whole thing, then we abandon transaction</li>
+</ul>
+</li>
+<li>A concurrent writing transaction might cause interleaved data<ul>
+<li>The validate step (which occurs after the execute phase) makes sure that all of our reads all have the same version number and weren&#39;t modified between reading some of it and reading all of it</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>A pure read-only FaRM transaction uses only one-sided RDMA reads, so very fast</p>
+</li>
+</ul>
+<h2>Fault Tolerance</h2>
+<ul>
+<li>The Primary / Backup replication means that everything sent to the primary is actually sent to all of the backups</li>
+<li>A client only returns success when COMMIT-PRIMARY is added to at least one primary&#39;s log, which means that the shard must have all replicas up to date</li>
+<li>As a result, all servers will have up to date information</li>
+<li>The configuration manager (CM) uses very short leases to keep track of which machines are alive<ul>
+<li>When one dies, then a reelection process causes a new primary to be elected</li>
+</ul>
+</li>
+</ul>
+</body></html>

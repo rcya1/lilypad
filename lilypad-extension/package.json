@@ -43,6 +43,10 @@
         "command": "lilypad-extension.delete",
         "title": "Delete",
         "icon": "$(trash)"
+      },
+      {
+        "command": "lilypad-extension.rename",
+        "title": "Rename"
       }
     ],
     "menus": {
@@ -57,17 +61,17 @@
         {
           "command": "lilypad-extension.refreshExplorer",
           "when": "view == lilypad-extension-browser",
-          "group": "navigation"
-        },
-        {
-          "command": "lilypad-extension.addFile",
-          "when": "view == lilypad-extension-browser",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "lilypad-extension.addFolder",
           "when": "view == lilypad-extension-browser",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "lilypad-extension.addFile",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation@0"
         }
       ],
       "view/item/context": [
@@ -77,10 +81,6 @@
           "group": "inline"
         },
         {
-          "command": "lilypad-extension.delete",
-          "when": "view == lilypad-extension-browser"
-        },
-        {
           "command": "lilypad-extension.addFile",
           "when": "view == lilypad-extension-browser",
           "group": "navigation"
@@ -89,6 +89,14 @@
           "command": "lilypad-extension.addFolder",
           "when": "view == lilypad-extension-browser",
           "group": "navigation"
+        },
+        {
+          "command": "lilypad-extension.rename",
+          "when": "view == lilypad-extension-browser"
+        },
+        {
+          "command": "lilypad-extension.delete",
+          "when": "view == lilypad-extension-browser"
         }
       ]
     },

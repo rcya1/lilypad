@@ -176,6 +176,18 @@ export function activate({
         }
       }
     ),
+    vscode.commands.registerCommand(
+      'lilypad-extension.rename',
+      async (node: ExplorerNode) => {
+        let newName = await vscode.window.showInputBox({
+          prompt: 'Enter new name',
+          value: node.label
+        })
+        if (newName) {
+          node.rename(newName)
+        }
+      }
+    ),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       // check if lilypad explorer is open
       if (!treeView?.visible) {
