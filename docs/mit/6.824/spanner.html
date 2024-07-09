@@ -1,0 +1,432 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Spanner</h1>
+<h2>Overview</h2>
+<ul>
+<li>Spanner is a scalable, multi-version, globally distributed, replicated database</li>
+<li>Supports externally-consistent (linearizable) distributed transactions (reads and writes)</li>
+<li>Shards data across many Paxos state machines in datacenters around the world<ul>
+<li>Automatically reshards as amount of data / number of servers change</li>
+</ul>
+</li>
+<li>Designed to scale to millions of machines and trillions of rows</li>
+<li>Used for high availability, even in the face of natural disasters<ul>
+<li>Replicates data within or even across continents</li>
+<li>Replication constraints can control how far replicas are from each other, how far data is from users, how many replicas are maintained</li>
+</ul>
+</li>
+<li>Supports general-purpose transactions and a SQL-based query language</li>
+<li>Assigns commit timestamps that reflect a serialization order<ul>
+<li>Based on looking at a clock and its uncertainty, which is factored into how long Spanner waits to ensure that it is accurate</li>
+<li>Uses the TrueTime API for looking at the clock</li>
+</ul>
+</li>
+</ul>
+<h2>Implementation</h2>
+<ul>
+<li>A Spanner deployment is called a universe, and there are few running universes<ul>
+<li>Organized into a set of zones where each zone is roughly a Bigtable deployment</li>
+<li>The set of zones is the set of locations across which data can be replicated<ul>
+<li>Each has a zonemaster and hundreds to thousands of spanservers</li>
+<li>Zonemaster assigns data to spanservers, and the spanservers serve data</li>
+<li>They also have location proxies which are used by clients to locate the spanservers assigned to their data</li>
+</ul>
+</li>
+<li>The universe master and placement driver are external singletons that are not in a zone<ul>
+<li>Universe master is a console for displaying status info about all zones for interactive debugging</li>
+<li>Placement driver handles automated movement of data across zones<ul>
+<li>This occurs to meet updated replication constraints or balance load</li>
+<li>Happens on the timescale of minutes</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Spanservers</h3>
+<ul>
+<li>A spanserver is distributed across multiple datacenters (zones)</li>
+<li>Each spanserver is responsible for 100-1000 instances of a datastructure called a tablet<ul>
+<li>A tablet implements a bag of mappings from <code>(key: string, timestamp: int64) -&gt; string</code></li>
+<li>Because each mapping contains a key and a timestamp, it&#39;s more of a multi-version database than a key-value store</li>
+</ul>
+</li>
+<li>A tablet&#39;s state is stored in a set of B-tree-like files and a write-ahead log on a distributed file system called Colossus</li>
+<li>Each spanserver implements a Paxos state machine on top of each tablet<ul>
+<li>Used to keep this bag of mappings constantly replicated</li>
+</ul>
+</li>
+<li>Each spanserver can be thought of as a shard of the data</li>
+<li>Also includes a lock table for concurrency control and a transaction manager to support distributed transactions<ul>
+<li>Transaction manager can be bypassed if a transaction only involves a single shard</li>
+</ul>
+</li>
+<li>Therefore when clients read their closest replica, they can go to a member of the Paxos cluster and read from them<ul>
+<li>Challenges: data on this member may not be fresh and transactions that use multiple shards (spanservers) need to be serializable</li>
+</ul>
+</li>
+</ul>
+<p><img style="max-width: 368px;" src="img/spanner.png"/></p>
+<ul>
+<li>General idea is that each spanserver has some participant leader which is not necessarily the same as the Paxos leader<ul>
+<li>Participant leader stores the locks and transaction manager</li>
+</ul>
+</li>
+<li>Tells the Paxos replica group (which is a separate bit of running software) the commands it wants it to replicate</li>
+</ul>
+<h2>Read-Write Transactions</h2>
+<ul>
+<li>Example: <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>=</mo><mi>x</mi><mo>+</mo><mn>1</mn><mo separator="true">;</mo><mi>y</mi><mo>=</mo><mi>y</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">x = x + 1; y = y - 1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">1</span><span class="mpunct">;</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span><ul>
+<li>This entire thing should happen as a single atomic action</li>
+</ul>
+</li>
+<li>Main idea is that we want to use two-phase commit with the Paxos-replicated participants</li>
+<li>Client picks a unique transaction ID and sends each read to Paxos leader of relevant shard<ul>
+<li>Each shard acquired lock on relevant record</li>
+<li>Read locks aren&#39;t replicated in Paxos so shard leader failure -&gt; abort</li>
+</ul>
+</li>
+<li>Client keeps the write private until it receives all of the reads<ul>
+<li>Afterwards, it then chooses a Paxos group to act as the two phase commit transaction coordinator (TC)</li>
+<li>Sends writes to shard leaders which each:<ul>
+<li>Acquire locks on written records</li>
+<li>Log a prepare record in Paxos to replicate the new written value</li>
+<li>Tells TC either that is prepared or that it crashed and lost the lock table</li>
+</ul>
+</li>
+<li>The TC then decides whether to commit or abort<ul>
+<li>Logs the decision and then tells participant leaders / client the results</li>
+</ul>
+</li>
+<li>Each participant leader:<ul>
+<li>Logs the TC&#39;s decision via Paxos, performs the write (if not aborted), and then releases the locks</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Since a transaction coordinator is backed by Paxos, we won&#39;t have problem with 2PC of TC failing</li>
+<li>This takes a long time (on the order of 100 ms), but with many shards and many clients, we can get high throughput</li>
+</ul>
+<h2>Read-Only Transactions</h2>
+<ul>
+<li><p>We want this to be faster than read-write transactions (xactions)</p>
+</li>
+<li><p>We read from local replicas and avoid Paxos / cross-datacenter messages</p>
+</li>
+<li><p>To deal with correctness, we need it to &quot;fit between read/write xactions&quot;</p>
+</li>
+<li><p>We can&#39;t just read the latest committed values if we want to read multiple things in the same transaction</p>
+<ul>
+<li><pre><code> T1:  Wx  Wy  C
+ T2:                 Wx  Wy  C
+ T3:             Rx             Ry
+</code></pre>
+</li>
+<li>T3 will not see a linearizable order in the transaction</li>
+</ul>
+</li>
+<li><p>Idea is to synchronize all computer&#39;s clocks and assign each transaction a timestamp (Snapshot Isolation)</p>
+<ul>
+<li>For read/write we use the commit time</li>
+<li>For read-only we use the start time</li>
+</ul>
+</li>
+<li><p>We want the results to occur as if each of them happened in the order of those timestamps</p>
+<ul>
+<li>All read/only transactions will only look at read/write transactions that committed before it started</li>
+<li>This is why every tablet included every version of the data at the different timestamps</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>If T3 reads from a replica that hasn&#39;t seen T1&#39;s write (i.e. it wasn&#39;t in Paxos majority) then we need to fix this<ul>
+<li>Replicas use an idea called &quot;safe time&quot;</li>
+<li>Before serving a read at time 20, the replica must see Paxos write for time &gt; 20<ul>
+<li>It won&#39;t use this write in its decision making, but at least this way it knows it has seen all writes &lt; 20</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Also has to delay if there are prepared but uncommitted transactions with a</li>
+<li>This creates a scenario where the read/only transactions are usually fast</li>
+</ul>
+<h2>Synchronized Clocks</h2>
+<ul>
+<li>This creates a problematic scenario for only r/o xactions if clocks aren&#39;t synchronized<ul>
+<li>r/w xactions are fine because they&#39;re based off of the locks</li>
+</ul>
+</li>
+<li>The TrueTime API yields a time interval for each clock that guarantees the correct time is somewhere in the interval<ul>
+<li>Intervals are usually microseconds but can go up to 10+ milliseconds</li>
+</ul>
+</li>
+<li>Using these we can make sure that we have the correct semantics<ul>
+<li>For r/o transactions, we measure the interval at the start of the transaction</li>
+<li>For r/w, we measure when the commit begins</li>
+<li>For the measured interval, we always look at the latest possible measured time</li>
+</ul>
+</li>
+<li>Before completing a r/w transaction&#39;s commit, we wait until this timestamp is less than the earliest possible current time<ul>
+<li>This guarantees that the recorded timestamp has definitely passed</li>
+</ul>
+</li>
+<li>Then for r/o we just compare its timestamp to make sure we have already seen a recent write (just read from the database)</li>
+</ul>
+</body></html>

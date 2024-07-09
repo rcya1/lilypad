@@ -1,0 +1,389 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Chain Replication</h1>
+<h2>Introduction</h2>
+<ul>
+<li>Storage systems implement operations so clients can store / retrieve / change data<ul>
+<li>File systems: read and write operations access a single file and are idempotent (behavior is always the same)</li>
+<li>Database system: operations may each access multiple objects and are serializable (can be atomic and ordered)<ul>
+<li>Serializable does not impose real time restrictions on operations while linearizable does</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Storage systems / services are somewhere between:<ul>
+<li>Store objects</li>
+<li>Support queries to return value derived from single object</li>
+<li>Support update to atomically change state of single object according to some computation based on prior state of object</li>
+</ul>
+</li>
+<li>We want to support high availability, throughput, and strong consistency<ul>
+<li>Chain replication supports this</li>
+</ul>
+</li>
+<li>Storage service guarantees a reply for each request it receives<ul>
+<li>If a client doesn&#39;t receive a reply, it re-issues a request<ul>
+<li>This means some requests can be ignored, but this is fine</li>
+</ul>
+</li>
+<li>Since query operations are idempotent but updates aren&#39;t, we have to be careful to make sure updates aren&#39;t performed twice</li>
+</ul>
+</li>
+</ul>
+<h2>Chain Replication</h2>
+<ul>
+<li>Servers are assumed to be fail-stop:<ul>
+<li>Each server halts in response to failure instead of making incorrect state transitions</li>
+<li>A server&#39;s halted state can be detected by the environment</li>
+</ul>
+</li>
+<li>If an object is replicated on <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi></mrow><annotation encoding="application/x-tex">t</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6151em;"></span><span class="mord mathnormal">t</span></span></span></span> servers, <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">t - 1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6984em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span> servers can fail without compromising availability</li>
+<li>The servers replicating a given object <em>objID</em> are linearly ordered to form a chain<ul>
+<li>First server is called the <em>head</em></li>
+<li>Last server is called the <em>tail</em></li>
+<li>The reply for each request is generated and sent by the tail</li>
+<li>Each query is directed to the tail of the chain and processed there atomically</li>
+<li>Each update request is directed to the head of the chain<ul>
+<li>Request is processed atomically and then forwarded to the next element</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Writes only respond after they have been processed all of the way to the tail<ul>
+<li>Reads can return as soon as possible, and they will not see any pending updates</li>
+<li>This is fine because it is still linearizable</li>
+</ul>
+</li>
+<li>We have a master that observes the chain and reconfigures it to eliminate failed servers<ul>
+<li>Informs clients which server is the head and which is the tail</li>
+<li>Is assumed to never fail or can use something like Paxos or Raft</li>
+</ul>
+</li>
+<li>Failures:<ul>
+<li>Head fails<ul>
+<li>Set new head to old head&#39;s successor</li>
+<li>This can cause any requests sent only to the old head to be ignored, but that&#39;s fine since client can resend when it doesn&#39;t receive a response</li>
+</ul>
+</li>
+<li>Tail fails<ul>
+<li>Set new tail to old tail&#39;s predecessor</li>
+<li>No other problems besides maybe having to send new responses that original tail didn&#39;t</li>
+</ul>
+</li>
+<li>Failure of intermediate <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi></mrow><annotation encoding="application/x-tex">S</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span><ul>
+<li>Remove <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi></mrow><annotation encoding="application/x-tex">S</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">S</span></span></span></span> from the chain but we need to do a bit of bookkeeping to determine if there are any requests that we need to forward from $S$&#39;s predecessor to $S$&#39;s successor</li>
+<li>Each server maintains a list of update requests that have been forwarded to its successor but have not been acknowledged by the successor<ul>
+<li>When it receives acknowledgement from its successor that it successfully finished applying the operation, then it removes from this list</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Handling these failures is fast and simple because the topology means we already know who is going next</li>
+</ul>
+</li>
+<li>When chains get too short, we need to add to them so that they can tolerate more failures<ul>
+<li>Simplest to just add a server to the end of a chain to make it the new tail</li>
+<li>Forwarding the new state to this server can be done in parallel with processing requests from clients</li>
+</ul>
+</li>
+</ul>
+<h2>Primary / Backup Protocols</h2>
+<ul>
+<li>Chain replication is a form of a p/b approach which itself is an instance of a state machine approach to replica management</li>
+<li>In p/b we have:<ul>
+<li>A primary that imposes a sequencing on client requests (to ensure strong consistency)</li>
+<li>Distribution of requests from primary to backup</li>
+<li>Waits for acknowledgment from backups</li>
+<li>After receiving a reply from backups it replies to client</li>
+</ul>
+</li>
+<li>If a primary fails, one of the backups is rpomoted</li>
+<li>In chain replication, the primary is split between the head and the tail<ul>
+<li>Faster than P/B because in CR the tail can respond to queries without waiting while in P/B we have to wait for acknowledgment from backups for prior updates before responding</li>
+</ul>
+</li>
+<li>In P/B latency is parallel while in CR it is serial</li>
+<li>Experiments show that CR yields higher throughput than P/B</li>
+<li>For the longest time, these dominated data replication / paxos / raft / quorum systems<ul>
+<li>Recently, has begun to shift</li>
+</ul>
+</li>
+</ul>
+<h2>Sharding</h2>
+<ul>
+<li>If you have too much data to fit on a single replica group, you need to shard across many replica groups</li>
+<li>Not so great system: each group of three servers serves a single shard / chain<ul>
+<li>Some servers will be more loaded than others</li>
+<li>The primary in each group will be slow while others have idle capacity</li>
+<li>Replacing a failed replica takes a long time since we have to fetch over the network (risk other replicas failing in the meantime)</li>
+<li>shard A: S1 S2 S3<br>shard B: S4 S5 S6</li>
+</ul>
+</li>
+<li>Better system (rndpar)<ul>
+<li>Split data into many more shards than servers<ul>
+<li>Then each server could be used in multiple shards / chains</li>
+<li>shard A: S1 S2 S3<br>shard B: S2 S3 S1<br>shard C: S3 S1 S2</li>
+<li>A server is primary in some groups, backup in other</li>
+</ul>
+</li>
+<li>Major improvements in repair speed because if a server was part of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi></mrow><annotation encoding="application/x-tex">M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">M</span></span></span></span> shards, then those <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi></mrow><annotation encoding="application/x-tex">M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">M</span></span></span></span> chains / shards can build a new one in parallel</li>
+<li>However these improvements are undermined by the fact that a few failures can wipe out all replicas of a shard</li>
+</ul>
+</li>
+</ul>
+</body></html>

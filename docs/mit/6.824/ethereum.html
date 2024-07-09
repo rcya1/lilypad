@@ -1,0 +1,377 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Ethereum</h1>
+<h2>Bitcoin</h2>
+<ul>
+<li>We look at the Bitcoin idea as a state transition system<ul>
+<li>There&#39;s a state consisting of the ownership status of all existing Bitcoins</li>
+<li>Each new block is a set of transactions that transforms the state and moves around Bitcoin</li>
+</ul>
+</li>
+<li>The state is a collection of all coins (unspent transaction outputs or UTCO) that have been minted and not spent<ul>
+<li>A transaction contains 1+ inputs that corresponds to an existing UTXO and an output with all new UTXO</li>
+<li>In Bitcoin, each UTXO has a corresponding owner (its public key)</li>
+<li>When doing a transaction, we make sure that all UTXO have not been sent yet</li>
+</ul>
+</li>
+<li>The main point of Bitcoin is to make sure that all of these transactions appear in the same order<ul>
+<li>The only way to attack the Bitcoin network would be to try to try to void sending money to people by trying to get something that invalidates that sending later by putting an out of order entry in</li>
+</ul>
+</li>
+<li>We could try implementing scripting straight into Bitcoin with no modifications:<ul>
+<li>UTXO in Bitcoin is owned by a script that takes in data and is verified iff the script is valid</li>
+<li>Limitations:<ul>
+<li>Not Turing-complete: lack of loops<ul>
+<li>This is because we could then have infinite loops during transaction verification</li>
+</ul>
+</li>
+<li>Value-blindness<ul>
+<li>No fine-grained control over amount that can be withdrawn because UTXO are all or nothing</li>
+</ul>
+</li>
+<li>Lack of state<ul>
+<li>UTXO can either be spent or unspent so there is no way to store state in contracts</li>
+</ul>
+</li>
+<li>Block-chain blindness<ul>
+<li>UTXO are blind to data such as the nonce / timestamp / previous blocks so there is no way to use that to generate RNG</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Ethereum</h2>
+<ul>
+<li>The state of Ethereum is made up of accounts, each of which contains:<ul>
+<li>The nonce, a counter used to make sure each transaction can only be processed once</li>
+<li>The account&#39;s current ether balance</li>
+<li>The account&#39;s contract code (if it exists)</li>
+<li>The account&#39;s storage (empty by default, contains kv pairs)</li>
+</ul>
+</li>
+<li>Two types of accounts:<ul>
+<li>Externally owned account: controlled by private keys and have no code</li>
+<li>Contract accounts: controlled by their contract code</li>
+</ul>
+</li>
+<li>One sends messages from an externally owned account by creating and signing a transaction</li>
+<li>In a contract account, every time it receives a message, its code activates<ul>
+<li>This allows it to write to internal storage and send other messages / create contracts</li>
+</ul>
+</li>
+<li>Contracts are not something that fulfilled or complied with but instead are autonomous agents<ul>
+<li>They always execute a specific piece of code when &quot;poked&quot; by a message</li>
+</ul>
+</li>
+<li>Transactions are sent from an externally owned account and contain:<ul>
+<li>The recipient of the message</li>
+<li>A signature identifying the sender</li>
+<li>The amount of ether to transfer</li>
+<li>An optional data field</li>
+<li>A STARTGAS field, representing the max number of computational steps the transaction execution is allowed to take</li>
+<li>A GASPRICE field, representing the fee the sender pays per computational step</li>
+<li>The latter two are used to prevent denial of service due to infinite loops</li>
+</ul>
+</li>
+<li>Messages are sent from contracts to other contracts and contain:<ul>
+<li>The sender of the message</li>
+<li>The recipient of the messages</li>
+<li>The amount of ether to transfer</li>
+<li>An optional data field</li>
+<li>A STARTGAS value</li>
+</ul>
+</li>
+<li>The gas allowance by a transaction / contract applies to total gas consumed by that transaction and all sub-executions<br><img style="max-width: 677px;" src="img/eth1.png"/></li>
+</ul>
+<p><img style="max-width: 716px;" src="img/eth2.png"/></p>
+<ul>
+<li>Ethereum blocks are mined much faster at 12 seconds per block because of the GHOST protocol</li>
+</ul>
+<h2>Lecture</h2>
+<ul>
+<li>Many applications are centralized where we have to trust the developers<ul>
+<li>For instance, there could be a casino that just lies about the results</li>
+<li>Open source doesn&#39;t really help because there&#39;s no way to tell if the given source code is actually being run</li>
+</ul>
+</li>
+<li>We want to have some distributed, trustless authority that anyone can look inside of to see what&#39;s happening<ul>
+<li>To make the economics of this work out, it has to have a built-in currency system</li>
+</ul>
+</li>
+<li>Smart contracts are like classes in that you can instantiate them and then have other people interact with them<ul>
+<li>All operations that perform work cost gas to fuel the compute power used to run this operation on Ethereum</li>
+<li>Get operations don&#39;t cost gas since they don&#39;t need to actually go onto the blockchain</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>Ethereum state is a mapping from addresses to either:<ul>
+<li>Externally owned accounts with a balnce</li>
+<li>Contract account with a balance, code, and state</li>
+</ul>
+</li>
+<li>Actions on the state machine either:<ul>
+<li>Deploy contracts with code and initial value</li>
+<li>Message with address, method to invoke, data, and ethereum value</li>
+</ul>
+</li>
+</ul>
+</body></html>

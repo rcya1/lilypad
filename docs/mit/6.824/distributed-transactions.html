@@ -1,0 +1,450 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>Distributed Transactions</h1>
+<h2>Paper Notes</h2>
+<h3>Before-Or-After Atomicity</h3>
+<ul>
+<li>Previously, we talked about coordination via sequence coordination<ul>
+<li>This says that Action W must happen before Action X for correctness</li>
+<li>Usually explicitly programmed using special language constructs or shared variables<ul>
+<li>I.e. use locks / semaphores to enforce specific ordering of operations</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Before-or-after atomicity is a more general constraint that several actions acting on the same data should not interfere with one another<ul>
+<li>Definition: concurrent actions have the before-or-after property if their effect from the invokers is the same as if the actions occurred either completely before or completely after one another</li>
+<li>The programmer of an action with the before-or-after property does not necessarily know all other actions that might use shared variables</li>
+</ul>
+</li>
+<li>Another way of saying this is that the results must be serializable</li>
+<li>The important distinction is that sequence coordination says two actions must be entirely separate while before-or-after says that they can occur at the same time and have interleaved instructions, but they must have the same state at the end</li>
+<li>In some applications, we may want stronger correctness requirements:<ul>
+<li>External time consistency means that if we have receipts that one action happened before another, then the serialization order must obey this (something like linearizability)</li>
+<li>Sequential consistency means that when a processor performs multiple instructions from the same source, the result should be the same as if the instructions were in the original order</li>
+</ul>
+</li>
+</ul>
+<h3>Simple Locking</h3>
+<ul>
+<li>A locking discipline</li>
+<li>Two rules:<ul>
+<li>Each transaction must acquire a lock for every shared data object it intends to read / write</li>
+<li>It may release its locks only after the transaction installs its last update</li>
+</ul>
+</li>
+<li>A transaction has a lock point, which is the first instant at which it has acquired all of its locks<ul>
+<li>The collection of locks it has acquired is its lock set</li>
+</ul>
+</li>
+<li>A lock manager can be used to maintain the current lockset and intercept variable accesses to verify that they are in the current lockset<ul>
+<li>Also intercepts calls to commit / abort so it can then release all locks</li>
+</ul>
+</li>
+<li>Can miss some opportunities for concurrency by unnecessary locking<ul>
+<li>Two operations that both want to read cannot be made concurrent</li>
+<li>Also we lock every variable that we <strong>might</strong> need to read, so we could get extra performance by only locking what we will actually read</li>
+</ul>
+</li>
+</ul>
+<h3>Two Phase Locking</h3>
+<ul>
+<li>Another locking discipline avoids the requirement that a transaction must know in advance which locks to acquire</li>
+<li>Widely used, but harder to argue it is correct</li>
+<li>A transaction acquires locks as it proceeds, and it may read / write a data object as soon as it acquired a lock<ul>
+<li>A transaction may not release any locks until it passes its lock point (acquired all of its locks)</li>
+<li>Number of locks acquired monotonically increases and then decreases (which is where two phases comes from)</li>
+</ul>
+</li>
+<li>Orders concurrent transactions so they produce results as if they had been serialized in the order in which they reached their lock points</li>
+<li>A lock manager can implement by intercepting all calls to read / write and acquiring a lock on the first use of each shared variable<ul>
+<li>Holds the locks until the commit / abort occurs</li>
+</ul>
+</li>
+<li>Potentially allows for more concurrency than simple locking, but there are still cases where it prevents some concurrency</li>
+</ul>
+<h3>Multiple-Site Atomicity / Distributed Two-Phase Commit</h3>
+<ul>
+<li>We previously talked about atomicity / concurrency where we have several processes running on the same system</li>
+<li>Now we look at executing component transactions at several sites separated by a best-effort network (i.e. the Internet)<ul>
+<li>Atomicity is difficult because messages used to coordinate transactions can be lost / delayed / duplicated</li>
+<li>We could use RPCs to execute target code but it doesn&#39;t by itself guarantee atomicity<ul>
+<li>Even if we use persistent senders (at-least-once execution) and duplicate suppression (at-most-once execution), this isn&#39;t guaranteed to work as shown below</li>
+</ul>
+</li>
+<li>Instead we use a variant of two-phase commit combined with persistent senders, duplicate suppression, and single-site transactions</li>
+<li>We assume that each site is capable of local transactions that satisfy all-or-nothing atomicity and before-or-after atomicity</li>
+</ul>
+</li>
+<li>Multiple-site atomicity is correct iff all sites do the same thing (either they all commit or they all abort)</li>
+</ul>
+<h4>Description</h4>
+<ul>
+<li>Suppose A wants to send jobs X, Y, Z to be performed by B, C, and D<ul>
+<li>Either all of these are done or none of them are done</li>
+<li>Can&#39;t just use RPCs raw because some could perform the action while others don&#39;t</li>
+</ul>
+</li>
+<li>Procedure:<ul>
+<li>A first sends each B, C, D the instruction to do X, Y, Z respectively</li>
+<li>B, C, D respond saying that they are ready to commit</li>
+<li>When A receives all responses, they respond to everyone to tell them to prepare to commit</li>
+<li>B, C, D then tentatively commit and ask A if they have decided to commit<ul>
+<li>If they don&#39;t receive a response, then they continue asking A</li>
+<li>They cannot do anything on their own and instead must wait for a response from A</li>
+<li>They go into a &quot;Prepared&quot; state</li>
+</ul>
+</li>
+<li>A then responds that they have committed<ul>
+<li>They must remember that they have committed forever because if B, C, D ask again if they have committed, then A has to respond again</li>
+</ul>
+</li>
+<li>B, C, D then commit and then can switch out of Prepared state</li>
+</ul>
+</li>
+<li>Resilient against temporary failures</li>
+<li>Some versions have a fourth acknowledgment record so that A can know when to throw out its outcome record</li>
+<li>After A commits, then they know that B, C, D will eventually get their result when they reboot / recover from failure</li>
+<li>This system has the coordinator as a single point of failure<ul>
+<li>The coordinator has to decide when to abort the operation</li>
+</ul>
+</li>
+<li>This system cannot coordinate actions to happen at the same time (Two General&#39;s Paradox)</li>
+</ul>
+<h2>Lecture Notes</h2>
+<ul>
+<li>So far, we&#39;ve covered distribution for fault tolerance<ul>
+<li>Many servers trying to look like a single one</li>
+</ul>
+</li>
+<li>Now we want to use many servers for performance<ul>
+<li>We can split the data (shard) over multiple servers for parallelism</li>
+<li>Fine as long as clients use data items one at a time</li>
+<li>But what if an operation involves records in different shards?<ul>
+<li>Need to perform a distributed transaction</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Correct behavior for a transaction: ACID<ul>
+<li>Atomic (either writes entirely or doesn&#39;t write at all)</li>
+<li>Consistent</li>
+<li>Isolated (No interference between actions (serializable))</li>
+<li>Durable (Committed writes are permanent)</li>
+</ul>
+</li>
+<li>Once we have ACID transactions, it&#39;s like its magic<ul>
+<li>Programmer writes serial code and system automatically adds correct locking / fault tolerance</li>
+<li>We do get a performance hit from transactions and some don&#39;t</li>
+<li>SQL databases provide transactions</li>
+</ul>
+</li>
+<li>A transaction can abort if something goes wrong<ul>
+<li>Result should be as if the transaction never executed</li>
+<li>Application can decide whether they want to retry</li>
+</ul>
+</li>
+</ul>
+<h3>Distributed Transactions</h3>
+<ul>
+<li>Two components:<ul>
+<li>Concurrency Control - isolated, serializable execution of concurrent transactions on a single DB<ul>
+<li>Two types: pessimistic and optimistic<ul>
+<li>Pessimistic: locks records before use, so any concurrent accesses cause delays</li>
+<li>Optimistic: use records without locking, when we commit, we check if the reads / writes were serializable<ul>
+<li>If we learn that our reads / writes were bad, then we abort and retry</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Pessimistic is faster if conflicts are frequent, optimistic is faster if rare</li>
+<li>We&#39;ll look at optimistic concurrency control another time (FaRM)</li>
+<li>Two-phase locking above is one way to implement pessimistic concurrency control<ul>
+<li>See above</li>
+<li>Some extra details:<ul>
+<li>Each database record has a lock</li>
+<li>DB may automatically abort to cure deadlock (has to automatically detect these i.e. through cycles or timeout)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Atomic Commit<ul>
+<li>Two-phase commit works by having a transaction coordinator (TC) managing the operation<ul>
+<li>Bad reputation:<ul>
+<li>Multiple rounds of messages</li>
+<li>Slow disk writes</li>
+<li>Locks are held between messages, blocking actions</li>
+<li>TC crashes can cause indefinite blocking with locks held</li>
+</ul>
+</li>
+<li>Usually only used in a single small domain</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>2PC is for ensuring every participant has to do something, but that something is different among all of them<ul>
+<li>On the other hand, Raft is used to get high availability, so it solves a different problem</li>
+<li>Each of the servers can run Raft to combine both distributed commits and high availability</li>
+</ul>
+</li>
+</ul>
+</body></html>

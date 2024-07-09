@@ -1,0 +1,421 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1.125em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h1>DynamoDB</h1>
+<h2>Overview</h2>
+<ul>
+<li>NoSQL scalable cloud database service</li>
+<li>Supports fast and predictable performance even at scale<ul>
+<li>Emphasizes consistent low latency because unexpectedly high latency is bad for customer experience</li>
+<li>Wants all requests to complete with 0-9 millisecond latency</li>
+</ul>
+</li>
+<li>Fundamental Properties:<ul>
+<li>Users just create tables and read/write them without having to know anything about their implementation<ul>
+<li>Supports CRUD (create, read, update, delete)</li>
+</ul>
+</li>
+<li>Data from multiple users should be on the same machine to ensure we are maximizing the use of a singe machine (multi-tenant)<ul>
+<li>Users should be able to view their data as single-tenant though</li>
+</ul>
+</li>
+<li>Tables should be infinitely scalable<ul>
+<li>As they grow, a table&#39;s data should be spread among multiple servers</li>
+</ul>
+</li>
+<li>Predictable and low latencies<ul>
+<li>Automatically repartitions data to meet requirements</li>
+</ul>
+</li>
+<li>Highly available by replicating data across servers</li>
+<li>Supports flexible use cases<ul>
+<li>Tables don&#39;t have a fixed schema and developers can request strong or eventual consistency</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Lessons learned from working on DynamoDB:<ul>
+<li>Adapt to customer traffic patterns to redo the partitioning scheme of databases</li>
+<li>Perform continuous verification of data-at-rest to prevent against hardware failures / software bugs</li>
+<li>Be very careful about changes to maintain high availability</li>
+<li>Designing systems for predictability over absolute performance improves system stability</li>
+</ul>
+</li>
+<li>History<ul>
+<li>Originally had Dynamo, which was a database system (not a service)<ul>
+<li>Hard to manage and each team had to spin up their own instance</li>
+<li>Had predictable high performance and scalability</li>
+</ul>
+</li>
+<li>SimpleDB was a fully managed database service<ul>
+<li>Small capacity (10GB) for tables</li>
+<li>Bad request throughput</li>
+<li>Unpredictable query / write latencies because every table attribute was indexed, which had to be updated with every write</li>
+</ul>
+</li>
+<li>Wanted to combine the two to get DynamoDB</li>
+</ul>
+</li>
+</ul>
+<h2>Architecture</h2>
+<ul>
+<li>Request routers take in requests and then auth them / direct them to the desired server</li>
+<li>Each table contains items, each of which contains a primary key<ul>
+<li>This is hashed and this is used in combination with the sort key value (if present) to determine where the item is stored</li>
+</ul>
+</li>
+<li>Secondary indices are used to help query a table by an alternative key</li>
+<li>Supports ACID (atomic, consistent, isolated, durable) transactions</li>
+<li>Each table is divide into partitions that handle a disjoint part of the table&#39;s key-range<ul>
+<li>Each has mutiple replicas distributed across availability zones</li>
+<li>Each replication group uses multi-paxos for leader election / consensus<ul>
+<li>For writes, the leader generates a write-ahead log record and the write is acknowledged to application once a quorum (majority) of peers persist the log record</li>
+<li>Any replica can serve eventually consistent reads, but only leader can do strongly-consistent reads</li>
+</ul>
+</li>
+<li>Each storage replica uses a B-tree to store key-value data</li>
+<li>We can also have log replicas which only persist recent write-ahead log entries</li>
+</ul>
+</li>
+<li>We have tens of microservices that handle things like repartitioning, determing if storage node is unhealthy, recovery, etc.</li>
+</ul>
+<h2>Admission Control</h2>
+<ul>
+<li>Admission control is used to ensure that a user application didn&#39;t overload the DynamoDB servers</li>
+<li>Original:<ul>
+<li>Each table has specified maximum read / write throughput</li>
+<li>Each partition of a table is allocated a given throughput, and for a machine storing multiple partitions, we make sure that the sum of throughput does not exceed machine capabilities</li>
+<li>Originally, it was assumed that partitions for a table would uniformly be accessed, so throughput could be split evenly<ul>
+<li>This creates issues in user applications where hot partitions use much more throughput than cold partitions</li>
+<li>This resulted in application reads / writes being rejected (throttling)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Bursting<ul>
+<li>Key observation is that partitions had non-uniform access and that not all partitions hosteed by a storage node used their allocated throughput simultaneously</li>
+<li>To absorb temporal spikes, applications can tap into unused capacity at a partition level in an attempt to absorb short-lived spikes<ul>
+<li>We retain unused capacity for up to 300 seconds and consume it when we need to handle a spike</li>
+<li>Still need to make sure that this burst doesn&#39;t go beyond the replica&#39;s capacity, which requires keeping track of allocated capacity at the replica level</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Adaptive Capacity<ul>
+<li>For long-lived spikes that can&#39;t be absorbed by burst capacity</li>
+<li>We monitor the provisioned and consumed capacity of all tables<ul>
+<li>If a table experienced throttling while the table level throughput was not exceeded, then it automatically increases the allocated throughput of the proprotions using a proportional control algorithm</li>
+</ul>
+</li>
+<li>Best-effort, but this along with bursting reduced 99.99% of throttling due to skewed accesses</li>
+</ul>
+</li>
+<li>However, adaptive capacity was only reactive and bursting sometimes couldn&#39;t absorb it if the node was overloaded<ul>
+<li>As a result, wanted to decouple admission control from partitions</li>
+<li>Replaced adaptive capacity with global admission control</li>
+<li>We keep capacity per table globally, but we keep partition-level capacity buckets to make sure an application doesn&#39;t consume all resources on its replica / node</li>
+<li>We let partitions always burst though</li>
+</ul>
+</li>
+<li>DynamoDB then has a system to proactively balance partitions based on how much they&#39;re bursting / using up a node&#39;s overall provisioned capacity<ul>
+<li>It then tries to move partitions to balance them out</li>
+</ul>
+</li>
+<li>We also scale partitions based on their throughput by splitting them once their consumed throughput goes too high<ul>
+<li>However, sometimes splits don&#39;t help when the entire key range is accessed sequentially or when a single item is being accessed, so DynamoDB detects these and then avoids splitting</li>
+</ul>
+</li>
+<li>Customers frequently don&#39;t know exactly the throughput they need and would frequently over-provision<ul>
+<li>On-demand tables look at the traffic and then adjust to accomodate double the previous peak traffic</li>
+<li>Automatically allocates more capacity as traffic volume increases</li>
+</ul>
+</li>
+</ul>
+<h2>Durability / Availability</h2>
+<ul>
+<li>Write-ahead logs from the Paxos replicas are central for providing durability<ul>
+<li>We use three replicas per partition<ul>
+<li>If any of these go down, we can very quickly add in a log replica which is fast because they don&#39;t need to copy the entire B-tree</li>
+</ul>
+</li>
+<li>We periodically archive these to S3, which is incredibly durable</li>
+</ul>
+</li>
+<li>Sometimes, incorrect data can be written due to hardware failures<ul>
+<li>Makes extensive checksums to validate every data transfer between two nodes</li>
+</ul>
+</li>
+<li>DynamoDB continuously verifies data at rest with checksums to build confidence in the system</li>
+<li>DynamoDB needs to store a lot of metadata, the most important of which is the mapping between primary keys and its location in the storage nodes<ul>
+<li>Originally this was just stored in DynamoDB and was then cached, but this created issues when the cache missed</li>
+<li>Instead, Amazon created MemDS, which stored all metadata in memory and has a bunch of fancy stuff to make it fast</li>
+</ul>
+</li>
+</ul>
+<h2>Transaction</h2>
+<ul>
+<li>Supports transactions through TransactGetItems which atomically gets multiple items at the same time</li>
+<li>TransactWriteItems does multiple updates and also allows you to check values (to make sure your get is still valid) in an atomic action</li>
+<li>This is supported under the hood by the request router sending to Transaction Coordinator<ul>
+<li>Uses OCC and some commit protocol to get this to work<ul>
+<li>Uses timestamp ordering to determine if transactions are serializable</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</body></html>
