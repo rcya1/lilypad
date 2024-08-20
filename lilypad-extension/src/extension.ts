@@ -340,10 +340,10 @@ function changeToEditor(editor: vscode.TextEditor, extensionPath: string) {
   panel.title = frontMatter.attributes.title || fileName
   panel.webview.html = readAndProcessHtml(renderedPath)
   let webviewListener = panel.webview.onDidReceiveMessage((message) => {
+    console.log(message)
     switch (message) {
       case 'close':
         if (panel) {
-          panel.dispose()
           if (associatedEditor) {
             vscode.window.showTextDocument(
               associatedEditor.document,
@@ -351,6 +351,7 @@ function changeToEditor(editor: vscode.TextEditor, extensionPath: string) {
               false
             )
           }
+          panel.dispose()
         }
         break
       default:
