@@ -25,6 +25,8 @@ Will organize later
 | `\vare`        | $\vare$        |
 | `\set{x}`      | $\set{x}$      |
 | `\card{A}`     | $\card{A}$     |
+| `\mag{A}`      | $\mag{A}$      |
+| `\norm{A}`     | $\norm{A}$     |
 | `\floor{x}`    | $\floor{x}$    |
 | `\ceil{x}`     | $\ceil{x}$     |
 | `\ang{x}`      | $\ang{x}$      |

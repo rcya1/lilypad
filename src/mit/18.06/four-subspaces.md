@@ -21,3 +21,9 @@ We could calculate these by computing RREF of $A^T$
   - That is, all vectors in $C(A)$ are orthogonal to those in $N(A^T)$
 - Both $C(A^T)$ and $N(A)$ live in $\reals^n$
   - Dimensions also add to $n$ and these are orthogonal
+
+---
+
+- Intuition:
+  - $x \in N(A) \implies Ax = 0 \implies a_1 \cdot x = 0, a_2 \cdot x = 0, \dots$
+  - Dot product with each of the rows is zero, so dot product with anything in the span of the rows must also be zero
