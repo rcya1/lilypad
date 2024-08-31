@@ -1,5 +1,5 @@
 ---
-title: symbolic-execution
+title: Symbolic Execution
 date: 2024-03-13
 order: 9
 ---

@@ -1,86 +1,99 @@
 /* eslint-disable react/prop-types */
-import { useRef, useState, useCallback, useEffect } from 'react'
-import { Tree } from 'react-arborist'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Scrollbars } from 'react-custom-scrollbars'
 import folder from './assets/folder.svg'
+import folderOpen from './assets/folder-open.svg'
 import file from './assets/file.svg'
 import fs from './assets/fs.json'
-import './App.css'
 
-function Node({ node, style, dragHandle }) {
+function render(data, indentLevel, isOpen, toggleOpen) {
+  let icon = data.children ? (isOpen(data.id) ? folderOpen : folder) : file
+
   return (
-    <div
-      className="cursor-pointer hover:bg-gray-100 rounded-md p-1 text-black text-lg"
-      style={style}
-      ref={dragHandle}
-      onClick={() => {
-        if (!node.isLeaf) {
-          node.toggle()
-        } else {
-          window.open('./' + node.id.replace('.md', '.html'))
-        }
-      }}
-    >
-      <img
-        src={node.isLeaf ? file : folder}
-        alt={node.isLeaf ? 'file' : 'folder'}
-        className="w-6 h-6 inline-block mr-1"
-      />
-      {node.data.name}
+    <div className="flex flex-col">
+      <a
+        className="flex flex-row hover:bg-gray-200 p-0.5 rounded-md text-md text-black hover:text-black"
+        onClick={(event) => {
+          if (data.children) {
+            event.preventDefault()
+            toggleOpen(data.id)
+          }
+        }}
+        href={data.id.replace('.md', '.html')}
+      >
+        <img src={icon} className="mr-2" />
+        <p className={data.children ? 'font-medium' : 'font-normal'}>
+          {(data.order ? data.order + '. ' : '') + data.name}
+        </p>
+      </a>
+      <AnimatePresence>
+        {data.children && isOpen(data.id) && (
+          <motion.div
+            style={{
+              marginLeft: indentLevel + 1 + 'rem'
+            }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{
+              height: 'auto',
+              opacity: 1,
+              transition: {
+                height: {
+                  duration: 0.2
+                },
+                opacity: {
+                  duration: 0.125,
+                  delay: 0.075
+                }
+              }
+            }}
+            exit={{
+              height: 0,
+              opacity: 0,
+              transition: {
+                height: {
+                  duration: 0.2
+                },
+                opacity: {
+                  duration: 0.125
+                }
+              }
+            }}
+          >
+            <div>
+              {data.children.map((data) =>
+                render(data, indentLevel + 1, isOpen, toggleOpen)
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-const useResize = (myRef) => {
-  const [width, setWidth] = useState(0)
-  const [height, setHeight] = useState(0)
-
-  const handleResize = useCallback(() => {
-    setWidth(myRef.current.offsetWidth)
-    setHeight(myRef.current.offsetHeight)
-  }, [myRef])
-
-  useEffect(() => {
-    window.addEventListener('load', handleResize)
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('load', handleResize)
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [myRef, handleResize])
-
-  return { width, height }
-}
-
 function App() {
-  const ref = useRef(null)
-  const { width } = useResize(ref)
+  const [openState, setOpenState] = useState({})
+  let toggleOpen = (id) => {
+    setOpenState((prev) => {
+      return { ...prev, [id]: !(prev[id] ? prev[id] : false) }
+    })
+  }
+  let isOpen = (id) => {
+    console.log(openState)
+    return openState[id] ? openState[id] : false
+  }
 
-  let initialOpenState = {}
-  fs.forEach((node) => {
-    initialOpenState[node.id] = true
-  })
   return (
-    <>
-      <div className="max-w-screen-md" ref={ref}>
-        <h1 className="mb-3">Lilypad</h1>
+    <Scrollbars style={{ width: '100vw', height: '100vh' }}>
+      <div className="max-w-screen-md mt-4 mb-4 content-center mx-auto text-center">
+        <h1 className="mb-3 text-4xl font-medium">Lilypad</h1>
         <p>Collection of my notes throughout the years</p>
         <div className="text-left mt-2">
-          <Tree
-            initialData={fs}
-            disableDrag={true}
-            disableEdit={true}
-            rowHeight={32}
-            width={Math.max(width, 768)}
-            height={1000}
-            initialOpenState={initialOpenState}
-            openByDefault={false}
-          >
-            {Node}
-          </Tree>
+          {fs.map((data) => render(data, 0, isOpen, toggleOpen))}
         </div>
       </div>
-    </>
+    </Scrollbars>
   )
 }
 

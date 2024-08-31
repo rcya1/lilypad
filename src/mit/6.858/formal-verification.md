@@ -1,5 +1,5 @@
 ---
-title: formal-verification
+title: Formal Verification
 date: 2024-03-19
 order: 10
 ---
