@@ -1,5 +1,5 @@
 ---
-title: trusted-hardware
+title: Trusted Hardware
 date: 2024-02-18
 order: 3
 ---

@@ -1,5 +1,5 @@
 ---
-title: mobile-device-security
+title: Mobile Device Security
 date: 2024-03-07
 order: 7
 ---

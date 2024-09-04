@@ -1,5 +1,5 @@
 ---
-title: software-fault-isolation
+title: Software Fault Isolation
 date: 2024-02-13
 order: 2
 ---

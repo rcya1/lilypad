@@ -1,5 +1,5 @@
 ---
-title: secure-channel
+title: Secure Channel
 date: 2024-04-10
 order: 13
 ---

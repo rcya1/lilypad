@@ -1,5 +1,5 @@
 ---
-title: anonymous-communication
+title: Anonymous Communication
 date: 2024-04-30
 order: 18
 ---

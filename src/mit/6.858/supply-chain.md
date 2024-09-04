@@ -1,5 +1,5 @@
 ---
-title: supply-chain
+title: Supply Chain
 date: 2024-04-08
 order: 12
 ---

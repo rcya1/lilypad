@@ -8,11 +8,19 @@ type FrontMatter = {
   order: number | undefined
 }
 
+interface Node {
+  id: string
+  name: string
+  order?: number
+  date?: Date
+  children?: Node[]
+}
+
 export function buildFs() {
   let outputFile = './browser/src/assets/fs.json'
 
   // @ts-ignore
-  let recurse = (p: string) => {
+  function recurse(p: string): Node {
     let id = p.split(path.sep).join(path.posix.sep)
     id = id.replace('src/', '')
     let stat = fs.statSync(p)
@@ -29,6 +37,8 @@ export function buildFs() {
             attributes: { title: undefined, date: undefined, order: undefined }
           }
       return {
+        order: frontMatter.attributes.order,
+        date: frontMatter.attributes.date,
         id: id,
         name: frontMatter.attributes.title ? frontMatter.attributes.title : p
       }
@@ -39,13 +49,39 @@ export function buildFs() {
         p == './src/'
           ? {}
           : JSON.parse(fs.readFileSync(path.join(p, 'info.json'), 'utf-8'))
+      let childrenNodes = children
+        .map((child) => recurse(path.join(p, child)))
+        .filter((child) => child)
+      childrenNodes.sort((a, b) => {
+        let res0
+        if (a.order && b.order) {
+          res0 = a.order - b.order
+        } else if (a.order) {
+          res0 = -1
+        } else if (b.order) {
+          res0 = 1
+        }
+        if (res0 !== undefined) {
+          return res0
+        }
+        let res1
+        if (a.date && b.date) {
+          res1 = a.date.getTime() - b.date.getTime()
+        } else if (a.date) {
+          res1 = -1
+        } else if (b.date) {
+          res1 = 1
+        }
+        if (res1 !== undefined) {
+          return res1
+        }
+        return a.id.localeCompare(b.id)
+      })
       return {
         id: id,
         name: info.name,
         // @ts-ignore
-        children: children
-          .map((child) => recurse(path.join(p, child)))
-          .filter((child) => child)
+        children: childrenNodes
       }
     }
   }
