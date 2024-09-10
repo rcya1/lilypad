@@ -43,7 +43,8 @@ export function buildFs() {
         name: frontMatter.attributes.title ? frontMatter.attributes.title : p
       }
     } else {
-      if (p.endsWith('img')) return
+      if (p.endsWith('img') || p.endsWith('.git') || p.endsWith('private'))
+        return
       let children = fs.readdirSync(p)
       let info =
         p == './src/'

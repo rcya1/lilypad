@@ -7,3 +7,7 @@ lilypad-extension/.vscode-test/
 lilypad-extension/*.vsix
 
 .config/lock
+
+src/private/*
+rendered/html/private/*
+rendered/pdf/private/*
