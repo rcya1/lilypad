@@ -51,8 +51,11 @@ const admonition = {
         icon = '<i class="fa fa-info-circle"></i>'
         break
       case 'definition':
-      case 'proposition':
         icon = '<i class="fa fa-book"></i>'
+        break
+      case 'theorem':
+      case 'proposition':
+        icon = '<i class="fa fa-scroll"></i>'
         break
     }
 
