@@ -198,7 +198,7 @@ export function activate({
         return
       }
       const terminal = vscode.window.createTerminal('Pull Lilypad')
-      terminal.sendText('python lilypad.py push ' + msg)
+      terminal.sendText('python lilypad.py push "' + msg + '"')
       terminal.show()
     }),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
