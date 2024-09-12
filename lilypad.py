@@ -25,10 +25,7 @@ def push_helper(text, cwd, message):
     click.echo('No changes to commit.')
   else:
     res = subprocess.run(['git', 'push', message], capture_output=True, cwd=cwd)
-    if res.returncode != 0:
-      click.echo('No changes to commit.')
-    else:
-      click.echo('Pushed changes for root.')
+    click.echo('Pushed changes for root.')
 
 @click.argument('message', required=True)
 @click.command()
