@@ -87,7 +87,7 @@ export function activate({
           }
           return
         } else if (vscode.window.activeTextEditor === associatedEditor) {
-          panel.reveal(vscode.ViewColumn.Beside, false)
+          panel.reveal(undefined, false)
           return
         }
       }
@@ -188,6 +188,19 @@ export function activate({
         }
       }
     ),
+    vscode.commands.registerCommand('lilypad-extension.pull', async () => {
+      const terminal = vscode.window.createTerminal('Pull Lilypad')
+      terminal.sendText('python lilypad.py pull')
+      terminal.show()
+    }),
+    vscode.commands.registerCommand('lilypad-extension.push', async () => {
+      let msg = await vscode.window.showInputBox({
+        prompt: 'Commit message'
+      })
+      const terminal = vscode.window.createTerminal('Pull Lilypad')
+      terminal.sendText('python lilypad.py push ' + msg)
+      terminal.show()
+    }),
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       // check if lilypad explorer is open
       if (!treeView?.visible) {

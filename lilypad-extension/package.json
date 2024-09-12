@@ -47,6 +47,16 @@
       {
         "command": "lilypad-extension.rename",
         "title": "Rename"
+      },
+      {
+        "command": "lilypad-extension.pull",
+        "title": "Pull Changes",
+        "icon": "$(repo-pull)"
+      },
+      {
+        "command": "lilypad-extension.push",
+        "title": "Push Changes",
+        "icon": "$(repo-push)"
       }
     ],
     "menus": {
@@ -72,6 +82,16 @@
           "command": "lilypad-extension.addFile",
           "when": "view == lilypad-extension-browser",
           "group": "navigation@0"
+        },
+        {
+          "command": "lilypad-extension.pull",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation@-1"
+        },
+        {
+          "command": "lilypad-extension.push",
+          "when": "view == lilypad-extension-browser",
+          "group": "navigation@-2"
         }
       ],
       "view/item/context": [
