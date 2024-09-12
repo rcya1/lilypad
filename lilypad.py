@@ -17,26 +17,24 @@ def pull():
     result = subprocess.run(['git', 'pull'], capture_output=True, check=True, cwd='./src/private')
     print(result.stdout.decode('utf-8'))
 
-@click.argument('message', required=True)
-@click.command()
-def push(message):
-  click.echo("Pushing local changes for root...")
-  subprocess.run(['git', 'add', '--all'], capture_output=True, check=True)
-  res = subprocess.run(['git', 'commit', '-m', message], capture_output=True)
+def push_helper(text, cwd, message):
+  click.echo(f"Pushing local changes for {text}...")
+  subprocess.run(['git', 'add', '--all'], capture_output=True, cwd=cwd)
+  res = subprocess.run(['git', 'commit', '-m', message], capture_output=True, cwd=cwd)
   if res.returncode != 0:
     click.echo('No changes to commit.')
   else:
-    res = subprocess.run(['git', 'push', message], capture_output=True, check=True)
+    res = subprocess.run(['git', 'push', message], capture_output=True, cwd=cwd)
     if res.returncode != 0:
       click.echo('No changes to commit.')
     else:
       click.echo('Pushed changes for root.')
 
-  if os.path.exists('src/private/.git'):
-    click.echo("Pushing local changes for private...")
-    subprocess.run(['git', 'add', '--all'], capture_output=True, check=True, cwd='./src/private')
-    subprocess.run(['git', 'commit', '-m', message], capture_output=True, check=True, cwd='./src/private')
-    click.echo('Pushed changes for private.')
+@click.argument('message', required=True)
+@click.command()
+def push(message):
+  push_helper('root', '.', message)
+  push_helper('private', '.src/private', message)
 
 cli.add_command(pull)
 cli.add_command(push)
