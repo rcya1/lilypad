@@ -90,6 +90,9 @@ export class ExplorerProvider implements vscode.TreeDataProvider<ExplorerNode> {
       if (name.endsWith('.DS_Store')) {
         return
       }
+      if (name.endsWith('.git')) {
+        return
+      }
       let p = path.join(elementPath, name)
       let stat = fs.statSync(p)
       if (stat.isDirectory()) {

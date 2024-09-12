@@ -70,9 +70,6 @@ export function activate({
 
           compileTerminal = vscode.window.createTerminal('Compile Lilypad')
           compileTerminal.sendText('yarn run watch')
-          vscode.window.showInformationMessage(
-            'Running Lilypad compile watcher in background...'
-          )
         })
       }
 
@@ -197,6 +194,9 @@ export function activate({
       let msg = await vscode.window.showInputBox({
         prompt: 'Commit message'
       })
+      if (!msg) {
+        return
+      }
       const terminal = vscode.window.createTerminal('Pull Lilypad')
       terminal.sendText('python lilypad.py push ' + msg)
       terminal.show()
