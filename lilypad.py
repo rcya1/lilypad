@@ -22,8 +22,15 @@ def pull():
 def push(message):
   click.echo("Pushing local changes for root...")
   subprocess.run(['git', 'add', '--all'], capture_output=True, check=True)
-  subprocess.run(['git', 'commit', '-m', message], capture_output=True, check=True)
-  click.echo('Pushed changes for root.')
+  res = subprocess.run(['git', 'commit', '-m', message], capture_output=True)
+  if res.returncode != 0:
+    click.echo('No changes to commit.')
+  else:
+    res = subprocess.run(['git', 'push', message], capture_output=True, check=True)
+    if res.returncode != 0:
+      click.echo('No changes to commit.')
+    else:
+      click.echo('Pushed changes for root.')
 
   if os.path.exists('src/private/.git'):
     click.echo("Pushing local changes for private...")
