@@ -8,6 +8,6 @@ lilypad-extension/*.vsix
 
 .config/lock
 
-src/private/*
+src/private*
 rendered/html/private/*
 rendered/pdf/private/*
