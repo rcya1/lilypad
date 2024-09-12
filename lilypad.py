@@ -19,7 +19,7 @@ def pull():
 
 def push_helper(text, cwd, message):
   click.echo(f"Pushing local changes for {text}...")
-  subprocess.run(['git', 'add', '--all', '--', '.', ':!./src/private'], capture_output=True, cwd=cwd)
+  subprocess.run(['git', 'add', '--all'], capture_output=True, cwd=cwd)
   res = subprocess.run(['git', 'commit', '-m', message], capture_output=True, cwd=cwd)
   if res.returncode != 0:
     click.echo('No changes to commit.')
