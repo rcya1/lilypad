@@ -34,7 +34,7 @@ def push_helper(text, cwd, message):
 @click.command()
 def push(message):
   push_helper('root', '.', message)
-  push_helper('private', '.src/private', message)
+  push_helper('private', './src/private', message)
 
 cli.add_command(pull)
 cli.add_command(push)
