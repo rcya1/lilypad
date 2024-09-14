@@ -372,20 +372,100 @@ body .theorem .title {
 </ul>
 <h2>TCP Tahoe</h2>
 <ul>
-<li>The first version of TCP with built in congestion control algorithms</li>
-<li>From the late 80s</li>
-<li>Slow start phase:<ul>
-<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mtext>wnd</mtext></msub><mo>←</mo><msub><mi>C</mi><mtext>wnd</mtext></msub></mrow><annotation encoding="application/x-tex">C_\text{wnd} \leftarrow C_\text{wnd}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">wnd</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">←</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">wnd</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> every RTT</li>
-<li>It does this by every time we receive an ACK, we increase window size by 1</li>
+<li><p>The first version of TCP with built in congestion control algorithms</p>
+</li>
+<li><p>From the late 80s</p>
+</li>
+<li><p>Slow start phase:</p>
+<ul>
+<li><code>SSThresHold</code>: the window size that TCP believes is safe to use<ul>
+<li>This is initialized to <code>AWS</code></li>
+<li>This is halved when we detect a packet loss</li>
+</ul>
+</li>
+<li><code>CWND</code>: the current congestion window size<ul>
+<li>Doubles every RTT when there is no packet drop</li>
+<li>It does this by every time we receive an ACK, we increase window size by 1<ul>
 <li>What this means is that when I send <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mo separator="true">,</mo><mn>2</mn><mo separator="true">,</mo><mn>3</mn><mo separator="true">,</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">1, 2, 3, 4</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">1</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">2</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">3</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">4</span></span></span></span>, and I receive ack for <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn></mrow><annotation encoding="application/x-tex">1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span>, I can send both <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>5</mn></mrow><annotation encoding="application/x-tex">5</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">5</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>6</mn></mrow><annotation encoding="application/x-tex">6</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">6</span></span></span></span> now</li>
+<li>Receiving a new ACK is defined as receiving a higher ACK number than the latest received one<ul>
+<li>Remember that an ACK is sent back with the number of the highest number such that everything up to that number has been received</li>
 </ul>
 </li>
-<li>When we hit a packet loss, slow start ends and we halve our window size<ul>
-<li>We then start avoidance phase where we increase by 1 every RTT and half every packet loss</li>
-<li>This is implemented as increasing our window size by <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi mathvariant="normal">/</mi><msub><mi>C</mi><mtext>wnd</mtext></msub></mrow><annotation encoding="application/x-tex">1 / C_\text{wnd}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1/</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord text mtight"><span class="mord mtight">wnd</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> after each ACK</li>
 </ul>
 </li>
-<li>TODO: figure out what TCP Tahoe / Reno actually implement</li>
-<li>Figure out what he meant by the buffer size calculation</li>
+</ul>
+</li>
+<li>Ends when <code>CWND</code> surpasses <code>SSThresh</code> OR if there is a packet loss<ul>
+<li>If packet loss, then, <code>SSThresh</code> is halved and we restart</li>
+<li>So we only leave cold start when <code>CWND &gt; SSThresh</code><ul>
+<li>Signifies that we are in &quot;uncharted&quot; territory and we need to increase the congestion window slower</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>During this entire process, TCP is measuring RTT to get an update</li>
+</ul>
+</li>
+<li><p>Congestion avoidance phase:</p>
+<ul>
+<li><code>CWND</code> increases by 1 every RTT when there is no packet drop<ul>
+<li>Effectively done by increasing by <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi mathvariant="normal">/</mi><mtext>CWND</mtext></mrow><annotation encoding="application/x-tex">1 / \text{CWND}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1/</span><span class="mord text"><span class="mord">CWND</span></span></span></span></span> after each ACK</li>
+</ul>
+</li>
+<li>When a packet is dropped, set <code>SSThresh</code> to <code>CWND / 2</code> and then go to the slow start phase</li>
+</ul>
+</li>
+<li><p>Fast retransmit:</p>
+<ul>
+<li>When a packet is dropped, the packets that follow the dropped one will trigger duplicate ACK messages</li>
+<li>However out of order packets will also result in duplicate ACKs</li>
+<li>To avoid misinterpreting duplicate ACK as packet loss, the TCP will conclude packet loss after receiving 3 duplicate ACKs (4 identical ACK packets)</li>
+<li>This will cause the lost packet to be transmitted immediately and enter the slow start phase</li>
+</ul>
+</li>
+</ul>
+<p><img style="" src="img/tcp-tahoe.png"/></p>
+<h2>TCP Reno</h2>
+<ul>
+<li><p>Adds Fast Recovery to TCP Tahoe</p>
+</li>
+<li><p>We try to distinguish between heavy congestion and moderate congestion</p>
+<ul>
+<li>If there is heavy congestion, we must reduce the network traffic drastically so everything should slow start</li>
+<li>If there is moderate congestion, a slow start is too drastic<ul>
+<li>Better would be to reduce <code>CWDN</code> by half and remain in congestion avoidance movie</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>To detect moderate congestion, can realize that many packets will still get through, so there will be many duplicate ACK messages</p>
+<ul>
+<li>We end up using that same number (3) to determine whether or not we are in moderate congestion</li>
+<li>So we piggyback on the code to trigger fast retransit</li>
+</ul>
+</li>
+<li><p>So when we receive 3 duplicate ACKs, we instead:</p>
+<ul>
+<li>Set <code>SSThresh</code> to <code>CWND / 2</code></li>
+<li>Set <code>CWND = SSThresh + 3</code><ul>
+<li>Idea is that this was triggered by 3 packets after the dropped, so the network could handle these bytes</li>
+</ul>
+</li>
+<li>We will stay in congestion avoidance</li>
+</ul>
+</li>
+</ul>
+<p><img style="" src="img/tcp-reno.png"/></p>
+<h2>Optimal Buffer Size</h2>
+<ul>
+<li>In steady state with TCP Reno, we constantly sawtooth between <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 3: W_\̲m̲i̲n̲" style="color:#cc0000">W_\min</span> and <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 4: 2W_\̲m̲i̲n̲" style="color:#cc0000">2W_\min</span><ul>
+<li>We are on average at <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 6: 1.5W_\̲m̲i̲n̲" style="color:#cc0000">1.5W_\min</span>, which means that if <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 4: 2W_\̲m̲i̲n̲" style="color:#cc0000">2W_\min</span> is our network capacity (with no queue) then we are only at 75% usage of our link</li>
+</ul>
+</li>
+<li>We want 100% usage, so <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 3: W_\̲m̲i̲n̲ ̲\geq C * RTT" style="color:#cc0000">W_\min \geq C * RTT</span>, which is the <strong>bandwidth delay product</strong><ul>
+<li>This is the maximum bandwidth that can be sent on the link</li>
+</ul>
+</li>
+<li>To actually let us get up to <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 7: 2 * W_\̲m̲i̲n̲" style="color:#cc0000">2 * W_\min</span> when we have <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 3: W_\̲m̲i̲n̲" style="color:#cc0000">W_\min</span> be the maximum, our buffer should be of size <span class="katex-error" title="ParseError: KaTeX parse error: Got function &#x27;\min&#x27; with no arguments as subscript at position 3: W_\̲m̲i̲n̲" style="color:#cc0000">W_\min</span></li>
 </ul>
 </body></html>

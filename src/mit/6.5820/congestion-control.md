@@ -88,11 +88,60 @@ order: 2
 - The first version of TCP with built in congestion control algorithms
 - From the late 80s
 - Slow start phase:
-  - $C_\text{wnd} \leftarrow C_\text{wnd}$ every RTT
-  - It does this by every time we receive an ACK, we increase window size by 1
-  - What this means is that when I send $1, 2, 3, 4$, and I receive ack for $1$, I can send both $5$ and $6$ now
-- When we hit a packet loss, slow start ends and we halve our window size
-  - We then start avoidance phase where we increase by 1 every RTT and half every packet loss
-  - This is implemented as increasing our window size by $1 / C_\text{wnd}$ after each ACK
-- TODO: figure out what TCP Tahoe / Reno actually implement
-- Figure out what he meant by the buffer size calculation
+  - `SSThresHold`: the window size that TCP believes is safe to use
+    - This is initialized to `AWS`
+    - This is halved when we detect a packet loss
+  - `CWND`: the current congestion window size
+    - Doubles every RTT when there is no packet drop
+    - It does this by every time we receive an ACK, we increase window size by 1
+      - What this means is that when I send $1, 2, 3, 4$, and I receive ack for $1$, I can send both $5$ and $6$ now
+      - Receiving a new ACK is defined as receiving a higher ACK number than the latest received one
+        - Remember that an ACK is sent back with the number of the highest number such that everything up to that number has been received
+  - Ends when `CWND` surpasses `SSThresh` OR if there is a packet loss
+    - If packet loss, then, `SSThresh` is halved and we restart
+    - So we only leave cold start when `CWND > SSThresh`
+      - Signifies that we are in "uncharted" territory and we need to increase the congestion window slower
+  - During this entire process, TCP is measuring RTT to get an update
+- Congestion avoidance phase:
+  - `CWND` increases by 1 every RTT when there is no packet drop
+    - Effectively done by increasing by $1 / \text{CWND}$ after each ACK
+  - When a packet is dropped, set `SSThresh` to `CWND / 2` and then go to the slow start phase
+- Fast retransmit:
+
+  - When a packet is dropped, the packets that follow the dropped one will trigger duplicate ACK messages
+  - However out of order packets will also result in duplicate ACKs
+  - To avoid misinterpreting duplicate ACK as packet loss, the TCP will conclude packet loss after receiving 3 duplicate ACKs (4 identical ACK packets)
+  - This will cause the lost packet to be transmitted immediately and enter the slow start phase
+
+![](img/tcp-tahoe.png)
+
+## TCP Reno
+
+- Adds Fast Recovery to TCP Tahoe
+- We try to distinguish between heavy congestion and moderate congestion
+
+  - If there is heavy congestion, we must reduce the network traffic drastically so everything should slow start
+  - If there is moderate congestion, a slow start is too drastic
+    - Better would be to reduce `CWDN` by half and remain in congestion avoidance movie
+
+- To detect moderate congestion, can realize that many packets will still get through, so there will be many duplicate ACK messages
+
+  - We end up using that same number (3) to determine whether or not we are in moderate congestion
+  - So we piggyback on the code to trigger fast retransit
+
+- So when we receive 3 duplicate ACKs, we instead:
+
+  - Set `SSThresh` to `CWND / 2`
+  - Set `CWND = SSThresh + 3`
+    - Idea is that this was triggered by 3 packets after the dropped, so the network could handle these bytes
+  - We will stay in congestion avoidance
+
+![](img/tcp-reno.png)
+
+## Optimal Buffer Size
+
+- In steady state with TCP Reno, we constantly sawtooth between $W_\min$ and $2W_\min$
+  - We are on average at $1.5W_\min$, which means that if $2W_\min$ is our network capacity (with no queue) then we are only at 75% usage of our link
+- We want 100% usage, so $W_\min \geq C * RTT$, which is the **bandwidth delay product**
+  - This is the maximum bandwidth that can be sent on the link
+- To actually let us get up to $2 * W_\min$ when we have $W_\min$ be the maximum, our buffer should be of size $W_\min$
