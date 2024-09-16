@@ -79,3 +79,37 @@ $$f(x_1, \dots, x_k) = \prod_{i=1}^k f_i(x_i)$$
 The conditional density of $X_k$ given the values for all other indices is:
 $$f(x_k | X_1 = x_1, \dots, X_{k-1} = x_{k-1}) = \frac{f(x_1, \dots, x_k)}{\int_{\reals^k} f(x_1, \dots, x_k)dx_k}$$
 ||
+
+## Multivariate Gaussian
+
+The 1D Gaussian PDF is given as:
+
+$$p(x) = \mathcal{N}(x; \mu, \sigma^2) = \frac{1}{\sigma \sqrt{2\pi}} \cdot \text{exp}\paren{-\frac{1}{2}\paren{\frac{x-\mu}{\sigma}}^2}$$
+
+For a $k$ -dimensional Gaussian, we have:
+
+$$f(x) = \frac{1}{\sqrt{(2\pi)^k \det \Sigma}} \text{exp}\paren{-\frac{1}{2} (x-\mu)^T \Sigma^{-1} (x - \mu)}$$
+
+To standardize a $k$ -dimensional Gaussian:
+
+$$Z = \Sigma^{-1/2} (X - \mu) \sim \mathcal{N}_k(0, I_k)$$
+
+||theorem Multivariate CLT
+For iid random vectors $X_1, \dots, X_n$ in $\reals^k$ with mean $\mu$ and covariance $\Sigma$, we have:
+$$\sqrt{n}\paren{\frac{\sum X_i}{n} - \mu} \rightsquigarrow \mathcal{N} \paren{0, \Sigma}$$
+||
+
+||theorem Multivariate Delta Method
+With the same setup but with $g: \reals^k \rightarrow \reals$ such that $\nabla g(\mu) \neq 0$, then:
+$$\sqrt{n}\paren{g\paren{\frac{\sum X_i}{n}} - g(\mu)} \rightsquigarrow \mathcal{N}\paren{0, \nabla g(\mu)^T \Sigma \nabla g(\mu)}$$
+||
+
+### Multivarate Delta Example
+
+Suppose $g(x) = x_1x_2\dots x_k$. Suppose $X_i$ are iid with $\mu = (2, \dots, 2)^T$ and covariance $I_k$. To get the limiting distribution of $g(\overline{X_n})$, we use the Delta method
+
+- $g(\mu) = 2^k$
+- $\nabla g(x) = \begin{pmatrix*}x_2x_3\dots x_k \\ x_1x_3\dots x_k \\ \vdots \\ x_1x_2 \dots x_{k-1}\end{pmatrix*}$
+- $\nabla g(\mu) = 2^{k-1} \cdot {1}_k$
+
+Putting these together, the resulting variance will be $2^{2k-2} \cdot k$
