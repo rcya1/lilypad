@@ -145,3 +145,108 @@ order: 2
 - We want 100% usage, so $W_\min \geq C * RTT$, which is the **bandwidth delay product**
   - This is the maximum bandwidth that can be sent on the link
 - To actually let us get up to $2 * W_\min$ when we have $W_\min$ be the maximum, our buffer should be of size $W_\min$
+
+## Bandwidth Delay Product
+
+- In typical literature, the $C$ is actually equal to the bandwidth delay product
+- It is equal to (what people typically call $\mu$) multiplied by the minimum RTT (that is, the minimum possible time it takes to send without any queues or any congestion)
+- Essentially equal to how many packets this network can support without any queues building up
+- It turns out that all of these congestion control algorithms are trying to estimate what this BDP is and get their window sizes to match it
+- Problem with trying to estimate this:
+  - To measure minimum RTT we need to send a single packet
+  - To measure the bottleneck number of packets per second, we need to send a lot of packets
+
+## TCP Reno Alternatives
+
+- TCP Reno pushes and tries to get a situation where the queues are always full
+- This means that if the queue sizes are set poorly, then this is going to lead to long queues and bad delays
+- BBR tries to estimate the $\mu$ and $\text{RTT}_\text{min}$
+- Cubic tries to do something different based on an analysis of TCP Reno to make sure it doesn't do worse than the TCP Reno
+
+### Analysis
+
+![](img/throughout-analysis.png)
+
+- $N$: the number of packets we send in a period $\tau$ (which we say is one triangle in the figure)
+  - $N = \int_0^\tau \frac{w(t)}{RTT} dt$
+- $p$: drop rate
+  - $p = 1 / N$ because every time
+- Throughoutput is then $N / \tau = 1 / (p \cdot \tau)$
+
+---
+
+Specifically for Reno:
+
+- We can do some math and only consider quadratic terms to get that $N = \frac{3}{8}W_\text{max}^2$
+  - $N = W / 2 + (W / 2 + 1) + \dots + (W / 2)$
+    - $W$ is $W_\text{max}$ for brevity's sake
+- $\tau = W_\text{max} / (2 * \text{RTT})$
+- Combining all of this gives:
+  - Throughput = $\sqrt{\frac{3}{2p}} \cdot \frac{1}{\text{RTT}}$
+- One thing: this property of inversely proportional to $\sqrt{p}$ and RTT is because of AIMD in general, not just Reno's numbers
+
+## Cubic
+
+### Background
+
+- Proposed to try to handle higher and higher bandwidths
+  - RTT wasn't going down, but this was
+  - As the Internet scaled, the linear increase was going to become terrible when connections are dropped / added
+- The authors tried thinking about using the state of the last $W_\text{max}$ you were just reduced from upon packet loss
+  - The idea was to fix TCP Reno which completely forgot about this
+  - Binary searching was proposed but ended up leading to a ton of bursting on the network which was bad since as you binary searched you would jump by huge amounts
+- The idea behind cubic is to start increasing fast and then as you approach the place where you previously were cut from, you should start increasing slowly again
+  - Then if you pass it, you want to start increasing quickly again
+  - If you stare at it, this looks like a cubic function
+    ![](img/cubic.png?maxwx=0.7)
+- They then fit a mathematical function to this and also do some math with the above analysis to ensure that at peak they are never slower than Reno
+  - This means they fine-tuned their constants for $\alpha$ and $\beta$ so that when you are near $W_\text{max}$, you are doing better than Reno
+- Another thing they wanted was to make this somewhat independent of RTT
+  - In Reno, if you have less of an RTT, you will be able to push your window size faster, which will give you more bandwidth
+  - To get around this, you could increase your window size by some constant \* RTT each RTT, but this ends up not working because RTT is very noisy and the algorithm becomes super unstable
+
+![](img/aimd-analysis.png)
+
+### Algorithm
+
+- We still use multiplicative decrease of $(1 - \beta)$ upon reaching a packet loss
+- Set window size when no packet loss as:
+  - $W(t) = c(t-k)^3 + W_\text{max}$
+  - $k$ is the amount of time it takes you to get to $W_\text{max}$ in seconds
+    - We can derive $k$ as $k = \frac{\beta W_\text{max}}{c}^{1/3}$
+- Since this is real time based, it should theoretically be independent of RTT
+- To actually implement this, everytime we receive an ACK, we use all of the information available to us to determine by how much should we increment to roughly stay on this curve
+  - We look at our target - our current
+  - Divide that by current window size and add that
+- To ensure this is never less than Reno, they also compute an $\alpha$ based on their $\beta$ to match Reno
+  - This $\alpha$ is computed so that using the analysis in the image at the end of the background section, the throughput using this $\alpha$ would have matched the Reno algorithm
+  - Uses whichever one offers a bigger step size: this $\alpha$ or what was computed via $W(t)$
+
+### Analysis
+
+- Doing the same analysis for throughput with an integral gives you:
+  - Proportional to $\frac{1}{RTT^{1/4} p^{3/4}}$
+- This didn't actually eliminate the RTT as a factor, but it did lessen it
+- We also lessened the impact of drop rate (since $p < 1$, square root is worse than $3/4$ power)
+
+## BBR
+
+- Trying to separately estimate bottleneck bandwidth $\mu$ and min RTT (what they call RTProp)
+  - Idea is RTProp includes speed of light delay and processing / transmission time incurred
+- They set what is called a pacing rate to be:
+  - Estimated BDP / RTT \* pacing gain
+    - This is different from RTT min because it could be higher as we have added congestion
+  - On average, pacing gain will be 1
+- Also enforces the number of inflight packets is at most 2 _ pacing rate _ RTT
+  - Prevents the buffer from being destroyed if you have a good estimate of the BDP
+- To estiamte bottleneck bandwidth:
+  - For each RTT look at how long it took and how many packets were acknowledged
+  - Use this to compute a bandwidth for this
+  - Use the last 6-10 estimate and take their maximum
+  - To do some experimentation / pushing and prodding, every few RTTs you increase your pacing gain to 1.25 and then decrease it to 0.75 for the next one
+- To estimate min RTT
+  - Keep track over your entire time of what the min RTT you observed was
+  - Every once in a while, do an RTT probe where you just send 3-4 packets in the entire RTT just to try to empty out the queue and see what happens
+- This does not react to packet drops at all!
+  - This was for BBR version 1, but this ended up being bad
+  - Version 2 reacts to them
