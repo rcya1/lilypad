@@ -1,5 +1,5 @@
 ---
-title: Congestion Control
+title: Congestion Control E2E Algorithms
 date: 2024-09-13
 order: 2
 ---
