@@ -1,0 +1,389 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+body .theorem {
+  border-color: #448aff;
+}
+body .theorem .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Router Assisted Congestion Control</h2>
+<ul>
+<li>Routers could drop a packet before the queues become empty to signal congestion</li>
+<li>Or could mark a congestion bit in the IP header to note congestion is happening<ul>
+<li>TCP algorithms can then use this to essentially treat the packet as dropped (but still get the data)</li>
+</ul>
+</li>
+<li>This is known as <strong>queue management</strong></li>
+<li>Routers can also help schedule packets to determine which ones should be sent on the link<ul>
+<li>This is useful for actually allocating different bandwidths to different people</li>
+</ul>
+</li>
+</ul>
+<h2>Queue Management</h2>
+<ul>
+<li>To measure the current size of the queue, we use an exponential weighted moving average<ul>
+<li>This helps deal with the noisy nature of the queue size and handling bursts of data</li>
+</ul>
+</li>
+<li>We can use this meausre and use randomness based on this to determine which packets to drop<ul>
+<li>We will find a fundamental problem with this later, but it is useful to look at</li>
+</ul>
+</li>
+<li>We can try a function that maps queue length to probability to drop<ul>
+<li>First idea: linear<ul>
+<li>First intuition that there is a problem with this:<ul>
+<li>We have a problem where this is dependent on our buffer size</li>
+<li>Our buffer size could be poorly set and be 100 times the bandwidth delay product</li>
+</ul>
+</li>
+<li>We also ideally want to have our function near 0 not really change</li>
+</ul>
+</li>
+<li><strong>RED</strong> is an early algorithm with a lot of research / simulations that said to use<br><img style="" src="img/red.png"/><ul>
+<li>Problem: it is very difficult to set the parameters of this function<ul>
+<li>Minimum threshold, maximum threshold, drop probability, and exponential weight</li>
+</ul>
+</li>
+<li>This is implemented in almost every router, but almost no-one turns it on because they can&#39;t tune the parameters</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Since these algorithms are hard to tune, we go in a different direction</li>
+</ul>
+<hr>
+<ul>
+<li>Suppose we have <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi></mrow><annotation encoding="application/x-tex">N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span></span></span></span> AIMD flows on a link of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi></mrow><annotation encoding="application/x-tex">\mu</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">μ</span></span></span></span> capacity (in packets / sec)<ul>
+<li>Remember that in TCP Reno, the throughput was prop to <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi mathvariant="normal">/</mi><mo stretchy="false">(</mo><mi>R</mi><mi>T</mi><mi>T</mi><mo>∗</mo><msqrt><mi>d</mi></msqrt><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">1 / (RTT * \sqrt{d})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1/</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.13889em;">RTT</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1.1822em;vertical-align:-0.25em;"></span><span class="mord sqrt"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.9322em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord" style="padding-left:0.833em;"><span class="mord mathnormal">d</span></span></span><span style="top:-2.8922em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail" style="min-width:0.853em;height:1.08em;"><svg xmlns="http://www.w3.org/2000/svg" width="400em" height="1.08em" viewBox="0 0 400000 1080" preserveAspectRatio="xMinYMin slice"><path d="M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z"/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.1078em;"><span></span></span></span></span></span><span class="mclose">)</span></span></span></span></li>
+<li>Ideally, each flow should be getting a capacity of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mi mathvariant="normal">/</mi><mi>N</mi></mrow><annotation encoding="application/x-tex">\mu / N</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">μ</span><span class="mord">/</span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span></span></span></span></li>
+<li>We want our queue to not blow up in size, which means RTT should be staying the same and we need to increase drop rate instead to allocate the same throughput to each person<ul>
+<li>However, this leads to a fundamental problem with the prev approach because previously the drop rate was only going up when the buffer size increased, which indicated the delay was going up</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Instead, we need to start dropping packets as the number of connections grows instead</li>
+</ul>
+<h3>PIE Algorithm</h3>
+<ul>
+<li>We will choose a target delay (reference delay)</li>
+<li>We update our drop probability as<ul>
+<li><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>←</mo><mo>+</mo><mi>α</mi><mo stretchy="false">(</mo><mtext>curr delay</mtext><mo>−</mo><mtext>ref delay</mtext><mo stretchy="false">)</mo><mo>+</mo><mi>β</mi><mo stretchy="false">(</mo><mtext>curr delay</mtext><mo>−</mo><mtext>old delay</mtext><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">p \leftarrow + \alpha(\text{curr delay} - \text{ref delay}) + \beta(\text{curr delay} - \text{old delay})</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">←</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">+</span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span><span class="mopen">(</span><span class="mord text"><span class="mord">curr delay</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">ref delay</span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.05278em;">β</span><span class="mopen">(</span><span class="mord text"><span class="mord">curr delay</span></span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord text"><span class="mord">old delay</span></span><span class="mclose">)</span></span></span></span></li>
+<li><span class="katex-error" title="ParseError: KaTeX parse error: Expected &#x27;EOF&#x27;, got &#x27;_&#x27; at position 10: \text{old_̲delay} \leftarr…" style="color:#cc0000">\text{old_delay} \leftarrow \text{curr delay}</span></li>
+</ul>
+</li>
+<li>Essentially runs a PI controller on the current delay versus the target<ul>
+<li>The first term is actually I and the second term is P (expand this out and telescope to see why)</li>
+</ul>
+</li>
+<li>The E in the PIE algorithm name comes from &quot;enhanced&quot;<ul>
+<li>The algorithm scales up <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.0037em;">α</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>β</mi></mrow><annotation encoding="application/x-tex">\beta</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.05278em;">β</span></span></span></span> depending on how big the current loss rates are</li>
+</ul>
+</li>
+</ul>
+<h2>XCP (Explicit Congestion Control)</h2>
+<ul>
+<li>This is not widely deployed</li>
+<li>Uses an idea of dynamic packet state<ul>
+<li>You had some data in the header that all routers along the path could update, and this would tell the receiver what to do</li>
+<li>It stores the:<ul>
+<li>cwnd</li>
+<li>rtt</li>
+<li>feedback</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>cwnd and rtt are set by the sender</li>
+<li>Each router will independently based on their congestion levels figure out how to set the feedback<ul>
+<li>Feedback = how to change the cwnd</li>
+<li>They will then look at the feedback from previous routers and if they have a less radical change than the previous routers, they do not update</li>
+<li>I.e. if previous router said to increase by 2, and this router says to increase by 3, then it will not do anything</li>
+</ul>
+</li>
+<li>By the time this gets back to the sender, it will receive the bottleneck feedback</li>
+<li>The main problem with trying to do this: how to do it without maintaining per-router flow<ul>
+<li>On high-speed routers, maintaining per flow state is really hard</li>
+<li>Also encryption would make it not feasible to peek into the headers</li>
+<li>In networking, stateless is most of the time used to refer to no per flow state (very different)</li>
+</ul>
+</li>
+<li>To do so, we compute this thing called efficiency:<ul>
+<li>A linear combination of spare capacity and the minimum queue length (persistent queue length) over some time period</li>
+<li>If it is greater than 0, we think we are uncongested and can increase the window</li>
+<li>Otherwise, decrease the window</li>
+</ul>
+</li>
+<li>Tricky thing:<ul>
+<li>We want to achieve AIMD, so we need to for each packet, without maintaing state, figure out how to set it so that we increase the window by <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi mathvariant="normal">/</mi><mi>R</mi><mi>T</mi><mi>T</mi></mrow><annotation encoding="application/x-tex">1 / RTT</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">1/</span><span class="mord mathnormal" style="margin-right:0.13889em;">RTT</span></span></span></span> and decrease by a constant amount per loss</li>
+<li>Recording cut off here sadge</li>
+</ul>
+</li>
+</ul>
+</body></html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+body .theorem {
+  border-color: #448aff;
+}
+body .theorem .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Router Scheduling</h2>
+<ul>
+<li>How do network providers figure out which packets to send to enforce things like how much people are paying bandwidth</li>
+<li>For the first part, we will talk about maximum fairness, which is a way of measuring fairness<ul>
+<li>Depending on the problem, we might use other kinds of fairness that we will talk about later</li>
+</ul>
+</li>
+<li>Isolation:<ul>
+<li>If we all pay the same amount, it doesn&#39;t matter what other people do, we should all get the same amount if we are all offering load</li>
+</ul>
+</li>
+<li>Two algorithms:<ul>
+<li>Fair queuing</li>
+<li>Defecit round robin<ul>
+<li>This is simpler to implement but has less guarantees</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Fair Queueing</h2>
+<h3>Maximum Fairness</h3>
+<ul>
+<li>Suppose we have <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span> customers, each offering a load of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>a</mi><mn>1</mn></msub><mo separator="true">,</mo><msub><mi>a</mi><mn>2</mn></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>a</mi><mi>n</mi></msub></mrow><annotation encoding="application/x-tex">a_1, a_2, \dots, a_n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">a</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> bits / sec</li>
+<li>The link capacity is <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi></mrow><annotation encoding="application/x-tex">\mu</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">μ</span></span></span></span></li>
+<li>Suppose <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="bold">a</mi><mo>=</mo><mo stretchy="false">{</mo><mn>2</mn><mo separator="true">,</mo><mn>3</mn><mo separator="true">,</mo><mn>4</mn><mo separator="true">,</mo><mn>5</mn><mo stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">\vec{a} = \{2, 3, 4, 5\}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4444em;"></span><span class="mord mathbf">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">{</span><span class="mord">2</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">3</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">4</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">5</span><span class="mclose">}</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>μ</mi><mo>=</mo><mn>10</mn></mrow><annotation encoding="application/x-tex">\mu = 10</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">μ</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">10</span></span></span></span><ul>
+<li>You could give everyone 2.5, but then you are not using up all of it</li>
+<li>You could give everyone 10/14 of what they wanted, but then you don&#39;t have isolation<ul>
+<li>I.e. think about what hapens if the last person asks for 5000 instead</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Max min = of all possible allocations that add up to 10, give the one that makes the minimum the largest<ul>
+<li>After you remove the minimum, this property should still hold for everyone else</li>
+</ul>
+</li>
+<li>An allocation method that satisfies this:<ul>
+<li>Take the min allocation and try to give it to everyone</li>
+<li>Then subtract that from everone&#39;s and try it again</li>
+<li>If there isn&#39;t enough to give it to everyone, equally distribute the remaining among everyone</li>
+</ul>
+</li>
+<li>There are other allocations that satisfy this for maybe the smallest, but not once you apply this rule recursively</li>
+</ul>
+<h3>Users</h3>
+<ul>
+<li>How does a router determine what is a user?<ul>
+<li>They can do things like look at the destination address or source address (maybe look at port too)</li>
+</ul>
+</li>
+<li>After doing this, they put all of a user&#39;s packets in a queue, and now we obly think about queues</li>
+<li>However, typically routers have a limited number of queues they can use<ul>
+<li>So they typically hash the user coming in to get which queue to put them in (stochastic fair queueing)</li>
+<li>Easier to build fast hardware with a fixed number of queues</li>
+</ul>
+</li>
+</ul>
+<h3>Queues</h3>
+<ul>
+<li>Queue with packets = backlogged queue</li>
+<li>Queue without = inactive / empty queue</li>
+<li>Round robin algorithm:<ul>
+<li>Start with the first queue, send its packet, and then go on</li>
+<li>This doesn&#39;t consider packet sizes, which can vary from 40 bytes to 1500 bytes</li>
+<li>Instead, we want to emulate a round robin that could send things bit by bit<ul>
+<li>This would implement maximum fairness since we are basically just doing what we described earlier</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Emulating bit by bit round robin:<ul>
+<li>We want to figure out which one bit by bit would have finished sending first</li>
+<li>We keep this idea of a &quot;round number&quot; which is basically a virtual clock</li>
+<li>Each packet will be assigned a start round number and an end round number<ul>
+<li>End round number = start round number + number of bits in the packet</li>
+<li>When we get a new packet, we assign it with a start round number of:<ul>
+<li>Max of the previous packet in queue&#39;s finish round number and the current round number</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>We go through each of our queues and send the packet with the lowest finish round number</li>
+</ul>
+</li>
+<li>An aside: using earliest start round number instead of finish round number is also an acceptable way of implementing fair queueing!</li>
+<li>Actually implementing this in hardware has a number of key points, but the main idea is that there is work done to make it faster by keeping approximate round numbers</li>
+</ul>
+<h3>Guarantees</h3>
+<ul>
+<li>Delay Bound:<ul>
+<li>Assume we have a <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">(</mo><mi>σ</mi><mo separator="true">,</mo><mi>ρ</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(\sigma, \rho)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.03588em;">σ</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">ρ</span><span class="mclose">)</span></span></span></span> source of data:<ul>
+<li>This means that in any duration <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi></mrow><annotation encoding="application/x-tex">\tau</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span></span></span></span>, the number of bits sent to us is at most <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>σ</mi><mi>τ</mi><mo>+</mo><mi>ρ</mi></mrow><annotation encoding="application/x-tex">\sigma \tau + \rho</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">σ</span><span class="mord mathnormal" style="margin-right:0.1132em;">τ</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">ρ</span></span></span></span></li>
+<li>Idea is that this is the maximum consistent rate coming in, but we allow for some burst</li>
+<li>This is known as a <strong>token-bucket</strong> specification</li>
+</ul>
+</li>
+<li>Under this assumption, there is a theorem that gives a guarantee on the delay for a specific packet</li>
+</ul>
+</li>
+</ul>
+<h3>End to End Congestion Control</h3>
+<ul>
+<li>If every router does this, do we still need e2e?</li>
+<li>It is worth using the e2e so that you can adapt to the current network conditions<ul>
+<li>Otherwise if you just keep sending too much then you will just get drops upon drops</li>
+</ul>
+</li>
+<li>Even beyond this, you actually need e2e congestion control to run entworks with maximum efficiency<ul>
+<li>Suppose we had S1 sending to D1 and S2 sending to D2 along the same link<br><img style="" src="img/bottleneck.png"/></li>
+<li>The correct answer would be to allocate 9 to S1 and 1 to S2</li>
+<li>However the fair queueing alone would just give you 5 and 5 for both sources</li>
+</ul>
+</li>
+</ul>
+<h2>Defecit Round Robin</h2>
+<ul>
+<li>Attempts to get rid of some of the difficulties of implementation</li>
+<li>Fair queuing has a very rigid way of defining excactly the order packets are sent in<ul>
+<li>This allows us to develop delay bounds</li>
+</ul>
+</li>
+<li>We attempt to relax that to ease implementation<ul>
+<li>Provides no delay guarantee, only bandwidth guarantees</li>
+</ul>
+</li>
+<li>Each of your active queues will &quot;accumualate credits&quot;<ul>
+<li>Each timestep, accumulate total bandwidth / number of active queues</li>
+<li>We then look at which queue has enough accumulated credits to send the next packet in its queue</li>
+<li>If it is, send the packet and decrease the accumulated credits</li>
+</ul>
+</li>
+<li></li>
+</ul>
+</body></html>

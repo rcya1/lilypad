@@ -11,3 +11,5 @@ lilypad-extension/*.vsix
 src/private*
 rendered/html/private/*
 rendered/pdf/private/*
+
+browser/src/assets/fs.json
