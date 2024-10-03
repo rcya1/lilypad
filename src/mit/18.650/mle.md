@@ -74,6 +74,9 @@ Note that the sample log likelihood we defined earlier was $\ell_n(\theta)$, whi
 Consider a statistical model with pdf $f_\theta$. If $\theta$ is one-dimensional, then the **Fisher information** is defined as:
 $$I(\theta) = \mathbb{E}_\theta\bracket{-\frac{d^2}{d\theta^2} \log f_\theta(X)} = \mathbb{V}_\theta \bracket{\frac{d}{d\theta} \log f_\theta(X)}$$
 
+It can also be written as:
+$$-\frac{1}{n} \mathbb{E}_\theta\bracket{\frac{d^2}{d\theta^2}\ell_n(\theta)}$$
+
 If $\theta$ is a multi-dimensional parameter, then the **Fisher information matrix** is defined as:
 $$I(\theta) = \mathbb{E}_\theta\bracket{-\nabla_\theta^2 \log f_\theta(X)} = \mathbb{V}_\theta \bracket{\nabla \log f_\theta(X)}$$
 ||
@@ -124,3 +127,36 @@ We also have by the LLN that $\overline{W_n}$ converges to $\exp{W_i}$, which is
 Applying Slutsky's, we have that:
 
 $$\sqrt{n}(\hat{\theta} - \theta^*) \rightsquigarrow \mathcal{N}(0, I(\theta^*)) / I(\theta^*) = \mathcal{N}(0, I(\theta^*)^{-1})$$
+
+#### Interpretation of Fisher Information
+
+We know that $I(\theta^*) = -\ell''(\theta^*)$
+
+- Recall that $\ell$ without a subscript is the population log likelihood
+- This indicates that its equal to the negative of the curvature of the population log likelihood
+- We plot the population log likelihood alongside the sample log likelihood
+  ![](img/fisher-interpretation.png)
+- In the left case where the curvature is large, the Fisher information is large and tells us that there is not much variance
+  - When we have small perturbations, the maximizer should still be close
+- In the right case where the curvature is fast, the FIsher information is small and tells us there is a lot more variance
+  - When we have small perturbations, the maximizer could be very far away
+
+## Algorithms for MLE
+
+- Can use gradient ascent to maximize the log-likelihood
+- Can also use Newton-Raphson update to find zeros of derivative:
+  - $\theta_{i+1} = \theta_i - \frac{\ell'_n(\theta_i)}{\ell''_n(\theta_i)'}$
+  - $\theta_{i+1} = \theta_i - (\nabla^2 \ell_n(\theta_i))^{-1} \nabla \ell_n(\theta_i)$
+
+### EM Algorithm
+
+||definition Mixture Models
+When data in a distribution is drawn from one of multiple distributions, and you don't know which distribution each datapoint is.
+||
+
+A common type of mixture model is two Gaussian mixed with a Bernoulli
+
+- $p$ to draw from $f_1 \sim \mathcal{N}(\mu_1, \sigma_1^2)$
+- $1 - p$ to draw from $f_2 \sim \mathcal{N}(\mu_2, \sigma_2^2)$
+
+The EM algorithm can be used to approximate the MLE (TODO)
