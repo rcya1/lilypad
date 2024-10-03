@@ -24,6 +24,7 @@
   "\\real": "\\Re\\left(#1\\right)",
   "\\comp": "\\Im\\left(#1\\right)",
   "\\deriv": "\\frac{d #1}{d #2}",
+  "\\pfrac": "\\frac{\\partial #1}{\\partial #2}",
   "\\limi": "\\lim_{#1 \\rightarrow \\infty}",
   "\\limit": "\\lim_{#1 \\rightarrow #2}",
   "\\vec": "\\mathbf{#1}",
