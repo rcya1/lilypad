@@ -1,7 +1,7 @@
 ---
 title: Math Commands
 date: 2022-09-08
-number: 1
+order: 1
 ---
 
 ## Collection of Math Macros
