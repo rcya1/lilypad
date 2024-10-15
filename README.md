@@ -22,3 +22,5 @@ Run `yarn` and `yarn run watch` to begin the watcher, which will automatically r
 - Improve watcher to check modification dates to see when to rebuild files
 - If the image parser cannot find the image; put a custom warning / admonition
 - Add the drag and drop for the explorer
+- Use URL parameters for navigating the website
+- FIx animation bug for last item of list in the website
