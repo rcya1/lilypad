@@ -9,6 +9,7 @@ def cli():
 @click.command()
 def pull():
   click.echo("Pulling latest changes for root...")
+  subprocess.run(['git', 'checkout', '--', './browser/src/assets/fs.json'])
   result = subprocess.run(['git', 'pull'], capture_output=True, check=True)
   print(result.stdout.decode('utf-8'))
 
