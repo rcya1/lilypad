@@ -58,3 +58,15 @@ For a perfect test, the power function $\Beta$ is a step function that is zero w
 ||
 
 ![](img/power-function.png)
+
+### Wald Test
+
+||definition Wald Test
+For an asymptotically normal $\hat{\theta}$, then the Wald test for the hypothesis $H_0: \theta = \theta_0$ vs $H_1 : \theta \neq \theta_0$ is:
+
+$$
+\Psi = 1\paren{\abs{\frac{\hat{\theta} - \theta_0}{\sigma} \geq z_{\alpha / 2}}}
+$$
+
+The Wald Test for the hypothesis $H_0 : \theta \leq \theta_0$ vs $H_1 : \theta > \theta_0$ is defined similarly and for the other way around
+||
