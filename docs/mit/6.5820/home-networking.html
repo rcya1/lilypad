@@ -1,0 +1,364 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+body .theorem {
+  border-color: #448aff;
+}
+body .theorem .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Home Networking</h2>
+<p>Different eras of home networking:</p>
+<ol start="0">
+<li>Built on top of the telephone network</li>
+</ol>
+<ul>
+<li>Still not in the home yet, very large computers</li>
+<li>Computers would connect over a network and just talk serially</li>
+<li>A modem would literally be a speaker next to a telephone used to send signals over existing infrastructure</li>
+<li>It had to connected to a physical telephone handset because:<ul>
+<li>The telehpones were still owned by the phone company</li>
+<li>There wasn&#39;t an interface that you could plug into, you had to use the hardware they provided</li>
+</ul>
+</li>
+<li>Eventually they were switched to have a modem just be directly connected to the network after the phone networks were sued</li>
+</ul>
+<ol>
+<li>Bringing it to Home</li>
+</ol>
+<ul>
+<li>Microprocecssor has started to bring these into homes</li>
+<li>Starts using TCP</li>
+<li>Packets are transformed into serial data and then just passed along the modem<ul>
+<li>Through protocols like SLIP and PPP</li>
+</ul>
+</li>
+<li>2.4 kbits/s</li>
+</ul>
+<ol start="2">
+<li>Ethernet</li>
+</ol>
+<ul>
+<li>Instead of having to speak serially over the line, it could now just communicate over ethernet</li>
+<li>For devices to learn their local IP addresses, they talk to a DHCP server</li>
+<li>There is a router that is the border between you and the rest of the Internet<ul>
+<li>Has a very simple routing table that just sends things to one port if it starts with a local thing and one port if it is anything else</li>
+</ul>
+</li>
+</ul>
+<ol start="3">
+<li>Local Ethernet Network</li>
+</ol>
+<ul>
+<li>Now let&#39;s say we have multiple computers on our home network</li>
+<li>So before things go out to the router through the modem, we have a switch that connects to two different computers</li>
+<li>Nothing else needs to change since our router just needs to know which range to send to the local network and which range to send to the outside world</li>
+</ul>
+<ol start="4">
+<li>Local Router Subnet</li>
+</ol>
+<ul>
+<li>It&#39;s annoying for the ISP to handle the DHCP server for you</li>
+<li>Instead they&#39;re just going to allocate you a certain subnet and let you handle that<ul>
+<li>So you&#39;re going to run the DHCP server locally</li>
+</ul>
+</li>
+<li>Now the ISP can just update their routers to just send stuff for your subnet to your router</li>
+</ul>
+<ol start="5">
+<li>Wireless</li>
+</ol>
+<ul>
+<li>Now to connect to your switch, you can use wlan0 instead of eth0 to connect via WiFi</li>
+<li>After here, everything goes downhill</li>
+</ul>
+<ol start="6">
+<li>ISPs Not Giving Subnets</li>
+</ol>
+<ul>
+<li>As more and more people wanted to come to the internet, the ISPs started charging for giving you subnets<ul>
+<li>Instead, they would just give you one IP address</li>
+<li>They would give you a /32 instead of a /24</li>
+</ul>
+</li>
+<li>You&#39;re gonna have at home a single computer on the Internet</li>
+<li>Our home network is going to have to be off the main Internet<ul>
+<li>Each thing in our private network will have its own private IP address</li>
+</ul>
+</li>
+<li>To set up a TCP connection, you can set up one with your single computer and then that single computer will make a connection along the actual world<ul>
+<li>Uses router as a proxy</li>
+<li>Also called jump host or bastion</li>
+<li>You can still set this up on your web browser to do this</li>
+</ul>
+</li>
+</ul>
+<ol start="7">
+<li>Transparent Proxy</li>
+</ol>
+<ul>
+<li>Instead of making the client do this process of setting up the proxy, the router can transparently do this for the client whenever it receives a connection request</li>
+</ul>
+<ol start="8">
+<li>Network Address / Port Translator (NAT / NAPT)</li>
+</ol>
+<ul>
+<li>Instead of having to maintain all of this TCP logic in the router, we&#39;re going to just simplify everything because the endpoints are already handling that</li>
+<li>Instead, we&#39;re going to just have the router retransmit the TCP packets and keep track of which ports match up with each other</li>
+<li>Not really a proxy anymore, just a translator</li>
+</ul>
+</body></html>
