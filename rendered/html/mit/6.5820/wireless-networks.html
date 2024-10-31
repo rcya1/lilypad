@@ -1,0 +1,419 @@
+<!DOCTYPE html><html><head>
+      <title>temporary</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"
+  crossorigin="anonymous"
+></script>
+<style>
+body {
+  font-family: 'Open Sans', sans-serif;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  margin: 0;
+  padding: 2em calc(max(50% - 457px + 2em, 1em));
+  position: relative;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: #fff;
+  overflow: initial;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  color: black;
+  background-color: white;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > :first-child {
+  margin-top: 0;
+}
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  color: black;
+  padding-bottom: 8px;
+  border-bottom: 1px solid black;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+body h1 {
+  font-size: 2.25em;
+  padding-bottom: 0.3em;
+}
+body h2 {
+  font-size: 1.75em;
+  padding-bottom: 0.3em;
+}
+body h3 {
+  font-size: 1.5em;
+}
+body h4 {
+  font-size: 1.25em;
+}
+body h5 {
+  font-size: 1.1em;
+}
+body h6 {
+  font-size: 1em;
+}
+body p + ul {
+  margin-top: -15px;
+}
+body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+body a {
+  color: #08c;
+  text-decoration: none;
+}
+body a:hover {
+  color: #00a3f5;
+  text-decoration: none;
+}
+body > p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+}
+body > ol,
+body > ul {
+  margin-bottom: 16px;
+}
+body ol,
+body ul {
+  padding-left: 2em;
+}
+body ol ol,
+body ol ul,
+body ul ol,
+body ul ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body li {
+  margin-bottom: 0;
+}
+body li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body code {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 1em;
+  padding: 0.15em 0.25em;
+  margin: 0;
+  white-space: break-spaces;
+  background-color: #afb8c133;
+  border-radius: 6px;
+  color: #000000;
+}
+body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  color: #1f2328;
+  background-color: #e3e6e9;
+  border-radius: 6px;
+}
+body pre > code {
+  padding: 0;
+  margin: 0;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
+}
+body hr {
+  height: 1px;
+  margin: 8px 0;
+  background-color: #000000;
+  border: 0 none;
+}
+body table {
+  margin: 10px 0 15px 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: 100%;
+  overflow: auto;
+  word-break: normal;
+  word-break: keep-all;
+}
+body table th {
+  font-weight: 700;
+  color: #000;
+}
+body table td,
+body table th {
+  border: 1px solid #d6d6d6;
+  padding: 6px 13px;
+}
+body dl {
+  padding: 0;
+}
+body dl dt {
+  padding: 0;
+  margin-top: 16px;
+  font-size: 1em;
+  font-style: italic;
+  font-weight: 700;
+}
+body dl dd {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+body ul {
+  list-style: disc;
+}
+body ul ul {
+  list-style: circle;
+}
+body ul ul ul {
+  list-style: square;
+}
+body own-preview ol {
+  list-style: decimal;
+}
+body own-preview ol ol,
+body ul ol {
+  list-style-type: lower-roman;
+}
+body own-preview ol ol ol,
+body own-preview ol ul ol,
+body ul ol ol,
+body ul ul ol {
+  list-style-type: lower-alpha;
+}
+body img {
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 25px;
+}
+body .image-caption {
+  font-size: 0.8em;
+  color: #494949;
+  text-align: center;
+  margin: -20px auto 10px;
+  width: 100%;
+}
+body .definition {
+  border-color: #06c406;
+}
+body .definition .title {
+  background-color: #d9ffd9;
+}
+body .info {
+  border-color: #448aff;
+}
+body .info .title {
+  background-color: #ecf3ff;
+}
+body .proposition {
+  border-color: #448aff;
+}
+body .proposition .title {
+  background-color: #ecf3ff;
+}
+body .theorem {
+  border-color: #448aff;
+}
+body .theorem .title {
+  background-color: #ecf3ff;
+}
+.admonition {
+  border: 1px solid;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.admonition .title {
+  font-size: 1em;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px 8px 0px 0px;
+}
+.admonition .title svg {
+  margin-right: 4px;
+}
+.admonition .title p {
+  margin: 0px;
+}
+.admonition .body {
+  padding: 8px 10px 0px;
+}
+.admonition .body > :first-child {
+  margin-top: 0;
+}
+.admonition .body > :last-child {
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body><h2>Wireless Networks</h2>
+<h3>Differences Between Wired</h3>
+<ul>
+<li>Wireless has interference with different communication channels<ul>
+<li>In wired, you just have these shielded cables that are only mixed once you get to a router / switch</li>
+</ul>
+</li>
+<li>Both wireless and wired have noise, but the type of noise is different</li>
+<li>Broadcasting is easier than wired because you can just send a message once versus 10 times<ul>
+<li>Fundamental difference: shared medium</li>
+</ul>
+</li>
+<li>The distance between the sender and receiver can change constantly during wireless<ul>
+<li>This changes the noise / conditions / the signal strength</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>Two main things that guide the architecture of the system:<ul>
+<li>Adapting to different conditions</li>
+<li>Sharing a medium</li>
+</ul>
+</li>
+<li>In the electromagnetic spectrum, the amount of the spectrum is a scarce resource<ul>
+<li>Some of it is iicesnsed by things like the FCC in the US</li>
+<li>Some of it is unlicensed like WiFi</li>
+</ul>
+</li>
+</ul>
+<h3>Celllular</h3>
+<ul>
+<li>We divide the world into cells</li>
+<li>Each cell has a base station responsible for covering that cell<ul>
+<li>Each is connected to a wired network via backhaul links</li>
+</ul>
+</li>
+<li>Neighboring cells get allocated different frequencies<ul>
+<li>I.e. each will have a specific channel number, each of which is allocated a different i.e. 5 MHz part of the spectrum</li>
+<li>There is a lot of flexibility in how much you allocate</li>
+</ul>
+</li>
+<li>In WiFi, these are known as access points instead</li>
+</ul>
+<h3>Time Multiplexing</h3>
+<ul>
+<li>We need to somehow figure out when each person is going to communicate<ul>
+<li>We can&#39;t have everyone shouting at once since they will all interfere with each other</li>
+<li>We divide time into segments where only one person gets to talk</li>
+<li>There are ways to get multiple people to talk at the same time but to a limited sense</li>
+</ul>
+</li>
+<li>Someone has to decide when each device gets to speak<ul>
+<li>The base station knows when it has data, but not when any of its users have data to send</li>
+<li>We don&#39;t want to waste time</li>
+</ul>
+</li>
+<li>We could all try sending data<ul>
+<li>If we don&#39;t get an acknowledgement due to the interference, we set a random timeout and try again</li>
+</ul>
+</li>
+<li>This was first done in the Aloha network which connected islands in Hawaii via a satellite backhaul link</li>
+<li>Some ideas for improving:<ul>
+<li>Dividing time into slots restricting to sending messages at the beginning of a time slot doubles the capacity of a network<ul>
+<li>Idea is that if two people were going to collide, you might as well collide fully by aligning the time slots</li>
+<li>Network capacity utilization doubles from 1/2e to 1/e</li>
+</ul>
+</li>
+<li>Carrier sense:<ul>
+<li>Listen for a random amount of time (a contention window) before you transmit<ul>
+<li>If we see that the network is being used, you should back off exponentially and double the amount of time you wait before trying again</li>
+<li>We should only count down when the channel is free</li>
+</ul>
+</li>
+<li>In total, this gives around 90% utilization empirically</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Unfortunately it isn&#39;t always possible to tell when a channel is free, so we still need acknowledgements<ul>
+<li>I.e. a case of hidden terminals where two peoplea are on opposite sides of the same cell and can talk to the base station, but not each other</li>
+</ul>
+</li>
+<li>Exposed terminal problem is when S1 wants to send to R1 and S2 wants to send to R2 but S1 and S2 are next to each other<ul>
+<li>We could have both send successfully if R1 and R2 are far from each other</li>
+<li>But carrier sense prevents this</li>
+<li>We lose a bit of throughput, but in reality we don&#39;t care about this<ul>
+<li>The acknowledgements for these messages might have collided with each other so it is fine to not send this</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3>Time Division Duplex</h3>
+<ul>
+<li>We have a controller node that is controlling peripherals</li>
+<li>We split into time segments<ul>
+<li>Every odd segment is the controller broadcasting to a specific device</li>
+<li>Then that device will respond</li>
+</ul>
+</li>
+<li>Wastes some time because if I want to get data from someone, then I have to send them a fake packet and then get their response<ul>
+<li>Or I want to send to you and you have nothing to send back to me</li>
+<li>Under high load, this works<ul>
+<li>For bluetooth, this often works well</li>
+<li>Especially for bluetooth audio, which is periodic, so the controller can allocate timeslots accordingly</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2>Adapting to Variability in Rates</h2>
+<ul>
+<li>We want to extract the highest possible rate we can transfer at</li>
+<li>Modulation and coding scheme (MCS):<ul>
+<li>Idea is that when transmitting data, we need to specify a modulation type and coding rate</li>
+<li>Modulation type: phase and amplitude modulation for transmitting bits<ul>
+<li>Idea is that each combination of phase / amplitude will convey some bits</li>
+<li>I.e. we take the phase amplitude plane and we break it down into 16 regions, each of which corresponds to some sequence of 4 bits</li>
+<li>When we get a signal, we look at what is the closest region and use that to get the bits out</li>
+<li>Examples: QAM-16</li>
+</ul>
+</li>
+<li>Coding rate: how much of our bits is going to be used for the error correction<ul>
+<li>Higher values transfer more information but sacrifice reliability</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>We need to have some policy for determining the MCS<ul>
+<li>Previously, people were trying things similar to congestion control</li>
+<li>If a packet didn&#39;t get through, send it again at a lower speed</li>
+<li>Problem is that if it didn&#39;t get through because of a collision, and now you send it with 1/2 the speed, it now takes twice as long<ul>
+<li>There is an even higher chance of collision now</li>
+<li>We don&#39;t have the same kind of problem now because this is a very collision heavy network</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Instead, an extremely simple idea was to just try a bunch of different bitrates carefully and choose which leads to the lowest time to transmit</li>
+</ul>
+<h2>Scheduling</h2>
+<ul>
+<li>The scheduling problem is different here as well since different clients will have different link rates</li>
+<li>Before, we were concerned with the bottle neck link rate</li>
+<li>Now, we want to send more data to the people with the higher link rates<ul>
+<li>So spending time equally among the people is a way to achieve proportional fairness</li>
+</ul>
+</li>
+<li>This algorithm for achieving roughly proportional fairness is used almost everywhere:<ul>
+<li>For each person, the base station computes the instantaneous rate to them and maintains an exponential moving average</li>
+<li>At each time step, select the user with the maximum instantaneous rate divided by average rate</li>
+</ul>
+</li>
+</ul>
+</body></html>
