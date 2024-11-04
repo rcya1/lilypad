@@ -99,9 +99,50 @@ order: 9
 ## Scheduling
 
 - The scheduling problem is different here as well since different clients will have different link rates
-- Before, we were concerned with the bottle neck link rate
+- Before, we were concerned with the bottleneck link rate
 - Now, we want to send more data to the people with the higher link rates
   - So spending time equally among the people is a way to achieve proportional fairness
 - This algorithm for achieving roughly proportional fairness is used almost everywhere:
   - For each person, the base station computes the instantaneous rate to them and maintains an exponential moving average
   - At each time step, select the user with the maximum instantaneous rate divided by average rate
+  - Idea is that for users who didn't get serviced in the time slot, the rate sent to them at that point was 0 so the average will come down a bit
+    - It will be multiplied by $1 - \alpha$
+    - Typically, $\alpha$ will have to be set to with respect to the number of users to make sure everyone gets a chance
+- Why does this give proportional fairness?
+  - Proportional fairness tries to maximize $U = \sum \log R_\text{avg}^i$
+  - $\pfrac{U}{R_{avg}^i} = 1 / R_{avg}^i$
+  - $\Delta U = \sum \pfrac{U}{R_{avg}^i} \cdot \Delta R_{avg}^i$
+    - But $\Delta R_{avg}^i = R_{avg}^i(t) - R_{avg}^i(t - 1)$
+  - Substituting this and the definition for the average in with respect to the instantaneous tells us that we can maximize the change in $\Delta U$ by adjusting the average of the person who has the maximal value of instantaneous / average
+
+## Roofnet
+
+- The idea was for an apartment building, you didn't need every apartment to have their own router
+- You could instead just have wide coverage from just a few nodes on the roof of the apartment building, each of which could serve 10-30 people
+- So this is an example of a home-esque network that is entirely handled through wireless with no wired backbone
+- Source routing: rather than use something like BGP or distance-vector, the sources all determine the path the packet is going to take
+
+  - Things are changing all of the time in terms of link rates and topology so people foundm with a distributed system things would get caught in a loop
+  - We need to force the source to make a decision and avoid these cycles
+  - If it gets lost, we just let it get lost
+  - Each source figures out a path through link state: - Each node gets a view of the entire graph and shares it with neighbors to build this - This is only possible with a small number of nodes, which works here - This can be maintained in a wireless network by a node just broadcasting a signel, and all nodes could read that and use it to estimate the quality - General rule of thumb: if there is a lot of dynamic things that are changing in the network, do source routing
+
+- ![](img/typical-radio-range.png)
+  - This is all over the place because it largely depends on what is going on near the receiver
+
+### Route Metric
+
+Link metric: How do we figure out which path to use?
+
+- One key: multiple hops reduce throughput
+- Links share the radio spectrum, so an intermediary node cannot listen while talking
+- Therefore, to retransmit what I want, it has to multiplex between listening and sending, and cuts the throughput in half
+  ![](img/link-metric-challenge.png)
+- Could avoid this by talking on different frequencies, but then we have even more challenges of assigning frequencies, etc.
+- Also: many links are asymmetric and links are very varying in their delivery ratio
+  ![](img/2024-11-03-15-56-25.png)
+  - Makes it hard to just give a threshold to say whether some links are bad or not
+    ![](img/2024-11-03-15-56-36.png)
+- One metric is ETX (expected transmission count)
+  - Minimize the total transmissions per packet by looking at delivery ratios
+  - For a path of multiple links, the total ETX is the sum of all component ETCs
