@@ -20,7 +20,7 @@ order: 14
   $$f(\theta | \text{data}) \propto L_n(\theta) f(\theta)$$
 - If the prior and posterior turn out to be in the same family of distributions, we call the prior a **conjugate prior**
 
-### Bayes Estimator
+### Bayes Estimator (mean)
 
 ||definition Bayes Estimator
 The Bayes estimator is the mean of the posterior, or mean a posteriori
@@ -48,3 +48,39 @@ To compute the MAP, we can maximize the log posterior, which turns out to maximi
 - $\ell_n (\theta) + \log f(\theta) - \log c_n$
 - Recall that $\ell_n$ is the log likelihood and $c_n$ is a constant
 - This can also be maximized via gradient ascent
+
+### Posterior interval
+
+This is the analogue of the confidence interval from frequentist inference
+
+||definition Posterior interval
+A $(1-\alpha)$ posterior interval is an interval $[a, b]$ such that the probability under the posterior curve between $a$ and $b$ is $1 - \alpha$
+
+$$\int_a^b f(\theta | \text{data}) d\theta = 1-\alpha$$
+||
+
+## Choosing a Prior
+
+There are several ways we can use to choose a prior:
+
+1. If we have true prior knowledge we should use that
+2. If we choose a conjugate prior, then we can ensure the posterior lies in the same family
+
+- This can be useful if there are known formulas for the mean and mode of probability distributions in this family, so we don't have to use gradient ascent / MCMC to solve
+- Examples: Beta prior -> Beta posterior and Gaussian prior -> Gaussian posterior
+
+3. If we have no knowledge, we can choose a uniform prior
+
+- If we need this to span the whole number line, then there's no way to get a valid uniform distribution
+- Instead, we can take an improper prior with $f(\theta) = 1$ and this will still lead to a valid posterior distribution
+- When we choose $f(\theta) = 1$, this means that we are not weighting $L_n(\theta)$ at all
+  - Therefore, the MAP is equal to the MLE
+
+### Gaussian Prior
+
+- If we have a Gaussian prior with mean $0$ and variance $\sigma^2$, we get the posterior is:
+  $$\mathcal{N}\paren{\frac{\sigma_i X_i}{n + 1/\sigma^2}, \paren{n + \frac{1}{\sigma^2}}^{-1}}$$
+- The mean and mode of a normal distribution are equal, so we have the Bayes estimator and MAP are:
+  $$\frac{\overline{X}_n}{1 + 1/n\sigma^2}$$
+  - This tells us that as $\sigma \rightarrow \infty$, the Bayes / MAP estimator getes closer to the MLE
+  - This is expected, since the less confident we arae about the prior, the more it approaches the unweighted likelihood
