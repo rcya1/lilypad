@@ -43,6 +43,7 @@ To quantify what is the best, we use an objective function that defines the loss
 
 - $C(H_j, H_i) = C_{ij}$
 - Denotes the cost of deciding the hypothesis is $H_i$ when the correct is $H_j$
+- We denote the true hypothesis as $H$ and estimated as $f$
 - Our goal is then to find the hypothesis that minimizes the cost $\phi(f)$
   - $\phi(f) = \exp{C(H, f(y))}$
   - Known as the Bayes risk
@@ -71,4 +72,14 @@ Choose $H_1$ when $L(y) > \eta$ and $H_0$ when $L(y) < \eta$ and arbitrarily oth
 - The main idea is to realize that $C_{00}p_{H|y}(H_0|y) + C_{01}p_{H|y}(H_1|y)$ represents the conditional expectation of the Bayes risk if we choose $H_0$
 - We want to choose whichever one leads to lower cost
 
-TODO: 2.2.3 onwards
+### Maximum A Posteriori (MAP)
+
+When $C_{00} = C_{11} = 1$ and $C_{01} = C_{10} = 0$, we are minimizing the probability of error, or maximizing accuracy
+
+- In this case, we have the MAP decision rule, which corresponds to choosing whichever $H_i$ leads to a larger $p_{H|y}(H_i|y)$
+
+### Maximum Likelihood (ML)
+
+When the hypotheses are equally likely, we get the decision rule:
+
+- Choose whichever $H_i$ leads to a larger $P_{y|H_i}(y|H_i)$
