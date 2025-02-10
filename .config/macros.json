@@ -30,5 +30,8 @@
   "\\vec": "\\mathbf{#1}",
   "\\veca": "\\begin{bmatrix*}#1\\end{bmatrix*}",
   "\\trace": "\\text{Tr}\\left(#1\\right)",
-  "\\cov": "\\text{Cov}\\left(#1\\right)"
+  "\\cov": "\\text{Cov}\\left(#1\\right)",
+  "\\mc": "\\mathcal{#1}",
+  "\\p": "\\paren{#1}",
+  "\\t": "\\text{#1}"
 }
