@@ -147,7 +147,7 @@ The ChaCha20 PRF:
   - $256 + 128 + 128 = 16 * 32$
 - Uses a 512 long permutation $\Pi$
   - This is a public permutation that is defined as doing the following 10 times:
-    ![](img/chacha.png)
+    ![](img/chacha.png?maxwx=0.8)
 - It then does $\t{pad}(k, x) \oplus \Pi(\t{pad})$
 - This uses no secret / data dependent memory accesses to avoid cache side channel attacks
 - This can be optimzied with SIMD instructions
@@ -176,8 +176,102 @@ There are many ways to use a PRP to make an encryption scheme, which we will go 
 
 ### Switching Lemma
 
+We can use a PRP as a PRF if the block size is large enough
+
+- Then we can just use counter-mode encryption
+- This is the main approach behind AES-GCM
+
+||lemma PRP Switching Lemma
+Let $P$ be a PRP working on inputs of length $n$. For every adversary $\mc{A}$ making at most $T$ queries, we have:
+$$\t{PRFAdv}[\mc{A}, P] \leq \t{PRPAdv}[\mc{A}, P] + \frac{T^2}{2^{n}}$$
+||
+
+If there is an adversary that can break $P$ as a PRF with $T^2 << 2^n$, it can also break it as a PRP with roughly the same advantage
+
+- If there is no way to break $P$ as a PRP, then this therefore means there cannot be anything breaking it as a PRF
+
+This guarantees nothing when $T^2 \approx 2^n$
+
+- When this is the case, the adversary can efficiently distinguish a PRP from a PRF
+- This is because at this point, the Birthday Paradox indicates the adversary is likely to see a collision, telling it that it is a PRF and not a PRP
+- Many applications use AES with $n = 128$ bits, so it is not safe to use the same key more than $2^64$ times
+
 ### Cipher-Block Chaining
+
+This is historically important, but should never be used in new systems
+
+- It is possible to show this is CPA-secure if the underlying pseudo-random permutation $P$ is secure
+
+We take a randomly generated $c[0]$ (a nonce) and then xor it with $m[0]$
+
+- We then pass it through the permutation to get out the first ciphertext as well as pass it to xor with $m[1]$ and repeat
+- We output all of our ciphertext along with $c[0]$ and use the inverse permutation to get the message back
+
+$$\t{CPAAdv}[A, \varepsilon] \leq 2 \cdot \t{PRPAdv}[\mc{B}, P] + \frac{2T^2\ell^2}{2^n}$$
+
+Disadvantages:
+
+- Not parallelizable
+- Requires evaluating PRP in forward and inverse directions, which requires more code / hardware
+- Ciphertexts must be a multiple of the block size, leading to padding
+
+#### Sweet32 Attack
+
+For small blocks (i.e. $n = 64$), after seeing enough encrypted messages (i.,e. $2^32$), then it is likely to see two ciphertext blocks that are equal
+
+- If $c_i = c_j$, then $c_{i-1} \oplus c_{j-1} = m_i \oplus m_j$
 
 ### AES / DES Design
 
-###
+#### Even-Mansour Cipher
+
+$2n$ bit key and $n$ bit block size with a public invertible permutation $\Pi$
+
+- The cipheris just $P_{EM}((k_0, k_1), x) = k_1 \oplus \Pi(x \oplus k_0)$
+
+If we model $\Pi$ as truly random, then this has a PRP advantage of $2T^2 / 2^n$
+
+#### AES
+
+AES is an iterated Even-Mansour cipher operating on a key of size $128, 192$, or $256$
+
+- Block size is fixed at $n = 128$
+- Derives "round keys" $k_0, \dots, k_r$ each of length $n$ from the input key $k$ as a linear function of $k$
+- AES then does:
+  - $st \leftarrow x \oplus k_0$
+  - For $i = 1, \dots, r:$, we do $st \leftarrow \Pi(x) \oplus k_i$
+  - We output $st$
+- For $128$ bit keys, the number of rounds is set at $r = 10$
+
+The public permutation $\Pi$ works as:
+
+![](img/aes.png?maxwx=0.8)
+
+- A naive implementation of SubBytes requires secret dependent memory accesses, which can lead to a side channel attack
+- Implementers frown on software AES implementations for this reason
+
+#### DES
+
+- In 1985, the Data Encryption Standard was published but never approved for use since its 56 key length was too short
+- AES built on top of a public random permutation
+- DES builds on a pseudorandom function
+
+The main idea is to turn a PRF into a PRP with a **Feistel network**
+
+- Uses a $56$ bit keyspace and a $64$ bit block size
+
+- One round of the Feistel network with PRF $F$ is a keyed permutation:
+  - $\pi_F(k, (x, y)) = (y, x \oplus F(k, y))$
+  - This means that we split the input into a left half ($x$) and a right half ($y$)
+- The $\ell$ round Feistel network applies $\pi_F$ many times:
+  - $P_\ell((k_1, \dots, k_\ell), (x, y)) = \pi_F(k_\ell, \pi_F(k_2, \pi_F(k_1, (x, y))))$
+- It was proven that with $\ell = 3$, this is sufficient to construct a secure PRP
+  - $\t{PRPAdv[\mc{A}, P_3]} \leq 3 \cdot \t{PRFAdv}[\mc{B}, F] + \frac{Q^2}{N} + \frac{Q^2}{2N^2}$
+
+The DES cipher is just a 16-round Feistel network with a fixed permutation before and after
+
+- To create the 16 PRFs to use with the Feistel network:
+  - 16 round keys $k_1, \dots, k_16$ are all generated as $48$ bit subsets of the bits from the key $k$
+  - The round function $F(k_i, \cdot)$ computes initial state as linear fucntion of round key and input, splits state into six-bit chunks and applies differet non-linear functions (known as S-boxes) to each with a lookup table, and then permutes the bits of the state
+  - Picking the S-boxes at random actually makes this cipher weak
+    - They were specifically constructed to have nice statistical properties
