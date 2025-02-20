@@ -84,7 +84,7 @@ $$\t{Dec}(s, \t{Enc}(s, b_1) + \t{Enc}(s, b_2)) = b_1 \oplus b_2$$
   $$(A_0 + A_1, (A_0 + A_1) \cdot s + (e_0 + e_1) + \floor{q/2} \cdot (v_0 + v_1)$$
 - We note that for all cases except $v_0 = v_1 = 1$, we have last term is exactly equal to $v_0 \oplus v_1$
 - In the last case, we have $\floor{q/2} \cdot (v_0 + v_1) \in \{-2, -1, 0\}$ so this only approximately holds
--
+  - We can address this and the compounding error term by setting the error bound such that $2B + 2 < q/4$
 
 **Proving CPA-Secure**:
 
