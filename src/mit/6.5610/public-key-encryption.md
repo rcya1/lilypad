@@ -62,12 +62,12 @@ The idea is that we are trying to recover $s$ and we are given a bunch of approx
 
 ### LWE Symmetric Encryption Scheme
 
-For encrypting messages $b$ that are a single bit with a secret key $s$ of length $n$:
-$$\t{Enc}(s, b) = (a, s \cdot a + e + b\floor{q/2})$$
-where $a \xleftarrow{R} \integers^n_q$.
+For encrypting messages $b$ that are vectors of length $n$ with a secret key $s$ of length $n$:
+$$\t{Enc}(s, b) = (A, A\cdot b + e + b\floor{q/2})$$
+where $A \xleftarrow{R} \integers^{n\times m}_q$.
 
-To decrypt messages $(a, c)$:
-$$\t{Dec}(s, (a, c)) = 0 \text{ iff } |c - s\cdot a| \leq q/4$$
+To decrypt the $i$th bit of message $(A, c)$:
+$$\t{Dec}(s, (A, c))_i = 0 \text{ iff } |c - A \cdot s|_i \leq q/4$$
 
 - We assume $e$ is small relative to $q/4$ so it cannot impact the answer
 
@@ -77,6 +77,14 @@ $$\t{Dec}(s, \t{Enc}(s, b_1) + \t{Enc}(s, b_2)) = b_1 \oplus b_2$$
 - Intuitively, this means that we can add ciphertexts and then decrypt to get back the "sum" of the original messages
 - However, the error is going to add up as we add more messages together
   - If the error term is small relative to $q$, we should still be able to do a lot
+
+**Proof of Linearly Homomorphic**:
+
+- Expanding gives:
+  $$(A_0 + A_1, (A_0 + A_1) \cdot s + (e_0 + e_1) + \floor{q/2} \cdot (v_0 + v_1)$$
+- We note that for all cases except $v_0 = v_1 = 1$, we have last term is exactly equal to $v_0 \oplus v_1$
+- In the last case, we have $\floor{q/2} \cdot (v_0 + v_1) \in \{-2, -1, 0\}$ so this only approximately holds
+-
 
 **Proving CPA-Secure**:
 
