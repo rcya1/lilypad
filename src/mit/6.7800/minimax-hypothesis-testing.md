@@ -84,7 +84,7 @@ $$\varphi_B(p, q, \lambda) = \varphi(p, r_B(\cdot, q, \lambda))$$
 
 ||definition Matched Bayes Risk
 The **matched Bayes risk** is:
-$$\varphi_B(p)^* = \varphi(p, r_B(\cdot, p, \lambda))$$
+$$\varphi^*_B(p) = \varphi(p, r_B(\cdot, p, \lambda))$$
 ||
 
 - We omit $\lambda$ because we know it is not affected by randomization
@@ -108,3 +108,37 @@ $\varphi_B^*(0) = C_{00}$ and $\varphi_B^*(1) = C_{11}$
 ||
 
 ![](img/minimax-2.png?maxwx=0.9)
+
+### Minimax Decision Rule
+
+||definition Minimax Decision Rule
+A minimax decision rule is a rule $r_M$, also known as $r_*$ that corresponds to a decision rule with prior $p_*$ and randomization parameter $\lambda_*$ such that:
+$$\min_r \max_p \varphi(p, r) = \varphi(p_*, r_*) = \varphi_B^*(p_*)$$
+||
+
+||theorem Theorem
+When there exists $P_F^*$ such that $\zeta_NP(P_F^*) = g_M(P_F^*)$ with $g_M$ defined as:
+$$g_M(P_F) = \frac{C_{01} - C_{00}}{C_{01} - C_{11}} - \frac{C_{10} - C_{00}}{C_{01} - C_{11}} \cdot P_F$$
+then $(P_F^*, \zeta(P_F^*)$ corresponds to an optimizing pair $(p_*, \lambda_*)$
+
+Otherwise, if $g_M(P_F^*)$ is below the efficient frontier, then $p_0^* = 0$, and if it is above, then $p_0^* = 1$
+||
+
+- The core idea is to draw the linear function $g_M$ and check where it intersects the efficient frontier of points
+  - For valid costs, this will always have a negative slope
+- If the OC-LRT originally intersects $g_M$, then there is no need for randomization and the parameter $\lambda$
+  - Recall that the $\lambda$ is just to bridge the gaps
+- $p_*$ is the prior nature should choose to make the system perform as poorly as possible
+  - Known as the **least favorable prior**
+- A core fact behind the proof is that $\varphi(p, r)$ has a saddle point, i.e. that it satisfies the minimax theorem:
+  - $\min \max \varphi = \max \min \varphi$
+
+||theorem Corollaries
+If $r_B$ is a minimax decision rule, then $p_* \in \t{argmax}_p \varphi_B^*(p)$
+
+$r_B(\cdot; p_*, \lambda_*)$ is an equalizer rule when $p\_\* \in (0, 1)
+
+- If there is an $r_B$ that is an equalizer rule with $p \in (0, 1)$, then it is a minimax decision rule
+
+$r_B(\cdot; p_*, \lambda)$ is a minimax decision rule for any $\lambda$ when $p_* \in \{0, 1\}$
+||
