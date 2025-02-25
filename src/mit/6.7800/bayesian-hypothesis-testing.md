@@ -69,7 +69,17 @@ Choose $H_1$ when $L(y) > \eta$ and $H_0$ when $L(y) < \eta$ and arbitrarily oth
 
 **Proof Sketch**:
 
-- The main idea is to realize that $C_{00}p_{H|y}(H_0|y) + C_{01}p_{H|y}(H_1|y)$ represents the conditional expectation of the Bayes risk if we choose $H_0$
+- We are trying to minimize $\varphi(f) = \exp{C(H, f(y))}$ across all decision rules $f$
+  - We note that the expectation is taken over all choices of $H$ and $y$
+  - By iterated expectation, we can rewrite this as:
+    $$\exp{\exp{C(H, f(y)) | y}}$$
+    - The inner expectation is conditional for a specific value of $y$ and is taken over all choices of $H$
+    - The outer expectation is over all values of $y$
+  - We can then note that this is equal to:
+    $$\int \exp{C(H, f(y)) | y) \cdot p_y(y) dy$$
+  - This can be minimized by considering each $y$ independently and minimizing $C(H, f(y))$ for each value of $y$
+- $C_{00}p_{H|y}(H_0|y) + C_{01}p_{H|y}(H_1|y)$ represents the conditional expectation of the Bayes risk if we choose $H_0$
+  - We do the same calculation for if we choose $H_1$
 - We want to choose whichever one leads to lower cost
 
 ### Maximum A Posteriori (MAP)
