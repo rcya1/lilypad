@@ -71,6 +71,8 @@ A randomized test cannot achieve a lower Bayes' risk than the optimum LRT in bin
 Remember that the Bayes risk incorporates our prior probabilities
 
 - Result is that the deterministic test we derived previously is optimal
+- One way to think about this is to consider the idea that minimizing Bayes risk is finding smallest value such that the line `Bayes risk = value` intersects the efficient frontier
+  - Since randomization can only expand the convex hull, there is no way for it to make a new point that has lower Bayes risk than something else
 
 ||theorem Neyman-Pearson Lemma
 Given hypotheses $p_{y|H}(y|H_0), p_{y|H}(y|H_1)$ and an $\alpha \in [0, 1]$, there exists a decision rule of the form:

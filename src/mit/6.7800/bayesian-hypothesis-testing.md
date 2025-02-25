@@ -77,6 +77,7 @@ Choose $H_1$ when $L(y) > \eta$ and $H_0$ when $L(y) < \eta$ and arbitrarily oth
 When $C_{00} = C_{11} = 1$ and $C_{01} = C_{10} = 0$, we are minimizing the probability of error, or maximizing accuracy
 
 - In this case, we have the MAP decision rule, which corresponds to choosing whichever $H_i$ leads to a larger $p_{H|y}(H_i|y)$
+- Therefore, minimizing probability of error is **a form of Bayes risk**
 
 ### Maximum Likelihood (ML)
 
