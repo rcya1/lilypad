@@ -34,9 +34,10 @@ export async function buildHTML(
   filepath: string,
   markdownContent: string
 ): Promise<string> {
+  let filename = path.basename(filepath).replace('.md', '')
   let head =
     `<!DOCTYPE html><html><head>
-      <title>temporary</title>
+      <title>${filename}</title>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       
