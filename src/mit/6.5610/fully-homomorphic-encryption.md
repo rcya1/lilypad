@@ -127,3 +127,55 @@ What do we choose for $G$?
 With this, we have that if our initial error can sit in the range $[-B, B]$, then as long as $q >> (n \log q)^d 2B$, then we can support a boolean function of depth $d$
 
 - Equivalently, for large enough $q$, we can support $d \approx n^{0.99}$
+
+### Bootstrapping
+
+The primary idea is to **refresh** ciphertexts
+
+- Goes from a ciphertext encrypting a message with lots of noise to a separate ciphertext that uses only a little noise
+- If the server was given the secret key $s$, this would be easy but this completely breaks it
+- Instead, we can have the user send the server an encrypted version of the secret key vector
+  - The server can homomorphically evaluate `Dec` on a ciphertext as long as `Dec` has a low complexity
+  - The output is then an encryption of the same message but with low error
+
+To do this, we need to think of `Dec` as a boolean circuit
+
+- We make the evaluation key `ek` as a vector of all of the encrypted bits of its secret key `s`
+- `ek = (Enc(s, s1), Enc(s, s2), ...)`
+- Given a ciphertext $C$ that still has a manageable amount of noise, the server will:
+  - Build a circuit $C_{\text{Dec}, \mc{C}}$ that emulates decoding the ciphertext $\mc{C}$
+  - Therefore, the output
+
+There are two important properties caveats we need to verify to make sure this works
+
+- The underlying levelled FHE scheme must be powerful enough to homomorphically evaluate the decryption circuit with at least one extra addition / multiplication gate
+  - I.e. if the decryption circuit has depth $d$, we need our levelled FHE scheme to support depth $d + 1$
+  - Our decryption circuit has depth $$O(\log n)$$ while we can support computations up to depth $n^0.99$, so we can bootstrap
+- We need the encryption scheme to be circularly secure
+  - Publishing ciphertexts that encrypt every bit of the secret key under itself hides the secret key
+  - We don't actually know if this is circularly secure
+  - Building a full FHE without this assumption is still an open question
+  - There are encryption schemes that can be proven to **not** be circularly secure
+
+### Applications
+
+Private Delegation
+
+- A user wants to outsource the computation of a function to a powerful but untrusted server
+  - Wants to hide the input
+- Examples:
+  - Evaluate an LLM without revealing the prompt
+  - Store emails on a server while still being able to search through them
+
+Secure Collaboration
+
+- Multiple users want to jointly evaluate a function on their hidden inputs without revealing anything but the output of the function
+- Examples:
+  - Hospitals may want to collaborate to train ML models while keeping patient data hidden
+  - Banks want to run an auction without revealing or learning each bidder's bid and each seller's price
+
+Private Database Lookups
+
+- Generalization of PIR
+  - User wants to make arbitrary queries to a remote database
+  - I.e. make SQL queries or search queries
