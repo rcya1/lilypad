@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head>
-      <title>temporary</title>
+      <title>hypothesis-testing-performance-limits</title>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       
@@ -334,6 +334,10 @@ P_F &amp;= pP_F(\eta&#x27;) + (1-p)P_F(\eta&#x27;&#x27;) \\
     </div><p>Remember that the Bayes risk incorporates our prior probabilities</p>
 <ul>
 <li>Result is that the deterministic test we derived previously is optimal</li>
+<li>One way to think about this is to consider the idea that minimizing Bayes risk is finding smallest value such that the line <code>Bayes risk = value</code> intersects the efficient frontier<ul>
+<li>Since randomization can only expand the convex hull, there is no way for it to make a new point that has lower Bayes risk than something else</li>
+</ul>
+</li>
 </ul>
 <div class="admonition theorem">
       <div class="title">

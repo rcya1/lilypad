@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head>
-      <title>temporary</title>
+      <title>datacenter-networks</title>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       
@@ -404,6 +404,96 @@ body .theorem .title {
 </li>
 </ul>
 </li>
+</ul>
+</li>
+</ul>
+<h2>Congestion Control</h2>
+<p>Why would this be different in a data center?</p>
+<ul>
+<li>You&#39;re not taking advantage of a lot of properties within a data center<ul>
+<li>I.e. you own everything</li>
+<li>You can look at traffic properties</li>
+</ul>
+</li>
+<li>You have control over all of the hardware in the datacenter</li>
+</ul>
+<p>We want to complete flows quickly:</p>
+<ul>
+<li>Two types of flows:<ul>
+<li>Short messages (i.e. queries or coordination)<ul>
+<li>These desire low latency</li>
+</ul>
+</li>
+<li>Large flows (i.e. data update)<ul>
+<li>These desire high throughput</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Our previous discussion of TCP didn&#39;t really think about these two types<ul>
+<li>It&#39;s hard to think about them on the wide Internet</li>
+</ul>
+</li>
+<li>Large buffers help absorb high throughput, but this leads to high latency</li>
+</ul>
+<h3>DCTCP</h3>
+<ul>
+<li>Main idea: because we can ensure all of our routers are ECN (explicit congestion notification) enabled, we can use the ECN marks to figure out how much to cut the window<ul>
+<li>By using this, it can keep the buffer occupancy small and ensure latency on the whole is more consistent</li>
+<li>When we do send a large volume flow,</li>
+</ul>
+</li>
+</ul>
+<p><img style="" src="img/dctcp-window-cut.png"/></p>
+<ul>
+<li>Switch marks packet when queue length &gt; K</li>
+<li>Sender maintains running average of fraction of packets marked<ul>
+<li>Exponential running average</li>
+<li>Uses this to figure out how to change the window</li>
+<li>When everything is marked, we do the same thing as TCP (cut the window in half)</li>
+</ul>
+</li>
+</ul>
+<p><img style="" src="img/dtcp-good.png"/></p>
+<h3>ML Training Jobs</h3>
+<ul>
+<li>When training across multiple GPUs, we need to look at communication across them</li>
+</ul>
+<p><img style="" src="img/ml-training.png"/></p>
+<ul>
+<li><p>Communication pattern of DNN training:</p>
+<ul>
+<li>We have a periodic up-down pattern of network demand</li>
+<li>When we have a training iteration, just our GPUs are working</li>
+<li>Then they need to communication</li>
+<li>It&#39;s periodic</li>
+</ul>
+</li>
+<li><p>One surprising observation:</p>
+<ul>
+<li>Fair congestion control protocols are not necessarily beneficial for ML workloads!</li>
+</ul>
+</li>
+</ul>
+<p><img style="" src="img/unfair-ml.png"/></p>
+<ul>
+<li>When a job is given higher bandwidth, it will finish faster, and then it will start its next compute phase</li>
+<li>Then, the other job can use the full bandwidth, and then finish</li>
+<li>Then the job that was given higher bandwidth will finish its compute and start going again</li>
+</ul>
+<p><img style="" src="img/unfair-sharing.png"/></p>
+<ul>
+<li>How do we enforce unfair network usage?<ul>
+<li>We can&#39;t just tell them to only use 60% of the link rate because then when only one of them is using the link at a time, it will not use it up</li>
+<li>We could use a priority queue to prioritize some over others<ul>
+<li>This adds more work for the switch to do</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>We want to do something e2e<ul>
+<li>You could instead change the AIMD update rule of the windows</li>
+<li>Have one add .6 and the other add .4</li>
 </ul>
 </li>
 </ul>

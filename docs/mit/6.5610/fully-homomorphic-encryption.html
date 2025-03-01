@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head>
-      <title>temporary</title>
+      <title>fully-homomorphic-encryption</title>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       
@@ -416,5 +416,71 @@ body .theorem .title {
 <p>With this, we have that if our initial error can sit in the range <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">[</mo><mo>−</mo><mi>B</mi><mo separator="true">,</mo><mi>B</mi><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">[-B, B]</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord">−</span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span><span class="mclose">]</span></span></span></span>, then as long as <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi><mo>&gt;</mo><mo>&gt;</mo><mo stretchy="false">(</mo><mi>n</mi><mi>log</mi><mo>⁡</mo><mi>q</mi><msup><mo stretchy="false">)</mo><mi>d</mi></msup><mn>2</mn><mi>B</mi></mrow><annotation encoding="application/x-tex">q &gt;&gt; (n \log q)^d 2B</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7335em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">q</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;&gt;</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0991em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">lo<span style="margin-right:0.01389em;">g</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">q</span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8491em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">d</span></span></span></span></span></span></span></span><span class="mord">2</span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span></span></span></span>, then we can support a boolean function of depth <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span></span></span></span></p>
 <ul>
 <li>Equivalently, for large enough <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>q</mi></mrow><annotation encoding="application/x-tex">q</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">q</span></span></span></span>, we can support <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo>≈</mo><msup><mi>n</mi><mn>0.99</mn></msup></mrow><annotation encoding="application/x-tex">d \approx n^{0.99}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≈</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">0.99</span></span></span></span></span></span></span></span></span></span></span></span></li>
+</ul>
+<h3>Bootstrapping</h3>
+<p>The primary idea is to <strong>refresh</strong> ciphertexts</p>
+<ul>
+<li>Goes from a ciphertext encrypting a message with lots of noise to a separate ciphertext that uses only a little noise</li>
+<li>If the server was given the secret key <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>s</mi></mrow><annotation encoding="application/x-tex">s</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">s</span></span></span></span>, this would be easy but this completely breaks it</li>
+<li>Instead, we can have the user send the server an encrypted version of the secret key vector<ul>
+<li>The server can homomorphically evaluate <code>Dec</code> on a ciphertext as long as <code>Dec</code> has a low complexity</li>
+<li>The output is then an encryption of the same message but with low error</li>
+</ul>
+</li>
+</ul>
+<p>To do this, we need to think of <code>Dec</code> as a boolean circuit</p>
+<ul>
+<li>We make the evaluation key <code>ek</code> as a vector of all of the encrypted bits of its secret key <code>s</code></li>
+<li><code>ek = (Enc(s, s1), Enc(s, s2), ...)</code></li>
+<li>Given a ciphertext <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>C</mi></mrow><annotation encoding="application/x-tex">C</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span></span></span></span> that still has a manageable amount of noise, the server will:<ul>
+<li>Build a circuit <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>C</mi><mrow><mtext>Dec</mtext><mo separator="true">,</mo><mi mathvariant="script">C</mi></mrow></msub></mrow><annotation encoding="application/x-tex">C_{\text{Dec}, \mc{C}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9694em;vertical-align:-0.2861em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3283em;"><span style="top:-2.55em;margin-left:-0.0715em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord text mtight"><span class="mord mtight">Dec</span></span><span class="mpunct mtight">,</span><span class="mord mathcal mtight" style="margin-right:0.05834em;">C</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> that emulates decoding the ciphertext <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="script">C</mi></mrow><annotation encoding="application/x-tex">\mc{C}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathcal" style="margin-right:0.05834em;">C</span></span></span></span></li>
+<li>Therefore, the output</li>
+</ul>
+</li>
+</ul>
+<p>There are two important properties caveats we need to verify to make sure this works</p>
+<ul>
+<li>The underlying levelled FHE scheme must be powerful enough to homomorphically evaluate the decryption circuit with at least one extra addition / multiplication gate<ul>
+<li>I.e. if the decryption circuit has depth <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi></mrow><annotation encoding="application/x-tex">d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord mathnormal">d</span></span></span></span>, we need our levelled FHE scheme to support depth <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">d + 1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7778em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span></li>
+<li>Our decryption circuit has depth <span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>log</mi><mo>⁡</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(\log n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mop">lo<span style="margin-right:0.01389em;">g</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span></span> while we can support computations up to depth <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>n</mi><mn>0</mn></msup><mi mathvariant="normal">.</mi><mn>99</mn></mrow><annotation encoding="application/x-tex">n^0.99</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span></span></span></span></span></span><span class="mord">.99</span></span></span></span>, so we can bootstrap</li>
+</ul>
+</li>
+<li>We need the encryption scheme to be circularly secure<ul>
+<li>Publishing ciphertexts that encrypt every bit of the secret key under itself hides the secret key</li>
+<li>We don&#39;t actually know if this is circularly secure</li>
+<li>Building a full FHE without this assumption is still an open question</li>
+<li>There are encryption schemes that can be proven to <strong>not</strong> be circularly secure</li>
+</ul>
+</li>
+</ul>
+<h3>Applications</h3>
+<p>Private Delegation</p>
+<ul>
+<li>A user wants to outsource the computation of a function to a powerful but untrusted server<ul>
+<li>Wants to hide the input</li>
+</ul>
+</li>
+<li>Examples:<ul>
+<li>Evaluate an LLM without revealing the prompt</li>
+<li>Store emails on a server while still being able to search through them</li>
+</ul>
+</li>
+</ul>
+<p>Secure Collaboration</p>
+<ul>
+<li>Multiple users want to jointly evaluate a function on their hidden inputs without revealing anything but the output of the function</li>
+<li>Examples:<ul>
+<li>Hospitals may want to collaborate to train ML models while keeping patient data hidden</li>
+<li>Banks want to run an auction without revealing or learning each bidder&#39;s bid and each seller&#39;s price</li>
+</ul>
+</li>
+</ul>
+<p>Private Database Lookups</p>
+<ul>
+<li>Generalization of PIR<ul>
+<li>User wants to make arbitrary queries to a remote database</li>
+<li>I.e. make SQL queries or search queries</li>
+</ul>
+</li>
 </ul>
 </body></html>
