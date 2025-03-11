@@ -101,6 +101,7 @@ where the right hand side must be independent of $x$ for the estimator to be val
 ||
 
 - An efficient estimator is guaranteed to be unbiased
+  - Can see this if we take the expectation of both sides w.r.t. $x$ given $y$
 - An efficient estimator is unique
 - An efficient estimator must be the unique MVU estimator for a problem
 
@@ -118,6 +119,11 @@ It is often convenient to use the likelihood function notation $L_y(x) = p_y(y; 
 ||theorem Corollary
 Suppose \mc{X}$ is open, and that an efficient estimator and ML estimator both exist. Then the two are identical.
 ||
+
+**Sketch**:
+
+- We note that the above corollary for when an estimator is efficient must hold for any $x$, not necessarily the optimal $x$
+- Therefore, we choose $x = \hat{x}_\t{ML}(y)$ and note that for this, $S(y; x)$ is $0$ since is is a local maximum
 
 This does not mean that ML estimators are always efficient!
 
