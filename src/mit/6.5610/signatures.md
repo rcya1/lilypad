@@ -84,8 +84,8 @@ We prove this satisfies the three properties:
     - Run $V$ on $v$ and if the $\beta$ it produces matches $\beta'$ then we output this transcript
       - Otherwise, restart
   - We show this is indistinguishable from a real transcript:
-    - The message $v$ is $A(z - \beta s) - \beta e + e'$m which by the lemma is indistinguishable from $A(z - \beta s) + e'$
-    - But $z - \beta s$ is uniformly distributred, so this is a possible message transcript
+    - The message $v$ is $A(z - \beta s) - \beta e + e'$ which by the lemma is indistinguishable from $A(z - \beta s) + e'$
+    - But $z - \beta s$ is uniformly distributed, so this is a possible message transcript
 
 #### Making Proof Non-Interactive
 
