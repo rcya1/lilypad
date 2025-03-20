@@ -135,3 +135,133 @@ What happens if we have malicious parties who send random junk?
   - This is fixable if we use a verified secret sharing scheme
     - A dealer "proves" that it send shares corresponding to a degree $t$ polynomial (or degree $2t$ in rerandomization)
     - If we use one of these, then we are fully secure against $t < n/3$ adversaries
+
+One note on the threat model: this does not typically protect against software bugs
+
+- If all parties are running the same software and an attacker finds a bug that can compromise all parties in one go, then the situation is comrpromised
+- Instead, what MPC can help with is local compromise:
+  - If two companies run an MPC, it protects one from learning more than it should about the others data
+
+### Applications
+
+**Cryptocurrency Secrets**
+
+- In cryptocurrency asset organizations, there is a secret signing key such that anyone holding it can authorize transactions
+- You may not trust any one employee with the key, so you split the key among multiple emplyoees
+- Rather than using BGW, most companies implement these using special-purpose "threshold signing" protocols
+  - These are more complicated / less elegant, but much faster
+
+**Private JOIN for Ad Attribution**:
+
+- Google and Meta use MPC for conversion measurement in online ads
+  - See which ads led to a purchase
+  - Does this by comparing user information with the advertiser (i.e. BMW)
+  - To avoid sharing all data, they use this
+- **Private Aggregation**:
+- A company ahs millions of clients, each of which holds a value
+- The company wants to compute some function over all of them without learning individual ones
+- I.e. private telemetry (Apple uses this to produce memories reels in Photos apop)
+
+#### Efficiency of BGW
+
+Many computations do not naturally have nice representations as arithmetic circuits
+
+- A Python script that exercises using RAM can have trillions of gates
+- BGW has communication cost scaling linearly with the number of gates
+- The number of rounds of communication scales with the depth of the circuit
+
+If the number of parties is in the millions, it may be infeasible for them all to have P2P communication links
+
+- It is hard to nail down who the parties are, and hard to have them agree on shared secrets with each other
+
+In practice, we go away from using BGW / general-purpose MPC protocols and instead on special-purpose ones
+
+- For crytocurrency or private-join, they may use something that looks nothing like BGW and instead very specific protocols
+- For private telemtry, companies use a similar protocol that uses no addition gates
+  - The simplest example is just a sum circuit, which can actually be used for a number of practical applications
+
+Almost all applications use one of these approaches
+
+- There is no MPC protocol as of today that uses training of neural network via BGW
+
+Another problem is that with millions of parties, there is a lot of communication overhead
+
+- Especially if the number of clients may evolve over time
+- A common technique is to work with a client / server model
+- Each client secret shares their input to $k << n$ servers, who run the computation amongst themselves
+- The downside is security: an attacker now only needs to compromise $k << n$ servers to violate privacy
+
+### Private Aggregation
+
+We explore more the idea of priate aggregation in a client-server model
+
+- Each client splits their data vector into a sum of $k$ random vectors
+  - They then send this to each server (equivalent to secret sharing)
+  - Each server learns nothing about the client overall vector
+- Each server can then sum up all client vectors it receives and then all of them can sum their answers to get the aggregate statistics
+
+#### Malicious Clients
+
+Problem: malicious clients can completely mess up the computation
+
+- Imagine something where each client is sending a vector of which website is their homepage (i.e. each entry in the vector is a website and is 0 or 1)
+  - A client could "vote" many times by sending a number > 1
+  - Or they could even send negative
+  - The server can't tell when this happens or know who to blame
+- Servers could use general-purpose MPC to detect and prevent this, but that leads to $O(n)$ communication per client
+  - $n$ is the length of the vector
+
+An idea is to have servers check that each client is well-formed before accepting it
+
+- Servers each hold an additive share of a client input $x$
+- We can construct a linear function (a sketch) of the input $x$ to compress it to something of length $O(1)$ that summarizes the goodness / badness of the input
+  - Then servers could conduct a $O(1)$ size MPC to check the sketch values
+  - In this case, we have the servers agree on a random vector $r$ of length $n$
+    - They also compute $R$, which has squared entries of $r$
+  - They then compute the test values $t_i = \angle{x_i, r}$ and $T_i = \angle{x_i, R}$
+  - They use an MPC to check:
+    $$(\sum x_i)^2 - \sum x_i = 0$$
+- If every element only has $<=1$ non-zero corodinate, then we will have the sum is 0
+  - There is very low chance (not formally proven here) that a cheating client can "win"
+
+#### Malicious Servers
+
+The previously described scheme does not protect against a malicious server
+
+- Imagien a server that guesses locations of non-zero element and tries to shift it
+  - I.e. they subtract 1 from that location and then add 1 somewhere else
+  - If they guess correct, then the verifier accepts
+  - If they guess wrong, the verifier wrongs
+
+If we wanted to check more complicated predicates, sketching is insufficient
+
+- I.e. check that $\sum x_i \in \{0, 1\}^n$
+
+We can instead try to do a zero-knowledge proof
+
+- The client is the prover while the servers are the verifiers
+
+Example for the above language:
+
+- Let $x = (x_1, \dots, x_n)$
+- Define polynomials $f, g, h$ over a field with:
+  - $f(i) = x_i$
+  - $g(i) = x_i - 1$
+  - $h = f \cdot g$
+- If $x \in L$, then: $h(i) = f(i) \cdot g(i) = x_i(x_i-1) = 0$ when $x_i \in \{0, 1\}$ for all $i$
+- Otherwise, then there is an $i$ such that $h_i \neq 0$A
+
+Key facts:
+
+- Given shares of $x$, one can compute shares of $f(r)$ and $g(r)$ without communication
+- Given shares of coefficient of $h$, can compute shares of $h(r)$ without communication
+
+We then have the following recipe:
+
+1. Client computes the polynomial $h$ and sends shares of $h$ to servers as its proof
+2. Servers check that for all $i$, $h(i) = 0$ by computing shares of $h(1), \dots, h(n)$ and then computing a random linear combination of the shares and checking if it is 0
+3. Servers check that $f \cdot g = h$ by choosing a random $r$ and computing shares of $f(r), g(r), h(r)$. They then use a $O(1)$ sized MPC to check if $f(r) \cdot g(r) - h(r)$
+
+This idea can actually be generalized to langauges that are computed by arbitrary circuits
+
+-
