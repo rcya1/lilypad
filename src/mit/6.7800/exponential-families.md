@@ -156,3 +156,90 @@ If the model is from a canonical exponential family, then an efficient estimator
 ||
 
 ### Multi-Parameter Exponential Families
+
+The above single-parameter families generalize naturally to distributions with multiple parameters
+
+||definition Multi-Parameter Exponential Families
+For some $\mc{X} \in \reals^L$ containing an open, nonempty set, a parameterized family of distributions $p(\cdot; \vec{x})$ is a $K$-parameter exponential family with:
+
+- Natural parameter $\lambda(\cdot) = \bracket{\lambda_1(\cdot), \dots, \lambda_K(\cdot)}^T: \mc{X} \rightarrow \reals^K$
+- Natural statistic $t(\cdot) = \bracket{t_1(\cdot), \dots, t_K(\cdot)}^T: \mc{Y} \rightarrow \reals^K$
+- Log base function $\beta(\cdot): \mc{Y} \rightarrow \reals$
+  with the form:
+  $$p_y(y; x) = \t{exp}\paren{\lambda(x)^T t(y) - \alpha(x) + \beta(y)}$$
+  ||
+
+The corresponding partition function is:
+$$Z(x) = e^\alpha(x) = \sum_y \t{exp}\paren{\lambda(x)^T t(y) + \beta(y)}$$
+
+- This is replaced with an integral when $y$ is continuous-valued
+
+A **canonical multi-parameter exponential family** is one with $\lambda(x) = x$
+
+The previous properties shown for exponential families readily extend to those for multi-parameter, and we omit the details
+
+- Generally, we replace derivative with gradient and second derivative with Hessian
+- We replace variance with the covariance matrix
+
+### Categorizing and Reducing Exponential Families
+
+For a family of distributions, in order for $y$ to be useful in estimating $x$, the distribution $p_y(\cdot, x)$ must be associated with a unique value of $x$
+
+- In this case, we say the parameter is **identifiable** from $y$ in family
+- These are the only families that are of interest
+- Formally, this means that there does not exist a $x_1$ and $x_2$ s.t. $x_1 \neq x_2$ and $p_y(\cdot; x_1) = p_y(\cdot; x_2)$
+
+||theorem Identifiability of Natural Parameters in Exponential Families
+The parameter of a canonical exponential family is identifiable iff the natural statistics satisfy no affine constraint:
+
+That is:
+$$\sum_{k=1}^K b_k t_k(\cdot) = c$$
+holds only if $b_1 = \cdots = b_K = c = 0$
+||
+
+For general exponential families, there are additional requirements for identifiability
+
+#### Minimal Families
+
+Identifiable exponential families may be reducible:
+
+- Consider $\lambda(x) = \bracket{x, 2x-1}$
+- We have $\ln p_y(y; x) = x t_1(y) + (2x-1)t_2(y) - \alpha(x) + \beta(y)$
+  - This can be equivalently exxpressed as $x(t_1(y) - 2t_2(y)) - \alpha(x) + (\beta(y) - t_2(y))$ which is an exponential family of smaller dimension
+- This is known as reducing the exponential family
+
+||theorem Reducibility of Exponential Families
+Any exponential family of dimension $K \geq 2$ that has the natural parameters not satisfying any affine constraint cannot be reduced. In fact, any exponential family whose natural parameters satisfy an affine constraint can be expressed as one of dimension $K - 1$
+||
+
+Some minimal families may satisfy non-linear constraints, which results in the natural parameter space not being an open subset of $\reals^K$
+
+- A **full rank** exponential family is a minimal exponential family whose parameter space for $\lambda$ includes an open, nonempty set in $\reals^K$
+- When a minimal exponential family is not full-rank, it is **curved**
+
+### Exponential Families over Finite Alphabets
+
+We consider for a collection of possible probability distributions, to what degree can an exponential family "cover" this set?
+
+- For distributions over a finite alphabet $\mc{Y}$, this is straightforward: we can construct a canonical exponential family over all positive distributions
+
+Let $\mc{Y} = \{1, \dots, M\}$ and then the $M$-dimensional canonical exponential family is:
+$$p_y(y; x) = \t{exp}\p{\sum_{i=1}^M x_i t_i(y) - \alpha(x)}$$
+with:
+$$t_i(y) = 1_{y=i}$$
+
+We then have that $p_y(j; x) \propto e^{x_j}$ for all $j$
+
+- Therefore, for any arbitrary distribution over $\mc{Y}$ $q(\cdot)$, we just take:
+  $$x_i = \ln q(i)$$
+  and we get the correct probabilities for each class
+
+### Inference
+
+One thing to note is that when computing the probability distribution $p_y(y; x)$, the data $y$ participates only through the natural statistics $t(y)$ and $\beta(y)$
+
+- Once we compute these $K + 1$ numbers, we can throw away the data and just use these statistics to perform inference on $x$
+- In fact, in exponential families, we don't even need $\beta(y)$
+- To take the MLE estimator, we just need to maximize $\ln p_y(y; x)$ across $x$, and since $\beta(y)$ is just an additive term, we can get away with not even computing it
+
+This is an example of sufficient statistics, which are functions of the data that are "loss-free" representations for the purpose of inference
