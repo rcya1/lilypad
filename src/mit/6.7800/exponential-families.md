@@ -98,8 +98,8 @@ The uniform random variable is **not** exponential
 
 #### Geometric Mean of Distributions
 
-||Weighted Geometric Mean
-COnsider two strictly positive probability distributions $p_1$ and $p_2$, the \*\*weighted geometric mean of these distributions is defined for all $x \in [0, 1]$:
+||definition Weighted Geometric Mean
+Consider two strictly positive probability distributions $p_1$ and $p_2$, the **weighted geometric mean** of these distributions is defined for all $x \in [0, 1]$:
 $$p_y(y; x) = \frac{p_1(y)^x p_2(y)^{1-x}}{Z(x)}$$
 ||
 
