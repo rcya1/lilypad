@@ -8,8 +8,6 @@ order: 3
 
 When multiplying $A$ and $B$, can break them up into blocks
 
-hi
-
 $$
 A = \begin{pmatrix}A_{1,1} & \dots & A_{1,n} \\
 \vdots \\
