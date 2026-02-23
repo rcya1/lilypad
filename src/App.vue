@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import LilypadSidebar from './components/LilypadSidebar.vue'
+import LilypadSidebar from './components/sidebar/LilypadSidebar.vue'
 </script>
 
 <template>

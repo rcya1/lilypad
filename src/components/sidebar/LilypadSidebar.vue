@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FileExplorer from './FileExplorer.vue'
 import LilypadIcon from '@/assets/icon-light.svg'
 import { ref, onBeforeUnmount } from 'vue'
 
@@ -47,6 +48,8 @@ onBeforeUnmount(() => {
       <LilypadIcon class="w-8 h-8 mr-2" />
       <h1 class="text-xl">Lilypad</h1>
     </div>
+
+    <FileExplorer />
 
     <div
       class="absolute top-0 right-0 h-full w-1 cursor-col-resize hover:bg-white/20 transition-colors"
