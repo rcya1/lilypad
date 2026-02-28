@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat); FILE=$(echo \"$INPUT\" | jq -r '.tool_input.file_path // \"\"'); if [[ \"$FILE\" =~ \\.(vue|ts)$ ]]; then cd /Users/rcya/lilypad && yarn type-check 2>&1 || true; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
