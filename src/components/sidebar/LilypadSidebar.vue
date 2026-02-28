@@ -6,7 +6,7 @@ import { ref, onBeforeUnmount } from 'vue'
 const sidebarWidth = ref(250)
 const snapThreshold = 160
 const maxWidth = 500
-const minimizedWidth = 48
+const minimizedWidth = 64
 
 const isMinimized = ref(false)
 const isResizing = ref(false)
@@ -53,7 +53,7 @@ onBeforeUnmount(() => {
       <LilypadIcon class="w-8 h-8 shrink-0" :class="{ 'mr-2': !isMinimized }" />
       <h1
         v-if="!isMinimized"
-        class="font-display italic font-medium text-xl text-text-primary leading-none"
+        class="font-display font-medium text-xl text-text-primary leading-none"
       >
         Lilypad
       </h1>

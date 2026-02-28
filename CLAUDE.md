@@ -48,22 +48,22 @@ Lilypad is a Vue 3 + TypeScript SPA built with Vite. It is an app for taking not
 
 | CSS var              | Tailwind utility            | Light value | Role                              |
 | -------------------- | --------------------------- | ----------- | --------------------------------- |
-| `--bg`               | `bg-bg`                     | `#eff5ef`   | Main canvas (light mint)          |
-| `--surface`          | `bg-surface`                | `#e3ede3`   | Sidebar/panel fill                |
-| `--surface-elevated` | `bg-surface-elevated`       | `#d6e5d6`   | Hover states                      |
-| `--surface-overlay`  | `bg-surface-overlay`        | `#c8dbc8`   | Active/selected                   |
-| `--border`           | `border-border`             | `#aec8ae`   | Visible borders                   |
-| `--border-subtle`    | `border-border-subtle`      | `#ccdacc`   | Faint separators                  |
-| `--text-primary`     | `text-text-primary`         | `#1a2a1a`   | Main text (dark green)            |
-| `--text-secondary`   | `text-text-secondary`       | `#3d5c3d`   | Labels, filenames                 |
-| `--text-muted`       | `text-text-muted`           | `#6b8c6b`   | Chevrons, placeholders            |
-| `--accent`           | `text-accent` / `bg-accent` | `#2d6b2d`   | Forest green — interactive/active |
+| `--bg`               | `bg-bg`                     | `#f4f8f4`   | Main canvas (near-white green)    |
+| `--surface`          | `bg-surface`                | `#eaf2ea`   | Sidebar/panel fill                |
+| `--surface-elevated` | `bg-surface-elevated`       | `#deeade`   | Hover states                      |
+| `--surface-overlay`  | `bg-surface-overlay`        | `#d0e2d0`   | Active/selected                   |
+| `--border`           | `border-border`             | `#b8cfb8`   | Visible borders                   |
+| `--border-subtle`    | `border-border-subtle`      | `#d6e6d6`   | Faint separators                  |
+| `--text-primary`     | `text-text-primary`         | `#1e2a1e`   | Main text (dark green)            |
+| `--text-secondary`   | `text-text-secondary`       | `#456045`   | Labels, filenames                 |
+| `--text-muted`       | `text-text-muted`           | `#789078`   | Chevrons, placeholders            |
+| `--accent`           | `text-accent` / `bg-accent` | `#3d7a3d`   | Forest green — interactive/active |
 | `--amber`            | `text-amber` / `bg-amber`   | `#b5823a`   | Folders, PDFs                     |
 
 **Typography:**
 
 - **Inter** (300–600, loaded via Google Fonts): All UI chrome → `font-ui` utility (`--font-family-ui`)
-- **Lora** (italic 400–600, loaded via Google Fonts): App title wordmark, empty state headings → `font-display` utility (`--font-family-display`)
+- **Lora** (400–600, loaded via Google Fonts): App title wordmark, empty state headings → `font-display` utility (`--font-family-display`)
 - **System mono** (no load): Code blocks → `font-mono` utility
 
 **Icons:** `lucide-vue-next` throughout. Standard sizes: 12px chevrons, 15px file/folder icons, 16px toolbar icons.
