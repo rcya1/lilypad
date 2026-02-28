@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import LilypadSidebar from './components/sidebar/LilypadSidebar.vue'
+import LilypadIcon from '@/assets/icon-light.svg'
 </script>
 
 <template>
-  <div class="flex flex-row h-screen">
+  <div class="flex flex-row h-screen bg-bg overflow-hidden">
     <LilypadSidebar />
-    <h1 class="font-bold">You did it!</h1>
-    <p>
-      Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-      documentation
-    </p>
+    <main class="flex-1 flex items-center justify-center bg-bg overflow-auto">
+      <div class="flex flex-col items-center gap-3 text-center">
+        <LilypadIcon class="w-16 h-16 opacity-[0.08]" />
+        <h2 class="font-display italic text-2xl font-normal text-text-secondary">
+          Open a note to begin
+        </h2>
+        <p class="text-sm text-text-muted">Select a file from the sidebar</p>
+      </div>
+    </main>
   </div>
 </template>

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
+import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, File } from 'lucide-vue-next'
 
 const props = defineProps<{
   entry: Entry
@@ -20,21 +21,30 @@ const toggle = () => {
 <template>
   <div>
     <div
-      class="flex items-center gap-1 py-1 px-2 cursor-pointer hover:bg-gray-200"
+      class="flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors duration-100"
       :style="{ paddingLeft: depth * 14 + 8 + 'px' }"
       @click="toggle"
     >
       <!-- Chevron -->
-      <span class="w-4 text-gray-500">
+      <span class="w-3 flex items-center justify-center text-text-muted shrink-0">
         <template v-if="isDirectory(entry)">
-          {{ isOpen ? '▾' : '▸' }}
+          <ChevronDown v-if="isOpen" :size="12" />
+          <ChevronRight v-else :size="12" />
         </template>
       </span>
 
       <!-- Icon -->
-      <span class="w-4">
-        <template v-if="isDirectory(entry)">📁</template>
-        <template v-else>📄</template>
+      <span class="flex items-center shrink-0">
+        <template v-if="isDirectory(entry)">
+          <FolderOpen v-if="isOpen" :size="15" class="text-amber" />
+          <Folder v-else :size="15" class="text-amber" />
+        </template>
+        <template v-else-if="!isDirectory(entry) && entry.type === 'pdf'">
+          <File :size="15" class="text-amber" />
+        </template>
+        <template v-else>
+          <FileText :size="15" class="text-accent" />
+        </template>
       </span>
 
       <!-- Name -->

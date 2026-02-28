@@ -1,1 +1,82 @@
 @import 'tailwindcss';
+
+:root {
+  --bg: #eff5ef;
+  --surface: #e3ede3;
+  --surface-elevated: #d6e5d6;
+  --surface-overlay: #c8dbc8;
+  --border: #aec8ae;
+  --border-subtle: #ccdacc;
+  --text-primary: #1a2a1a;
+  --text-secondary: #3d5c3d;
+  --text-muted: #6b8c6b;
+  --accent: #2d6b2d;
+  --accent-hover: #245c24;
+  --accent-subtle: #c0d8c0;
+  --amber: #b5823a;
+  --amber-subtle: #eedfc0;
+}
+
+.dark {
+  --bg: #0f1a0f;
+  --surface: #141f14;
+  --surface-elevated: #1c2a1c;
+  --surface-overlay: #243024;
+  --border: #3a4f3a;
+  --border-subtle: #2d3f2d;
+  --text-primary: #e8f2e8;
+  --text-secondary: #a8c4a8;
+  --text-muted: #6b8c6b;
+  --accent: #5a9a5a;
+  --accent-hover: #6aaa6a;
+  --accent-subtle: #1c3a1c;
+  --amber: #c99648;
+  --amber-subtle: #3d2e10;
+}
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-amber: var(--amber);
+  --color-amber-subtle: var(--amber-subtle);
+
+  --font-family-ui: 'Inter', system-ui, sans-serif;
+  --font-family-display: 'Lora', Georgia, serif;
+  --font-family-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-family-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

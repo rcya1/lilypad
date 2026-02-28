@@ -39,3 +39,33 @@ Lilypad is a Vue 3 + TypeScript SPA built with Vite. It is an app for taking not
 **File explorer types** (`src/types/file-explorer.ts`): The `Entry` union type represents either a `Directory` (with recursive `children`) or a `Document` (with a `DocumentType` of `'pdf' | 'txt'`). Use the `isDirectory()` type guard to narrow entries.
 
 **Sidebar** (`src/components/sidebar/`): Implements drag-to-resize (160–500px range) using raw DOM event listeners, cleaned up in `onBeforeUnmount`. The file explorer currently uses mock data.
+
+## Design System
+
+**Mode:** Light mode only now; dark mode infrastructure is in place. Toggle `.dark` class on `<html>` to activate dark mode.
+
+**Tokens** — CSS vars defined in `:root` / `.dark`, bridged to Tailwind utilities via `@theme { --color-* }`:
+
+| CSS var              | Tailwind utility            | Light value | Role                              |
+| -------------------- | --------------------------- | ----------- | --------------------------------- |
+| `--bg`               | `bg-bg`                     | `#eff5ef`   | Main canvas (light mint)          |
+| `--surface`          | `bg-surface`                | `#e3ede3`   | Sidebar/panel fill                |
+| `--surface-elevated` | `bg-surface-elevated`       | `#d6e5d6`   | Hover states                      |
+| `--surface-overlay`  | `bg-surface-overlay`        | `#c8dbc8`   | Active/selected                   |
+| `--border`           | `border-border`             | `#aec8ae`   | Visible borders                   |
+| `--border-subtle`    | `border-border-subtle`      | `#ccdacc`   | Faint separators                  |
+| `--text-primary`     | `text-text-primary`         | `#1a2a1a`   | Main text (dark green)            |
+| `--text-secondary`   | `text-text-secondary`       | `#3d5c3d`   | Labels, filenames                 |
+| `--text-muted`       | `text-text-muted`           | `#6b8c6b`   | Chevrons, placeholders            |
+| `--accent`           | `text-accent` / `bg-accent` | `#2d6b2d`   | Forest green — interactive/active |
+| `--amber`            | `text-amber` / `bg-amber`   | `#b5823a`   | Folders, PDFs                     |
+
+**Typography:**
+
+- **Inter** (300–600, loaded via Google Fonts): All UI chrome → `font-ui` utility (`--font-family-ui`)
+- **Lora** (italic 400–600, loaded via Google Fonts): App title wordmark, empty state headings → `font-display` utility (`--font-family-display`)
+- **System mono** (no load): Code blocks → `font-mono` utility
+
+**Icons:** `lucide-vue-next` throughout. Standard sizes: 12px chevrons, 15px file/folder icons, 16px toolbar icons.
+
+**Color roles:** accent (green) for interactive/resize/active states; amber for folders and PDFs.
