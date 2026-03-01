@@ -33,7 +33,13 @@ const content = ref<Entry[]>([
       <span class="text-xs font-medium text-text-muted uppercase tracking-widest">Files</span>
     </div>
     <div class="text-sm select-none">
-      <FileExplorerNode v-for="entry in content" :key="entry.name" :entry="entry" :depth="0" />
+      <FileExplorerNode
+        v-for="entry in content"
+        :key="entry.name"
+        :entry="entry"
+        :depth="0"
+        path-prefix=""
+      />
     </div>
   </div>
 </template>

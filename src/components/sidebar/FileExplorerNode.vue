@@ -1,29 +1,51 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
 import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, File } from 'lucide-vue-next'
+import { useEditorStore } from '@/stores/editor'
 
 const props = defineProps<{
   entry: Entry
   depth: number
+  pathPrefix: string
 }>()
 
+const store = useEditorStore()
 const isOpen = ref(true)
 
-const toggle = () => {
+// Full path used as a stable document ID
+const fullPath = computed(() =>
+  props.pathPrefix ? `${props.pathPrefix}/${props.entry.name}` : props.entry.name,
+)
+
+// Path prefix passed to direct children (only relevant for directories)
+const childPathPrefix = computed(() => fullPath.value)
+
+function handleClick() {
   if (isDirectory(props.entry)) {
     isOpen.value = !isOpen.value
+  } else if (props.entry.type === 'txt') {
+    store.openDocument(fullPath.value, props.entry.name, props.entry.type)
   }
 }
+
+const isActive = computed(
+  () => !isDirectory(props.entry) && store.activeDocumentId === fullPath.value,
+)
 </script>
 
 <template>
   <div>
     <div
-      class="flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors duration-100"
+      class="flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
+      :class="
+        isActive
+          ? 'bg-surface-overlay text-text-primary'
+          : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
+      "
       :style="{ paddingLeft: depth * 14 + 8 + 'px' }"
-      @click="toggle"
+      @click="handleClick"
     >
       <!-- Chevron -->
       <span class="w-3 flex items-center justify-center text-text-muted shrink-0">
@@ -43,7 +65,7 @@ const toggle = () => {
           <File :size="15" class="text-amber" />
         </template>
         <template v-else>
-          <FileText :size="15" class="text-accent" />
+          <FileText :size="15" :class="isActive ? 'text-accent' : 'text-accent'" />
         </template>
       </span>
 
@@ -59,6 +81,7 @@ const toggle = () => {
         :key="child.name"
         :entry="child"
         :depth="depth + 1"
+        :path-prefix="childPathPrefix"
       />
     </div>
   </div>
