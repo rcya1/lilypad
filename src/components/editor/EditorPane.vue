@@ -2,16 +2,26 @@
 import { computed } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import TextEditor from './TextEditor.vue'
+import EditorTabs from './EditorTabs.vue'
 import LilypadIcon from '@/assets/icon-light.svg'
 
 const store = useEditorStore()
+const hasTabs = computed(() => store.tabOrder.length > 0)
 const activeId = computed(() => store.activeDocumentId)
 </script>
 
 <template>
   <main class="flex-1 flex flex-col overflow-hidden bg-bg">
-    <template v-if="activeId">
-      <TextEditor :document-id="activeId" class="flex-1" />
+    <template v-if="hasTabs">
+      <EditorTabs />
+      <TextEditor
+        v-for="id in store.tabOrder"
+        v-show="id === activeId"
+        :key="id"
+        :document-id="id"
+        :is-active="id === activeId"
+        class="flex-1"
+      />
     </template>
     <template v-else>
       <div class="flex-1 flex items-center justify-center">

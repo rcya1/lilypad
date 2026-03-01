@@ -4,7 +4,7 @@ import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
 import { useEditorStore } from '@/stores/editor'
 
-const props = defineProps<{ documentId: string }>()
+const props = defineProps<{ documentId: string; isActive: boolean }>()
 
 const store = useEditorStore()
 const container = ref<HTMLDivElement>()
@@ -63,45 +63,39 @@ const lilypadTheme = EditorView.theme({
   },
 })
 
-function buildState(content: string) {
-  return EditorState.create({
-    doc: content,
-    extensions: [
-      basicSetup,
-      lilypadTheme,
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          store.updateContent(props.documentId, update.state.doc.toString())
-        }
-      }),
-      EditorView.lineWrapping,
-    ],
-  })
-}
-
-function mountView(documentId: string) {
-  if (!container.value) return
-  const doc = store.openDocuments.get(documentId)
-  const content = doc?.content ?? ''
-
-  if (view) {
-    // Swap the state in place to avoid flickering; recreate if container changed
-    view.setState(buildState(content))
-  } else {
-    view = new EditorView({
-      state: buildState(content),
-      parent: container.value,
-    })
-  }
-  view.focus()
-}
-
-onMounted(() => mountView(props.documentId))
-
 watch(
-  () => props.documentId,
-  (newId) => mountView(newId),
+  () => props.isActive,
+  (active) => {
+    if (active && view) {
+      requestAnimationFrame(() => {
+        view?.requestMeasure()
+        view?.focus()
+      })
+    }
+  },
 )
+
+onMounted(() => {
+  if (!container.value) return
+  const doc = store.openDocuments.get(props.documentId)
+  view = new EditorView({
+    state: EditorState.create({
+      doc: doc?.content ?? '',
+      extensions: [
+        basicSetup,
+        lilypadTheme,
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged) {
+            store.updateContent(props.documentId, update.state.doc.toString())
+          }
+        }),
+        EditorView.lineWrapping,
+      ],
+    }),
+    parent: container.value,
+  })
+  view.focus()
+})
 
 onBeforeUnmount(() => {
   view?.destroy()
