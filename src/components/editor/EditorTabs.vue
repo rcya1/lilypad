@@ -47,7 +47,7 @@ function onDragEnd() {
 <template>
   <div
     class="flex items-stretch bg-surface border-b border-border-subtle shrink-0 overflow-x-auto"
-    style="height: 34px"
+    style="height: 40px"
     @dragover.prevent
     @drop="onDrop"
   >
@@ -78,19 +78,19 @@ function onDragEnd() {
           class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
         />
 
-        <span class="truncate max-w-35 font-ui text-xs">{{ tab.name }}</span>
+        <span class="truncate max-w-35 font-ui text-sm">{{ tab.name }}</span>
 
         <!-- Close button -->
         <span
-          class="flex items-center justify-center w-4 h-4 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
+          class="flex items-center justify-center w-5 h-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
           :class="
             tab.id === store.activeDocumentId
-              ? 'opacity-60 hover:opacity-100'
-              : 'opacity-0 group-hover:opacity-60 hover:opacity-100!'
+              ? 'opacity-80 hover:opacity-100'
+              : 'opacity-0 group-hover:opacity-70 hover:opacity-100!'
           "
           @click.stop="store.closeDocument(tab.id)"
         >
-          <X :size="11" />
+          <X :size="13" />
         </span>
       </button>
     </template>
