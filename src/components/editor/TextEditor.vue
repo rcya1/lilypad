@@ -36,6 +36,10 @@ const lilypadTheme = EditorView.theme({
   '.cm-focused .cm-cursor': {
     borderLeftColor: 'var(--accent)',
   },
+  '.cm-selectionLayer': {
+    zIndex: '2 !important',
+    mixBlendMode: 'darken',
+  },
   '.cm-selectionBackground': {
     backgroundColor: 'var(--surface-overlay) !important',
   },
