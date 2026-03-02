@@ -131,12 +131,7 @@ onBeforeUnmount(() => {
             <!-- Second panel -->
             <div class="flex-1 overflow-hidden">
               <MarkdownPreview v-if="!isSwapped" :document-id="id" />
-              <TextEditor
-                v-else
-                :document-id="id"
-                :is-active="id === activeId"
-                class="h-full"
-              />
+              <TextEditor v-else :document-id="id" :is-active="id === activeId" class="h-full" />
             </div>
           </div>
         </div>
