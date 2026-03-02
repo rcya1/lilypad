@@ -66,11 +66,17 @@ watch(
   padding-bottom: 0.3em;
   margin-top: 0;
 }
-.markdown-body :deep(h2) { font-size: 1.35rem; }
-.markdown-body :deep(h3) { font-size: 1.1rem; }
+.markdown-body :deep(h2) {
+  font-size: 1.35rem;
+}
+.markdown-body :deep(h3) {
+  font-size: 1.1rem;
+}
 .markdown-body :deep(h4),
 .markdown-body :deep(h5),
-.markdown-body :deep(h6) { font-size: 1rem; }
+.markdown-body :deep(h6) {
+  font-size: 1rem;
+}
 
 /* Paragraphs & spacing */
 .markdown-body :deep(p) {
@@ -206,8 +212,12 @@ watch(
 .markdown-body :deep(.admonition-body) {
   padding: 10px 14px;
 }
-.markdown-body :deep(.admonition-body > p:first-child) { margin-top: 0; }
-.markdown-body :deep(.admonition-body > p:last-child) { margin-bottom: 0; }
+.markdown-body :deep(.admonition-body > p:first-child) {
+  margin-top: 0;
+}
+.markdown-body :deep(.admonition-body > p:last-child) {
+  margin-bottom: 0;
+}
 
 /* Admonition type colours */
 .markdown-body :deep(.admonition-info) {
