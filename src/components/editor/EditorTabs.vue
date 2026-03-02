@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { X } from 'lucide-vue-next'
+import { X, RotateCw, RotateCcw, ArrowLeftRight, ArrowUpDown } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
+
+defineProps<{
+  isVertical: boolean
+  isSwapped: boolean
+  rotationClockwise: boolean
+}>()
+
+const emit = defineEmits<{
+  'toggle-layout': []
+  'toggle-swap': []
+}>()
 
 const store = useEditorStore()
 const tabs = computed(() => store.tabOrder.map((id) => store.openDocuments.get(id)!))
@@ -100,5 +111,25 @@ function onDragEnd() {
 
     <!-- Trailing drag target area (rest of the tab bar) -->
     <div class="flex-1" @dragover="onDragOverEnd" @drop="onDrop" />
+
+    <!-- Layout controls -->
+    <div class="flex items-center gap-0.5 px-2 shrink-0 border-l border-border-subtle">
+      <button
+        class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+        :title="isVertical ? 'Switch to side-by-side' : 'Switch to top-bottom'"
+        @click="emit('toggle-layout')"
+      >
+        <RotateCw v-if="rotationClockwise" :size="15" />
+        <RotateCcw v-else :size="15" />
+      </button>
+      <button
+        class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+        :title="isSwapped ? 'Move editor to primary position' : 'Swap editor and preview'"
+        @click="emit('toggle-swap')"
+      >
+        <ArrowLeftRight v-if="!isVertical" :size="15" />
+        <ArrowUpDown v-else :size="15" />
+      </button>
+    </div>
   </div>
 </template>

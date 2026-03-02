@@ -15,12 +15,37 @@ const splitPct = ref(50)
 const MIN_PCT = 20
 const MAX_PCT = 80
 
-let dragging = false
+const isVertical = ref(false)
+const isSwapped = ref(false)
+const rotationClockwise = ref(true)
+const isDragging = ref(false)
+
+function toggleLayout() {
+  isVertical.value = !isVertical.value
+  rotationClockwise.value = !rotationClockwise.value
+  splitPct.value = 50
+}
+
+function toggleSwap() {
+  isSwapped.value = !isSwapped.value
+}
+
+const dividerLineClass = computed(() => {
+  if (isVertical.value) {
+    return isDragging.value
+      ? 'w-full h-0.75 bg-accent'
+      : 'w-full h-0.5 bg-border-subtle group-hover:bg-border group-hover:h-0.75'
+  } else {
+    return isDragging.value
+      ? 'h-full w-0.75 bg-accent'
+      : 'h-full w-0.5 bg-border-subtle group-hover:bg-border group-hover:w-0.75'
+  }
+})
 
 function onDividerMouseDown(e: MouseEvent) {
   e.preventDefault()
-  dragging = true
-  document.body.style.cursor = 'col-resize'
+  isDragging.value = true
+  document.body.style.cursor = isVertical.value ? 'row-resize' : 'col-resize'
   document.body.style.userSelect = 'none'
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', onMouseUp)
@@ -28,14 +53,19 @@ function onDividerMouseDown(e: MouseEvent) {
 
 function onMouseMove(e: MouseEvent) {
   const pane = splitPane.value?.[0]
-  if (!dragging || !pane) return
+  if (!isDragging.value || !pane) return
   const rect = pane.getBoundingClientRect()
-  const pct = ((e.clientX - rect.left) / rect.width) * 100
-  splitPct.value = Math.min(MAX_PCT, Math.max(MIN_PCT, pct))
+  if (isVertical.value) {
+    const pct = ((e.clientY - rect.top) / rect.height) * 100
+    splitPct.value = Math.min(MAX_PCT, Math.max(MIN_PCT, pct))
+  } else {
+    const pct = ((e.clientX - rect.left) / rect.width) * 100
+    splitPct.value = Math.min(MAX_PCT, Math.max(MIN_PCT, pct))
+  }
 }
 
 function onMouseUp() {
-  dragging = false
+  isDragging.value = false
   document.body.style.cursor = ''
   document.body.style.userSelect = ''
   window.removeEventListener('mousemove', onMouseMove)
@@ -51,30 +81,62 @@ onBeforeUnmount(() => {
 <template>
   <main class="flex-1 flex flex-col overflow-hidden bg-bg">
     <template v-if="hasTabs">
-      <EditorTabs />
+      <EditorTabs
+        :is-vertical="isVertical"
+        :is-swapped="isSwapped"
+        :rotation-clockwise="rotationClockwise"
+        @toggle-layout="toggleLayout"
+        @toggle-swap="toggleSwap"
+      />
 
       <!-- For each open tab, render stacked (only active is shown) -->
       <template v-for="id in store.tabOrder" :key="id">
         <div v-show="id === activeId" class="flex-1 overflow-hidden">
-          <div v-if="id === activeId" ref="splitPane" class="flex flex-row h-full">
-            <!-- Editor side -->
-            <div :style="{ width: splitPct + '%' }" class="h-full overflow-hidden">
-              <TextEditor :document-id="id" :is-active="id === activeId" class="h-full" />
+          <div
+            v-if="id === activeId"
+            ref="splitPane"
+            :class="['flex h-full', isVertical ? 'flex-col' : 'flex-row']"
+          >
+            <!-- First panel -->
+            <div
+              :style="isVertical ? { height: splitPct + '%' } : { width: splitPct + '%' }"
+              class="overflow-hidden shrink-0"
+              :class="isSwapped ? 'bg-surface' : ''"
+            >
+              <TextEditor
+                v-if="!isSwapped"
+                :document-id="id"
+                :is-active="id === activeId"
+                class="h-full"
+              />
+              <MarkdownPreview v-else :document-id="id" />
             </div>
 
             <!-- Resize divider -->
-            <div
-              class="relative w-2 shrink-0 cursor-col-resize group"
-              @mousedown="onDividerMouseDown"
-            >
+            <div :class="['relative shrink-0 z-10', isVertical ? 'w-full h-0' : 'h-full w-0']">
               <div
-                class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border-subtle group-hover:bg-accent transition-colors duration-100"
-              />
+                :class="[
+                  'absolute group flex',
+                  isVertical
+                    ? 'inset-x-0 top-0 -translate-y-1/2 h-4 cursor-row-resize items-center'
+                    : 'inset-y-0 left-0 -translate-x-1/2 w-4 cursor-col-resize justify-center',
+                ]"
+                @mousedown="onDividerMouseDown"
+                @dblclick="splitPct = 50"
+              >
+                <div class="transition-all duration-100" :class="dividerLineClass" />
+              </div>
             </div>
 
-            <!-- Preview side -->
-            <div class="flex-1 h-full overflow-hidden">
-              <MarkdownPreview :document-id="id" />
+            <!-- Second panel -->
+            <div class="flex-1 overflow-hidden">
+              <MarkdownPreview v-if="!isSwapped" :document-id="id" />
+              <TextEditor
+                v-else
+                :document-id="id"
+                :is-active="id === activeId"
+                class="h-full"
+              />
             </div>
           </div>
         </div>
