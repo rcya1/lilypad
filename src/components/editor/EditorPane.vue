@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, useTemplateRef, onBeforeUnmount } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
@@ -9,9 +9,8 @@ import LilypadIcon from '@/assets/icon-light.svg'
 const store = useEditorStore()
 const hasTabs = computed(() => store.tabOrder.length > 0)
 const activeId = computed(() => store.activeDocumentId)
-const isMarkdown = computed(() => store.activeDocument?.type === 'md')
 
-// Split pane state — percentage given to the editor side
+const splitPane = useTemplateRef<HTMLDivElement[]>('splitPane')
 const splitPct = ref(50)
 const MIN_PCT = 20
 const MAX_PCT = 80
@@ -28,9 +27,8 @@ function onDividerMouseDown(e: MouseEvent) {
 }
 
 function onMouseMove(e: MouseEvent) {
-  if (!dragging) return
-  const pane = document.getElementById('editor-split-pane')
-  if (!pane) return
+  const pane = splitPane.value?.[0]
+  if (!dragging || !pane) return
   const rect = pane.getBoundingClientRect()
   const pct = ((e.clientX - rect.left) / rect.width) * 100
   splitPct.value = Math.min(MAX_PCT, Math.max(MIN_PCT, pct))
@@ -58,12 +56,7 @@ onBeforeUnmount(() => {
       <!-- For each open tab, render stacked (only active is shown) -->
       <template v-for="id in store.tabOrder" :key="id">
         <div v-show="id === activeId" class="flex-1 overflow-hidden">
-          <!-- Markdown: split editor + preview -->
-          <div
-            v-if="isMarkdown && id === activeId"
-            id="editor-split-pane"
-            class="flex flex-row h-full"
-          >
+          <div v-if="id === activeId" ref="splitPane" class="flex flex-row h-full">
             <!-- Editor side -->
             <div :style="{ width: splitPct + '%' }" class="h-full overflow-hidden">
               <TextEditor :document-id="id" :is-active="id === activeId" class="h-full" />
@@ -71,18 +64,19 @@ onBeforeUnmount(() => {
 
             <!-- Resize divider -->
             <div
-              class="w-px shrink-0 bg-border-subtle hover:bg-accent cursor-col-resize transition-colors duration-100"
+              class="relative w-2 shrink-0 cursor-col-resize group"
               @mousedown="onDividerMouseDown"
-            />
+            >
+              <div
+                class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border-subtle group-hover:bg-accent transition-colors duration-100"
+              />
+            </div>
 
             <!-- Preview side -->
-            <div class="flex-1 h-full overflow-hidden border-l border-border-subtle">
+            <div class="flex-1 h-full overflow-hidden">
               <MarkdownPreview :document-id="id" />
             </div>
           </div>
-
-          <!-- Non-markdown: full-width editor -->
-          <TextEditor v-else :document-id="id" :is-active="id === activeId" class="h-full w-full" />
         </div>
       </template>
     </template>
