@@ -5,13 +5,13 @@ import { ref } from 'vue'
 const content = ref<Entry[]>([
   {
     kind: 'document',
-    name: 'file1.txt',
-    type: 'txt',
+    name: 'welcome.md',
+    type: 'md',
   },
   {
     kind: 'document',
-    name: 'file2.txt',
-    type: 'txt',
+    name: 'notes.md',
+    type: 'md',
   },
   {
     kind: 'directory',
@@ -19,8 +19,8 @@ const content = ref<Entry[]>([
     children: [
       {
         kind: 'document',
-        name: 'file3.pdf',
-        type: 'pdf',
+        name: 'math.md',
+        type: 'md',
       },
     ],
   },

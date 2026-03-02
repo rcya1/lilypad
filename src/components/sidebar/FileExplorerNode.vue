@@ -25,7 +25,7 @@ const childPathPrefix = computed(() => fullPath.value)
 function handleClick() {
   if (isDirectory(props.entry)) {
     isOpen.value = !isOpen.value
-  } else if (props.entry.type === 'txt') {
+  } else if (props.entry.type === 'md') {
     store.openDocument(fullPath.value, props.entry.name, props.entry.type)
   }
 }

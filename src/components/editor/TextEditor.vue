@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
+import { markdown } from '@codemirror/lang-markdown'
 import { useEditorStore } from '@/stores/editor'
 
 const props = defineProps<{ documentId: string; isActive: boolean }>()
@@ -84,6 +85,7 @@ onMounted(() => {
       extensions: [
         basicSetup,
         lilypadTheme,
+        markdown(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             store.updateContent(props.documentId, update.state.doc.toString())
