@@ -28,7 +28,7 @@ const lilypadTheme = EditorView.theme({
   },
   '.cm-content': {
     caretColor: 'var(--accent)',
-    padding: '20px 0',
+    padding: '10px 0',
   },
   '.cm-line': {
     padding: '0 8px',

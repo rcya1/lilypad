@@ -65,6 +65,7 @@ Lilypad is a Vue 3 + TypeScript SPA built with Vite. It is an app for taking not
 
 - **Inter** (300–600, loaded via Google Fonts): All UI chrome → `font-ui` utility (`--font-family-ui`)
 - **Lora** (400–600, loaded via Google Fonts): App title wordmark, empty state headings → `font-display` utility (`--font-family-display`)
+- **Open Sans** (400–600, loaded via Google Fonts): Markdown preview body → `font-preview` utility (`--font-family-preview`)
 - **System mono** (no load): Code blocks → `font-mono` utility
 
 **Icons:** `lucide-vue-next` throughout. Standard sizes: 12px chevrons, 15px file/folder icons, 16px toolbar icons.

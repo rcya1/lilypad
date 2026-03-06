@@ -53,6 +53,7 @@
   --font-family-ui: 'Inter', system-ui, sans-serif;
   --font-family-display: 'Lora', Georgia, serif;
   --font-family-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
+  --font-family-preview: 'Open Sans', system-ui, sans-serif;
 }
 
 body {

@@ -27,7 +27,7 @@ watch(
 <template>
   <div class="h-full overflow-y-auto bg-surface">
     <div
-      class="markdown-body m-2 rounded-md bg-bg px-6 py-5 font-ui text-sm leading-[1.75] text-text-primary border border-border-subtle"
+      class="markdown-body m-2 rounded-md bg-bg px-5 py-5 font-preview text-sm leading-[1.75] text-text-primary border border-border-subtle"
       v-html="html"
     />
   </div>
@@ -47,7 +47,7 @@ watch(
 .markdown-body :deep(h4),
 .markdown-body :deep(h5),
 .markdown-body :deep(h6) {
-  font-family: var(--font-family-display);
+  font-family: var(--font-family-preview);
   font-weight: 500;
   line-height: 1.3;
   margin-top: 1.6em;

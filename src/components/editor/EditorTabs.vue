@@ -67,7 +67,7 @@ function onDragEnd() {
       <div v-if="draggedId && dropIndex === i" class="w-0.5 bg-accent shrink-0 self-stretch" />
 
       <button
-        class="group relative flex items-center gap-1.5 px-3 text-sm border-r border-border-subtle shrink-0 transition-colors duration-100 cursor-pointer select-none"
+        class="group relative flex items-center gap-1.5 pl-3 pr-1 text-sm border-r border-border-subtle shrink-0 transition-colors duration-100 cursor-pointer select-none"
         :class="[
           tab.id === store.activeDocumentId
             ? 'bg-bg text-text-primary'
