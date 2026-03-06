@@ -29,6 +29,7 @@ const lilypadTheme = EditorView.theme({
   '.cm-content': {
     caretColor: 'var(--accent)',
     padding: '10px 0',
+    paddingBottom: '50vh',
   },
   '.cm-line': {
     padding: '0 8px',
@@ -39,6 +40,7 @@ const lilypadTheme = EditorView.theme({
   '.cm-selectionLayer': {
     zIndex: '2 !important',
     mixBlendMode: 'darken',
+    pointerEvents: 'none',
   },
   '.cm-selectionBackground': {
     backgroundColor: 'var(--surface-overlay) !important',

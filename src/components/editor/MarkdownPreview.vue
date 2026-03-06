@@ -27,7 +27,7 @@ watch(
 <template>
   <div class="h-full overflow-y-auto bg-surface">
     <div
-      class="markdown-body m-2 rounded-md bg-bg px-5 py-5 font-preview text-sm leading-[1.75] text-text-primary border border-border-subtle"
+      class="markdown-body m-2 rounded-md bg-bg px-5 py-5 font-preview text-[15px] leading-[1.6] text-text-primary border border-border-subtle"
       v-html="html"
     />
   </div>
@@ -48,11 +48,20 @@ watch(
 .markdown-body :deep(h5),
 .markdown-body :deep(h6) {
   font-family: var(--font-family-preview);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.3;
-  margin-top: 1.6em;
+  margin-top: 1.1em;
   margin-bottom: 0.5em;
   color: var(--text-primary);
+}
+
+.markdown-body :deep(h1):first-child,
+.markdown-body :deep(h2):first-child,
+.markdown-body :deep(h3):first-child,
+.markdown-body :deep(h4):first-child,
+.markdown-body :deep(h5):first-child,
+.markdown-body :deep(h6):first-child {
+  margin-top: 0;
 }
 
 .markdown-body :deep(h1) {
@@ -62,12 +71,20 @@ watch(
   margin-top: 0;
 }
 .markdown-body :deep(h2) {
-  font-size: 1.35rem;
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--text-primary);
+  padding-bottom: 0.2em;
 }
 .markdown-body :deep(h3) {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--text-primary);
+  padding-bottom: 0.15em;
 }
-.markdown-body :deep(h4),
+.markdown-body :deep(h4) {
+  font-size: 1.1rem;
+  border-bottom: 1px solid var(--text-primary);
+  padding-bottom: 0.15em;
+}
 .markdown-body :deep(h5),
 .markdown-body :deep(h6) {
   font-size: 1rem;
@@ -130,8 +147,21 @@ watch(
 /* Lists */
 .markdown-body :deep(ul),
 .markdown-body :deep(ol) {
-  padding-left: 1.5em;
-  margin: 0.75em 0;
+  padding-left: 2em;
+  margin-top: 0.15em;
+  margin-bottom: 0.75em;
+}
+.markdown-body :deep(ul) {
+  list-style-type: disc;
+}
+.markdown-body :deep(ol) {
+  list-style-type: decimal;
+}
+.markdown-body :deep(ul ul) {
+  list-style-type: circle;
+}
+.markdown-body :deep(ul ul ul) {
+  list-style-type: square;
 }
 .markdown-body :deep(li) {
   margin: 0.2em 0;
@@ -179,7 +209,6 @@ watch(
 /* KaTeX display blocks */
 .markdown-body :deep(.katex-display) {
   margin: 1em 0;
-  overflow-x: auto;
 }
 
 /* Admonitions */
@@ -197,9 +226,6 @@ watch(
   gap: 6px;
   padding: 8px 14px;
   font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   background: var(--surface-elevated);
   border-bottom: 1px solid var(--border-subtle);
 }

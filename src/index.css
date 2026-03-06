@@ -56,6 +56,12 @@
   --font-family-preview: 'Open Sans', system-ui, sans-serif;
 }
 
+html,
+body {
+  height: 100vh;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text-primary);

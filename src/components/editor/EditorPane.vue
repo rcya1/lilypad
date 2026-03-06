@@ -32,11 +32,11 @@ function toggleSwap() {
 
 const dividerLineClass = computed(() => {
   if (isDragging.value) {
-    return isVertical.value ? 'w-full h-0.5 bg-accent' : 'h-full w-0.5 bg-accent'
+    return isVertical.value ? 'h-0.5 bg-accent' : 'w-0.5 bg-accent'
   }
   return isVertical.value
-    ? 'w-full h-px bg-border-subtle group-hover:bg-border'
-    : 'h-full w-px bg-border-subtle group-hover:bg-border'
+    ? 'h-px bg-border-subtle group-hover:bg-border'
+    : 'w-px bg-border-subtle group-hover:bg-border'
 })
 
 function onDividerMouseDown(e: MouseEvent) {
@@ -88,7 +88,7 @@ onBeforeUnmount(() => {
 
       <!-- For each open tab, render stacked (only active is shown) -->
       <template v-for="id in store.tabOrder" :key="id">
-        <div v-show="id === activeId" class="flex-1 overflow-hidden">
+        <div v-show="id === activeId" class="flex-1 min-h-0 overflow-hidden">
           <div
             v-if="id === activeId"
             ref="splitPane"
@@ -108,19 +108,26 @@ onBeforeUnmount(() => {
               <MarkdownPreview v-else :document-id="id" />
             </div>
 
-            <!-- Resize divider -->
-            <div :class="['relative shrink-0 z-10', isVertical ? 'w-full h-1' : 'h-full w-1']">
+            <!-- Resize divider — hit zone sits in the second panel so it never covers the first panel's scrollbar -->
+            <div :class="['relative shrink-0 z-10', isVertical ? 'w-full h-0' : 'h-full w-0']">
               <div
                 :class="[
-                  'absolute group flex items-center justify-center',
+                  'absolute group',
                   isVertical
-                    ? 'inset-x-0 top-0 -translate-y-1/2 h-5 cursor-row-resize'
-                    : 'inset-y-0 left-0 -translate-x-1/2 w-5 cursor-col-resize',
+                    ? 'inset-x-0 top-0 h-3 cursor-row-resize'
+                    : 'inset-y-0 left-0 w-3 cursor-col-resize',
                 ]"
                 @mousedown="onDividerMouseDown"
                 @dblclick="splitPct = 50"
               >
-                <div class="transition-all duration-150" :class="dividerLineClass" />
+                <!-- Line sits at the edge that faces the first panel -->
+                <div
+                  :class="[
+                    'absolute transition-all duration-150',
+                    isVertical ? 'top-0 inset-x-0' : 'left-0 inset-y-0',
+                    dividerLineClass,
+                  ]"
+                />
               </div>
             </div>
 
