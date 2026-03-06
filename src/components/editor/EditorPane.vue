@@ -20,6 +20,42 @@ const isSwapped = ref(false)
 const rotationClockwise = ref(true)
 const isDragging = ref(false)
 
+// Panel positions — both panels are always absolutely positioned.
+// "first slot" is left (horizontal) or top (vertical).
+function slotStyle(inFirst: boolean) {
+  if (!isVertical.value) {
+    return inFirst
+      ? { left: '0%', top: '0%', width: `${splitPct.value}%`, height: '100%' }
+      : { left: `${splitPct.value}%`, top: '0%', width: `${100 - splitPct.value}%`, height: '100%' }
+  } else {
+    return inFirst
+      ? { left: '0%', top: '0%', width: '100%', height: `${splitPct.value}%` }
+      : { left: '0%', top: `${splitPct.value}%`, width: '100%', height: `${100 - splitPct.value}%` }
+  }
+}
+
+const editorPanelStyle = computed(() => slotStyle(!isSwapped.value))
+const previewPanelStyle = computed(() => slotStyle(isSwapped.value))
+
+const dividerHitZoneStyle = computed(() => {
+  if (!isVertical.value) {
+    return { left: `calc(${splitPct.value}% - 6px)`, top: '0', width: '12px', height: '100%' }
+  } else {
+    return { top: `calc(${splitPct.value}% - 6px)`, left: '0', height: '12px', width: '100%' }
+  }
+})
+
+const dividerLineClass = computed(() => {
+  if (isDragging.value) {
+    return isVertical.value
+      ? 'top-1/2 -translate-y-1/2 inset-x-0 h-0.5 bg-accent'
+      : 'left-1/2 -translate-x-1/2 inset-y-0 w-0.5 bg-accent'
+  }
+  return isVertical.value
+    ? 'top-1/2 -translate-y-1/2 inset-x-0 h-px bg-border-subtle group-hover:bg-border'
+    : 'left-1/2 -translate-x-1/2 inset-y-0 w-px bg-border-subtle group-hover:bg-border'
+})
+
 function toggleLayout() {
   isVertical.value = !isVertical.value
   rotationClockwise.value = !rotationClockwise.value
@@ -29,15 +65,6 @@ function toggleLayout() {
 function toggleSwap() {
   isSwapped.value = !isSwapped.value
 }
-
-const dividerLineClass = computed(() => {
-  if (isDragging.value) {
-    return isVertical.value ? 'h-0.5 bg-accent' : 'w-0.5 bg-accent'
-  }
-  return isVertical.value
-    ? 'h-px bg-border-subtle group-hover:bg-border'
-    : 'w-px bg-border-subtle group-hover:bg-border'
-})
 
 function onDividerMouseDown(e: MouseEvent) {
   e.preventDefault()
@@ -103,52 +130,36 @@ onBeforeUnmount(() => {
       <!-- For each open tab, render stacked (only active is shown) -->
       <template v-for="id in store.tabOrder" :key="id">
         <div v-show="id === activeId" class="flex-1 min-h-0 overflow-hidden">
-          <div
-            v-if="id === activeId"
-            ref="splitPane"
-            :class="['flex h-full bg-surface', isVertical ? 'flex-col' : 'flex-row']"
-          >
-            <!-- First panel -->
+          <div v-if="id === activeId" ref="splitPane" class="relative h-full bg-surface overflow-hidden">
+            <!-- Editor panel -->
             <div
-              :style="isVertical ? { height: splitPct + '%' } : { width: splitPct + '%' }"
-              class="overflow-hidden shrink-0"
+              class="absolute overflow-hidden split-panel"
+              :class="{ 'no-transition': isDragging }"
+              :style="editorPanelStyle"
             >
-              <TextEditor
-                v-if="!isSwapped"
-                :document-id="id"
-                :is-active="id === activeId"
-                class="h-full"
-              />
-              <MarkdownPreview v-else :document-id="id" />
+              <TextEditor :document-id="id" :is-active="id === activeId" class="h-full" />
             </div>
 
-            <!-- Resize divider — hit zone sits in the second panel so it never covers the first panel's scrollbar -->
-            <div :class="['relative shrink-0 z-10', isVertical ? 'w-full h-0' : 'h-full w-0']">
+            <!-- Preview panel -->
+            <div
+              class="absolute overflow-hidden split-panel"
+              :class="{ 'no-transition': isDragging }"
+              :style="previewPanelStyle"
+            >
+              <MarkdownPreview :document-id="id" />
+            </div>
+
+            <!-- Resize divider hit zone -->
+            <div
+              class="absolute z-10 group"
+              :class="isVertical ? 'cursor-row-resize' : 'cursor-col-resize'"
+              :style="dividerHitZoneStyle"
+              @mousedown="onDividerMouseDown"
+              @dblclick="splitPct = 50"
+            >
               <div
-                :class="[
-                  'absolute group',
-                  isVertical
-                    ? 'inset-x-0 top-0 h-3 cursor-row-resize'
-                    : 'inset-y-0 left-0 w-3 cursor-col-resize',
-                ]"
-                @mousedown="onDividerMouseDown"
-                @dblclick="splitPct = 50"
-              >
-                <!-- Line sits at the edge that faces the first panel -->
-                <div
-                  :class="[
-                    'absolute transition-all duration-150',
-                    isVertical ? 'top-0 inset-x-0' : 'left-0 inset-y-0',
-                    dividerLineClass,
-                  ]"
-                />
-              </div>
-            </div>
-
-            <!-- Second panel -->
-            <div class="flex-1 overflow-hidden">
-              <MarkdownPreview v-if="!isSwapped" :document-id="id" />
-              <TextEditor v-else :document-id="id" :is-active="id === activeId" class="h-full" />
+                :class="['absolute transition-all duration-150', dividerLineClass]"
+              />
             </div>
           </div>
         </div>
@@ -169,3 +180,17 @@ onBeforeUnmount(() => {
     </template>
   </main>
 </template>
+
+<style scoped>
+.split-panel {
+  transition:
+    left 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    top 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    width 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    height 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.split-panel.no-transition {
+  transition: none;
+}
+</style>
