@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
@@ -8,9 +8,14 @@ const props = defineProps<{ documentId: string }>()
 
 const store = useEditorStore()
 const html = ref('')
+const renderKey = ref(0)
+const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
+
+let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
 async function render(content: string) {
   html.value = await parseMarkdown(content)
+  renderKey.value++
 }
 
 onMounted(() => {
@@ -18,22 +23,50 @@ onMounted(() => {
   render(doc?.content ?? '')
 })
 
+onBeforeUnmount(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
+
 watch(
   () => store.openDocuments.get(props.documentId)?.content,
-  (content) => render(content ?? ''),
+  (content) => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => render(content ?? ''), 5)
+  },
+)
+
+watch(
+  () => props.documentId,
+  () => {
+    if (scrollContainer.value) scrollContainer.value.scrollTop = 0
+  },
 )
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto bg-surface">
+  <div ref="scrollContainer" class="h-full overflow-y-auto bg-surface">
     <div
-      class="markdown-body m-2 rounded-md bg-bg px-5 py-5 font-preview text-[15px] leading-[1.6] text-text-primary border border-border-subtle"
+      :key="renderKey"
+      class="markdown-body preview-fade m-2 rounded-md bg-bg px-5 py-5 font-preview text-[15px] leading-[1.6] text-text-primary border border-border-subtle"
       v-html="html"
     />
   </div>
 </template>
 
 <style scoped>
+@keyframes preview-fade-in {
+  0% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.preview-fade {
+  animation: preview-fade-in 200ms ease;
+}
+
 .markdown-body {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.07),

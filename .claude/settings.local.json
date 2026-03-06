@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(yarn type-check:*)",
-      "Bash(yarn build-only:*)"
+      "Bash(yarn build-only:*)",
+      "Bash(yarn lint:*)"
     ]
   }
 }

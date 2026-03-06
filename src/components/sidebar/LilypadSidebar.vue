@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FileExplorer from './FileExplorer.vue'
 import LilypadIcon from '@/assets/icon-light.svg'
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const sidebarWidth = ref(250)
 const snapThreshold = 160
@@ -38,15 +38,28 @@ const stopResize = () => {
   document.removeEventListener('mouseup', stopResize)
 }
 
+function onKeyDown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+    e.preventDefault()
+    isMinimized.value = !isMinimized.value
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeyDown)
+})
+
 onBeforeUnmount(() => {
   document.removeEventListener('mousemove', resize)
   document.removeEventListener('mouseup', stopResize)
+  window.removeEventListener('keydown', onKeyDown)
 })
 </script>
 
 <template>
   <div
     class="relative flex flex-col h-screen bg-surface border-r border-border-subtle shrink-0"
+    :class="{ 'transition-[width] duration-200 ease-in-out': !isResizing }"
     :style="{ width: (isMinimized ? minimizedWidth : sidebarWidth) + 'px' }"
   >
     <div class="flex flex-row items-center p-4">

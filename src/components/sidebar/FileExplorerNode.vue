@@ -65,7 +65,7 @@ const isActive = computed(
           <File :size="15" class="text-amber" />
         </template>
         <template v-else>
-          <FileText :size="15" :class="isActive ? 'text-accent' : 'text-accent'" />
+          <FileText :size="15" :class="isActive ? 'text-accent' : 'text-text-secondary'" />
         </template>
       </span>
 
@@ -75,14 +75,20 @@ const isActive = computed(
       </span>
     </div>
 
-    <div v-if="isDirectory(entry) && isOpen">
-      <FileExplorerNode
-        v-for="child in entry.children"
-        :key="child.name"
-        :entry="child"
-        :depth="depth + 1"
-        :path-prefix="childPathPrefix"
-      />
+    <div
+      v-if="isDirectory(entry)"
+      class="grid transition-[grid-template-rows] duration-150 ease-in-out"
+      :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
+    >
+      <div class="overflow-hidden min-h-0">
+        <FileExplorerNode
+          v-for="child in entry.children"
+          :key="child.name"
+          :entry="child"
+          :depth="depth + 1"
+          :path-prefix="childPathPrefix"
+        />
+      </div>
     </div>
   </div>
 </template>

@@ -57,8 +57,7 @@ function onDragEnd() {
 
 <template>
   <div
-    class="flex items-stretch bg-surface border-b border-border-subtle shrink-0 overflow-x-auto"
-    style="height: 40px"
+    class="flex items-stretch bg-surface border-b border-border-subtle shrink-0 overflow-x-auto h-10"
     @dragover.prevent
     @drop="onDrop"
   >
@@ -67,6 +66,7 @@ function onDragEnd() {
       <div v-if="draggedId && dropIndex === i" class="w-0.5 bg-accent shrink-0 self-stretch" />
 
       <button
+        :title="tab.name"
         class="group relative flex items-center gap-1.5 pl-3 pr-1 text-sm border-r border-border-subtle shrink-0 transition-colors duration-100 cursor-pointer select-none"
         :class="[
           tab.id === store.activeDocumentId
@@ -76,6 +76,14 @@ function onDragEnd() {
         ]"
         draggable="true"
         @click="store.setActiveDocument(tab.id)"
+        @mousedown="
+          (e: MouseEvent) => {
+            if (e.button === 1) {
+              e.preventDefault()
+              store.closeDocument(tab.id)
+            }
+          }
+        "
         @dragstart="onDragStart($event, tab.id)"
         @dragover="onDragOver($event, i)"
         @dragend="onDragEnd"
@@ -93,7 +101,7 @@ function onDragEnd() {
           class="flex items-center justify-center w-5 h-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
           :class="
             tab.id === store.activeDocumentId
-              ? 'opacity-80 hover:opacity-100'
+              ? 'opacity-60 hover:opacity-100'
               : 'opacity-0 group-hover:opacity-70 hover:opacity-100!'
           "
           @click.stop="store.closeDocument(tab.id)"
