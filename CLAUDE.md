@@ -27,6 +27,7 @@ Lilypad is a Vue 3 + TypeScript SPA built with Vite. It is an app for taking not
 - `@` path alias maps to `./src`
 - SVGs imported as Vue components via `vite-svg-loader`
 - Dual linting: oxlint (fast, Rust-based) + ESLint (Vue/TS rules)
+- **Prefer Tailwind utilities over scoped CSS.** Reach for `<style scoped>` only when Tailwind can't express it (e.g. `:deep()` selectors for `v-html` content, multi-value `box-shadow`, pseudo-element tricks). All design tokens have Tailwind counterparts — use `bg-surface`, `text-text-primary`, `font-ui`, etc. instead of `var(--surface)` inline or in CSS classes.
 
 **Structure:**
 

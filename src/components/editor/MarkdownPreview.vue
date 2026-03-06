@@ -25,29 +25,19 @@ watch(
 </script>
 
 <template>
-  <div class="preview-scroll h-full overflow-y-auto">
-    <div class="markdown-body" v-html="html" />
+  <div class="h-full overflow-y-auto bg-surface">
+    <div
+      class="markdown-body m-2 rounded-md bg-bg px-6 py-5 font-ui text-sm leading-[1.75] text-text-primary border border-border-subtle"
+      v-html="html"
+    />
   </div>
 </template>
 
 <style scoped>
-.preview-scroll {
-  background: var(--surface);
-}
-
 .markdown-body {
-  max-width: 720px;
-  margin: 8px 10px 12px;
-  padding: 24px 10px 36px;
-  background: var(--bg);
-  border-radius: 6px;
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.07),
     0 2px 10px rgba(0, 0, 0, 0.04);
-  font-family: var(--font-family-ui);
-  font-size: 14px;
-  line-height: 1.75;
-  color: var(--text-primary);
 }
 
 /* Headings */

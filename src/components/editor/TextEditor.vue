@@ -31,7 +31,7 @@ const lilypadTheme = EditorView.theme({
     padding: '20px 0',
   },
   '.cm-line': {
-    padding: '0 16px',
+    padding: '0 8px',
   },
   '.cm-focused .cm-cursor': {
     borderLeftColor: 'var(--accent)',

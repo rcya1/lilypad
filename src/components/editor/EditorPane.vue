@@ -31,15 +31,12 @@ function toggleSwap() {
 }
 
 const dividerLineClass = computed(() => {
-  if (isVertical.value) {
-    return isDragging.value
-      ? 'w-full h-0.75 bg-accent'
-      : 'w-full h-0.5 bg-border-subtle group-hover:bg-border group-hover:h-0.75'
-  } else {
-    return isDragging.value
-      ? 'h-full w-0.75 bg-accent'
-      : 'h-full w-0.5 bg-border-subtle group-hover:bg-border group-hover:w-0.75'
+  if (isDragging.value) {
+    return isVertical.value ? 'w-full h-0.5 bg-accent' : 'h-full w-0.5 bg-accent'
   }
+  return isVertical.value
+    ? 'w-full h-px bg-border-subtle group-hover:bg-border'
+    : 'h-full w-px bg-border-subtle group-hover:bg-border'
 })
 
 function onDividerMouseDown(e: MouseEvent) {
@@ -95,13 +92,12 @@ onBeforeUnmount(() => {
           <div
             v-if="id === activeId"
             ref="splitPane"
-            :class="['flex h-full', isVertical ? 'flex-col' : 'flex-row']"
+            :class="['flex h-full bg-surface', isVertical ? 'flex-col' : 'flex-row']"
           >
             <!-- First panel -->
             <div
               :style="isVertical ? { height: splitPct + '%' } : { width: splitPct + '%' }"
               class="overflow-hidden shrink-0"
-              :class="isSwapped ? 'bg-surface' : ''"
             >
               <TextEditor
                 v-if="!isSwapped"
@@ -113,18 +109,18 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- Resize divider -->
-            <div :class="['relative shrink-0 z-10', isVertical ? 'w-full h-0' : 'h-full w-0']">
+            <div :class="['relative shrink-0 z-10', isVertical ? 'w-full h-1' : 'h-full w-1']">
               <div
                 :class="[
-                  'absolute group flex',
+                  'absolute group flex items-center justify-center',
                   isVertical
-                    ? 'inset-x-0 top-0 -translate-y-1/2 h-4 cursor-row-resize items-center'
-                    : 'inset-y-0 left-0 -translate-x-1/2 w-4 cursor-col-resize justify-center',
+                    ? 'inset-x-0 top-0 -translate-y-1/2 h-5 cursor-row-resize'
+                    : 'inset-y-0 left-0 -translate-x-1/2 w-5 cursor-col-resize',
                 ]"
                 @mousedown="onDividerMouseDown"
                 @dblclick="splitPct = 50"
               >
-                <div class="transition-all duration-100" :class="dividerLineClass" />
+                <div class="transition-all duration-150" :class="dividerLineClass" />
               </div>
             </div>
 
