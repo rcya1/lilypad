@@ -11,16 +11,19 @@ export const useFilesStore = defineStore('files', () => {
   const entries = ref<EntryRow[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const selectedFolderId = ref<string | null>(null)
+  const pendingCreate = ref<{
+    parentId: string | null
+    type: 'file' | 'folder'
+    insertBefore: string | null // null = append to end
+  } | null>(null)
 
   const tree = computed<Entry[]>(() => buildTree(null))
 
   function buildTree(parentId: string | null): Entry[] {
     const children = entries.value
       .filter((e) => e.parent_id === parentId)
-      .sort((a, b) => {
-        if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1
-        return a.name.localeCompare(b.name)
-      })
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
 
     return children.map((row) => {
       if (row.kind === 'directory') {
@@ -40,6 +43,47 @@ export const useFilesStore = defineStore('files', () => {
         type: row.document_type as DocumentType,
       }
     })
+  }
+
+  function getNextSortOrder(parentId: string | null): number {
+    const siblings = entries.value.filter((e) => e.parent_id === parentId)
+    if (siblings.length === 0) return 1000
+    return Math.max(...siblings.map((e) => e.sort_order)) + 1000
+  }
+
+  function getPendingSortOrder(): number {
+    if (!pendingCreate.value) return 1000
+    const { parentId, insertBefore } = pendingCreate.value
+    if (!insertBefore) return getNextSortOrder(parentId)
+    const siblings = entries.value
+      .filter((e) => e.parent_id === parentId)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+    const idx = siblings.findIndex((s) => s.id === insertBefore)
+    if (idx === -1) return getNextSortOrder(parentId)
+    const cur = siblings[idx]!.sort_order
+    const prevOrder = idx > 0 ? siblings[idx - 1]!.sort_order : cur - 1000
+    return (prevOrder + cur) / 2
+  }
+
+  function selectFolder(id: string | null) {
+    selectedFolderId.value = id
+  }
+
+  function triggerCreate(
+    parentId: string | null,
+    type: 'file' | 'folder',
+    insertBefore: string | null = null,
+  ) {
+    pendingCreate.value = { parentId, type, insertBefore }
+  }
+
+  function updatePendingPosition(parentId: string | null, insertBefore: string | null) {
+    if (!pendingCreate.value) return
+    pendingCreate.value = { ...pendingCreate.value, parentId, insertBefore }
+  }
+
+  function clearPendingCreate() {
+    pendingCreate.value = null
   }
 
   async function fetchEntries() {
@@ -62,7 +106,12 @@ export const useFilesStore = defineStore('files', () => {
     loading.value = false
   }
 
-  async function createDocument(name: string, type: DocumentType, parentId: string | null = null) {
+  async function createDocument(
+    name: string,
+    type: DocumentType,
+    parentId: string | null = null,
+    sortOrder?: number,
+  ) {
     if (!auth.user) return null
 
     const { data, error: err } = await supabase
@@ -73,6 +122,7 @@ export const useFilesStore = defineStore('files', () => {
         name,
         document_type: type,
         parent_id: parentId,
+        sort_order: sortOrder ?? getNextSortOrder(parentId),
       })
       .select()
       .returns<EntryRow[]>()
@@ -86,12 +136,10 @@ export const useFilesStore = defineStore('files', () => {
     const ext = type === 'pdf' ? 'pdf' : 'md'
     const storagePath = `${auth.user.id}/${data.id}.${ext}`
 
-    // Upload empty file
     await supabase.storage
       .from('user-files')
       .upload(storagePath, new Blob([''], { type: 'text/plain' }))
 
-    // Update storage_path
     await supabase
       .from('entries')
       .update({ storage_path: storagePath } as never)
@@ -102,7 +150,11 @@ export const useFilesStore = defineStore('files', () => {
     return data
   }
 
-  async function createDirectory(name: string, parentId: string | null = null) {
+  async function createDirectory(
+    name: string,
+    parentId: string | null = null,
+    sortOrder?: number,
+  ) {
     if (!auth.user) return null
 
     const { data, error: err } = await supabase
@@ -112,6 +164,7 @@ export const useFilesStore = defineStore('files', () => {
         kind: 'directory' as const,
         name,
         parent_id: parentId,
+        sort_order: sortOrder ?? getNextSortOrder(parentId),
       })
       .select()
       .returns<EntryRow[]>()
@@ -143,10 +196,8 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   async function deleteEntry(id: string) {
-    // Collect all descendant IDs for storage cleanup
     const idsToDelete = collectDescendantIds(id)
 
-    // Delete storage files for documents
     const storagePaths = idsToDelete
       .map((did) => entries.value.find((e) => e.id === did))
       .filter((e) => e?.storage_path)
@@ -156,7 +207,6 @@ export const useFilesStore = defineStore('files', () => {
       await supabase.storage.from('user-files').remove(storagePaths)
     }
 
-    // DB cascade handles children
     const { error: err } = await supabase.from('entries').delete().eq('id', id)
 
     if (err) {
@@ -165,6 +215,11 @@ export const useFilesStore = defineStore('files', () => {
     }
 
     entries.value = entries.value.filter((e) => !idsToDelete.includes(e.id))
+
+    if (selectedFolderId.value && idsToDelete.includes(selectedFolderId.value)) {
+      selectedFolderId.value = null
+    }
+
     return true
   }
 
@@ -175,6 +230,32 @@ export const useFilesStore = defineStore('files', () => {
       result.push(...collectDescendantIds(child.id))
     }
     return result
+  }
+
+  async function moveEntry(
+    id: string,
+    newParentId: string | null,
+    newSortOrder: number,
+  ): Promise<boolean> {
+    const descendants = collectDescendantIds(id)
+    if (newParentId !== null && descendants.includes(newParentId)) return false
+
+    const { error: err } = await supabase
+      .from('entries')
+      .update({ parent_id: newParentId, sort_order: newSortOrder } as never)
+      .eq('id', id)
+
+    if (err) {
+      error.value = err.message
+      return false
+    }
+
+    const entry = entries.value.find((e) => e.id === id)
+    if (entry) {
+      entry.parent_id = newParentId
+      entry.sort_order = newSortOrder
+    }
+    return true
   }
 
   async function downloadContent(entryId: string): Promise<string | null> {
@@ -240,6 +321,8 @@ Happy note-taking!
     entries.value = []
     loading.value = false
     error.value = null
+    selectedFolderId.value = null
+    pendingCreate.value = null
   }
 
   return {
@@ -247,11 +330,20 @@ Happy note-taking!
     tree,
     loading,
     error,
+    selectedFolderId,
+    pendingCreate,
     fetchEntries,
     createDocument,
     createDirectory,
     renameEntry,
     deleteEntry,
+    moveEntry,
+    collectDescendantIds,
+    selectFolder,
+    triggerCreate,
+    updatePendingPosition,
+    getPendingSortOrder,
+    clearPendingCreate,
     downloadContent,
     uploadContent,
     seedWelcomeFile,

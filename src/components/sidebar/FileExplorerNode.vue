@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
-import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, File } from 'lucide-vue-next'
+import {
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ChevronDown,
+  FileText,
+  File,
+  Check,
+  GripVertical,
+} from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
+import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 
 const props = defineProps<{
   entry: Entry
@@ -19,16 +29,50 @@ const showContextMenu = ref(false)
 const contextMenuPos = ref({ x: 0, y: 0 })
 const isRenaming = ref(false)
 const renameValue = ref('')
-const showNewFileInput = ref(false)
-const showNewFolderInput = ref(false)
 const newChildName = ref('')
+
+const entryRef = computed(() => props.entry)
+const { dropRegion, isInvalidTarget, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop } =
+  useDragDrop(entryRef, isOpen, filesStore)
+
+const isActive = computed(
+  () => !isDirectory(props.entry) && editorStore.activeDocumentId === props.entry.id,
+)
+
+const isSelectedFolder = computed(
+  () => isDirectory(props.entry) && filesStore.selectedFolderId === props.entry.id,
+)
+
+// Show pending input when pendingCreate targets this folder
+const showNewInput = computed(
+  () => isDirectory(props.entry) && filesStore.pendingCreate?.parentId === props.entry.id,
+)
+
+watch(showNewInput, (val, _old, onCleanup) => {
+  if (val) {
+    newChildName.value = ''
+    isOpen.value = true
+    // Cancel when clicking outside the pending row
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as Element)?.closest('[data-pending-input]')) {
+        filesStore.clearPendingCreate()
+      }
+    }
+    setTimeout(() => document.addEventListener('mousedown', handler), 0)
+    onCleanup(() => document.removeEventListener('mousedown', handler))
+  }
+})
 
 async function handleClick() {
   if (isDirectory(props.entry)) {
     isOpen.value = !isOpen.value
-  } else if (props.entry.type === 'md') {
-    const content = await filesStore.downloadContent(props.entry.id)
-    editorStore.openDocument(props.entry.id, props.entry.name, props.entry.type, content ?? '')
+    filesStore.selectFolder(props.entry.id)
+  } else {
+    filesStore.selectFolder(null)
+    if (props.entry.type === 'md') {
+      const content = await filesStore.downloadContent(props.entry.id)
+      editorStore.openDocument(props.entry.id, props.entry.name, props.entry.type, content ?? '')
+    }
   }
 }
 
@@ -67,51 +111,51 @@ async function handleDelete() {
 
 function startNewChildFile() {
   showContextMenu.value = false
-  isOpen.value = true
-  showNewFolderInput.value = false
-  showNewFileInput.value = true
-  newChildName.value = ''
+  filesStore.triggerCreate(props.entry.id, 'file')
 }
 
 function startNewChildFolder() {
   showContextMenu.value = false
-  isOpen.value = true
-  showNewFileInput.value = false
-  showNewFolderInput.value = true
-  newChildName.value = ''
+  filesStore.triggerCreate(props.entry.id, 'folder')
 }
 
-async function submitNewChildFile() {
+async function submitNew() {
   const name = newChildName.value.trim()
   if (!name) {
-    showNewFileInput.value = false
+    filesStore.clearPendingCreate()
     return
   }
-  const finalName = name.endsWith('.md') ? name : `${name}.md`
-  await filesStore.createDocument(finalName, 'md', props.entry.id)
-  newChildName.value = ''
-  showNewFileInput.value = false
-}
-
-function cancelNewChild() {
-  showNewFileInput.value = false
-  showNewFolderInput.value = false
-}
-
-async function submitNewChildFolder() {
-  const name = newChildName.value.trim()
-  if (!name) {
-    showNewFolderInput.value = false
-    return
+  const pending = filesStore.pendingCreate!
+  const sortOrder = filesStore.getPendingSortOrder()
+  if (pending.type === 'file') {
+    const finalName = name.endsWith('.md') ? name : `${name}.md`
+    await filesStore.createDocument(finalName, 'md', pending.parentId, sortOrder)
+  } else {
+    await filesStore.createDirectory(name, pending.parentId, sortOrder)
   }
-  await filesStore.createDirectory(name, props.entry.id)
   newChildName.value = ''
-  showNewFolderInput.value = false
+  filesStore.clearPendingCreate()
 }
 
-const isActive = computed(
-  () => !isDirectory(props.entry) && editorStore.activeDocumentId === props.entry.id,
-)
+function cancelNew() {
+  filesStore.clearPendingCreate()
+  newChildName.value = ''
+}
+
+function onPendingDragStart(e: DragEvent) {
+  draggingEntry.value = {
+    kind: 'document',
+    id: PENDING_ID,
+    name: '',
+    parentId: filesStore.pendingCreate?.parentId ?? null,
+    type: 'md',
+  }
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+}
+
+function onPendingDragEnd() {
+  draggingEntry.value = null
+}
 </script>
 
 <template>
@@ -131,16 +175,32 @@ const isActive = computed(
     <!-- Normal display -->
     <div
       v-else
-      class="flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
-      :class="
+      class="relative flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
+      :class="[
         isActive
           ? 'bg-surface-overlay text-text-primary'
-          : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
-      "
+          : isSelectedFolder
+            ? 'bg-surface-elevated text-text-primary'
+            : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
+        dropRegion === 'into' && !isInvalidTarget ? 'ring-1 ring-inset ring-accent' : '',
+        isInvalidTarget && draggingEntry ? 'opacity-40' : '',
+      ]"
       :style="{ paddingLeft: depth * 14 + 8 + 'px' }"
+      draggable="true"
+      @dragstart="onDragStart"
+      @dragend="onDragEnd"
+      @dragover="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
       @click="handleClick"
       @contextmenu="onContextMenu"
     >
+      <!-- Before drop indicator -->
+      <div
+        v-if="dropRegion === 'before' && !isInvalidTarget"
+        class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
+      />
+
       <!-- Chevron -->
       <span class="w-3 flex items-center justify-center text-text-muted shrink-0">
         <template v-if="isDirectory(entry)">
@@ -167,6 +227,12 @@ const isActive = computed(
       <span class="truncate">
         {{ entry.name }}
       </span>
+
+      <!-- After drop indicator -->
+      <div
+        v-if="dropRegion === 'after' && !isInvalidTarget"
+        class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
+      />
     </div>
 
     <!-- Context menu -->
@@ -213,28 +279,89 @@ const isActive = computed(
       :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
     >
       <div class="overflow-hidden min-h-0">
-        <!-- New child file/folder input -->
+        <template v-for="child in entry.children" :key="child.id">
+          <!-- Pending input row: appears before the child whose ID matches insertBefore -->
+          <div
+            v-if="showNewInput && filesStore.pendingCreate?.insertBefore === child.id"
+            data-pending-input
+            class="flex items-center gap-1.5 py-1 px-2 rounded-sm bg-surface-elevated"
+            :style="{ paddingLeft: (depth + 1) * 14 + 8 + 'px' }"
+            draggable="true"
+            @dragstart="onPendingDragStart"
+            @dragend="onPendingDragEnd"
+          >
+            <span
+              class="w-3 flex items-center justify-center text-text-muted shrink-0 cursor-grab active:cursor-grabbing"
+            >
+              <GripVertical :size="12" />
+            </span>
+            <span class="flex items-center shrink-0">
+              <FileText
+                v-if="filesStore.pendingCreate?.type === 'file'"
+                :size="15"
+                class="text-text-secondary"
+              />
+              <Folder v-else :size="15" class="text-amber" />
+            </span>
+            <input
+              v-model="newChildName"
+              class="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary font-ui"
+              :placeholder="filesStore.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'"
+              @keydown.enter="submitNew"
+              @keydown.escape="cancelNew"
+              @vue:mounted="($event as any).el.focus()"
+            />
+            <button
+              class="flex items-center justify-center w-4 h-4 rounded text-accent hover:bg-surface-overlay transition-colors cursor-pointer shrink-0"
+              @mousedown.prevent
+              @click="submitNew"
+            >
+              <Check :size="12" />
+            </button>
+          </div>
+
+          <FileExplorerNode :entry="child" :depth="depth + 1" />
+        </template>
+
+        <!-- Pending input row at end (insertBefore = null) -->
         <div
-          v-if="showNewFileInput || showNewFolderInput"
-          class="py-0.5 px-2"
+          v-if="showNewInput && filesStore.pendingCreate?.insertBefore === null"
+          data-pending-input
+          class="flex items-center gap-1.5 py-1 px-2 rounded-sm bg-surface-elevated"
           :style="{ paddingLeft: (depth + 1) * 14 + 8 + 'px' }"
+          draggable="true"
+          @dragstart="onPendingDragStart"
+          @dragend="onPendingDragEnd"
         >
+          <span
+            class="w-3 flex items-center justify-center text-text-muted shrink-0 cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical :size="12" />
+          </span>
+          <span class="flex items-center shrink-0">
+            <FileText
+              v-if="filesStore.pendingCreate?.type === 'file'"
+              :size="15"
+              class="text-text-secondary"
+            />
+            <Folder v-else :size="15" class="text-amber" />
+          </span>
           <input
             v-model="newChildName"
-            class="w-full px-2 py-0.5 text-sm bg-bg border border-accent rounded outline-none text-text-primary font-ui"
-            :placeholder="showNewFileInput ? 'filename.md' : 'folder name'"
-            @keydown.enter="showNewFileInput ? submitNewChildFile() : submitNewChildFolder()"
-            @keydown.escape="cancelNewChild"
+            class="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary font-ui"
+            :placeholder="filesStore.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'"
+            @keydown.enter="submitNew"
+            @keydown.escape="cancelNew"
             @vue:mounted="($event as any).el.focus()"
           />
+          <button
+            class="flex items-center justify-center w-4 h-4 rounded text-accent hover:bg-surface-overlay transition-colors cursor-pointer shrink-0"
+            @mousedown.prevent
+            @click="submitNew"
+          >
+            <Check :size="12" />
+          </button>
         </div>
-
-        <FileExplorerNode
-          v-for="child in entry.children"
-          :key="child.id"
-          :entry="child"
-          :depth="depth + 1"
-        />
       </div>
     </div>
   </div>

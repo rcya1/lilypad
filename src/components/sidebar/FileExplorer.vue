@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { FilePlus, FolderPlus } from 'lucide-vue-next'
+import { ref, computed, watch, onMounted } from 'vue'
+import { FilePlus, FolderPlus, FileText, Folder, Check, GripVertical } from 'lucide-vue-next'
 import FileExplorerNode from './FileExplorerNode.vue'
 import { useFilesStore } from '@/stores/files'
+import { useEditorStore } from '@/stores/editor'
+import { draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 
 const files = useFilesStore()
-const showNewFileInput = ref(false)
-const showNewFolderInput = ref(false)
+const editorStore = useEditorStore()
 const newName = ref('')
 
 onMounted(async () => {
@@ -14,62 +15,112 @@ onMounted(async () => {
   await files.seedWelcomeFile()
 })
 
-async function submitNewFile() {
-  const name = newName.value.trim()
-  if (!name) {
-    showNewFileInput.value = false
-    return
-  }
-  const finalName = name.endsWith('.md') ? name : `${name}.md`
-  await files.createDocument(finalName, 'md')
-  newName.value = ''
-  showNewFileInput.value = false
-}
+// Pending input at root level
+const showRootInput = computed(() => files.pendingCreate?.parentId === null)
 
-async function submitNewFolder() {
-  const name = newName.value.trim()
-  if (!name) {
-    showNewFolderInput.value = false
-    return
+watch(showRootInput, (val, _old, onCleanup) => {
+  if (val) {
+    newName.value = ''
+    const handler = (e: MouseEvent) => {
+      if (!(e.target as Element)?.closest('[data-pending-input]')) {
+        files.clearPendingCreate()
+      }
+    }
+    setTimeout(() => document.addEventListener('mousedown', handler), 0)
+    onCleanup(() => document.removeEventListener('mousedown', handler))
   }
-  await files.createDirectory(name)
-  newName.value = ''
-  showNewFolderInput.value = false
+})
+
+function getInsertBelowActive(): {
+  parentId: string | null
+  insertBefore: string | null
+} | null {
+  const activeId = editorStore.activeDocumentId
+  if (!activeId) return null
+  const activeEntry = files.entries.find((e) => e.id === activeId)
+  if (!activeEntry) return null
+  const siblings = files.entries
+    .filter((e) => e.parent_id === activeEntry.parent_id)
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+  const idx = siblings.findIndex((s) => s.id === activeEntry.id)
+  const insertBefore = idx !== -1 && idx < siblings.length - 1 ? siblings[idx + 1]!.id : null
+  return { parentId: activeEntry.parent_id, insertBefore }
 }
 
 function startNewFile() {
-  showNewFolderInput.value = false
-  showNewFileInput.value = true
-  newName.value = ''
+  const folderId = files.selectedFolderId
+  if (folderId) {
+    files.triggerCreate(folderId, 'file')
+  } else {
+    const below = getInsertBelowActive()
+    files.triggerCreate(below?.parentId ?? null, 'file', below?.insertBefore ?? null)
+  }
 }
 
 function startNewFolder() {
-  showNewFileInput.value = false
-  showNewFolderInput.value = true
+  const folderId = files.selectedFolderId
+  if (folderId) {
+    files.triggerCreate(folderId, 'folder')
+  } else {
+    const below = getInsertBelowActive()
+    files.triggerCreate(below?.parentId ?? null, 'folder', below?.insertBefore ?? null)
+  }
+}
+
+async function submitNew() {
+  const name = newName.value.trim()
+  if (!name) {
+    files.clearPendingCreate()
+    return
+  }
+  const pending = files.pendingCreate!
+  const sortOrder = files.getPendingSortOrder()
+  if (pending.type === 'file') {
+    const finalName = name.endsWith('.md') ? name : `${name}.md`
+    await files.createDocument(finalName, 'md', pending.parentId, sortOrder)
+  } else {
+    await files.createDirectory(name, pending.parentId, sortOrder)
+  }
   newName.value = ''
+  files.clearPendingCreate()
 }
 
 function cancelNew() {
-  showNewFileInput.value = false
-  showNewFolderInput.value = false
+  files.clearPendingCreate()
+  newName.value = ''
+}
+
+function onPendingDragStart(e: DragEvent) {
+  draggingEntry.value = {
+    kind: 'document',
+    id: PENDING_ID,
+    name: '',
+    parentId: null,
+    type: 'md',
+  }
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
+}
+
+function onPendingDragEnd() {
+  draggingEntry.value = null
 }
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto">
+  <div class="flex-1 overflow-y-auto" @click.self="files.selectFolder(null)">
     <div class="flex items-center justify-between px-3 pt-1 pb-2">
       <span class="text-xs font-medium text-text-muted uppercase tracking-widest">Files</span>
       <div class="flex items-center gap-0.5">
         <button
           class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-          title="New file"
+          :title="files.selectedFolderId ? 'New file in selected folder' : 'New file'"
           @click="startNewFile"
         >
           <FilePlus :size="14" />
         </button>
         <button
           class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-          title="New folder"
+          :title="files.selectedFolderId ? 'New folder in selected folder' : 'New folder'"
           @click="startNewFolder"
         >
           <FolderPlus :size="14" />
@@ -82,24 +133,94 @@ function cancelNew() {
       <div v-for="i in 3" :key="i" class="h-6 bg-surface-elevated rounded animate-pulse" />
     </div>
 
-    <div v-else class="text-sm select-none">
-      <!-- New file/folder input at root level -->
-      <div v-if="showNewFileInput || showNewFolderInput" class="px-2 py-1">
+    <div v-else class="text-sm select-none" @click.self="files.selectFolder(null)">
+      <template v-for="entry in files.tree" :key="entry.id">
+        <!-- Pending row before the entry whose ID matches insertBefore -->
+        <div
+          v-if="showRootInput && files.pendingCreate?.insertBefore === entry.id"
+          data-pending-input
+          class="flex items-center gap-1.5 py-1 px-2 rounded-sm bg-surface-elevated"
+          style="padding-left: 8px"
+          draggable="true"
+          @dragstart="onPendingDragStart"
+          @dragend="onPendingDragEnd"
+        >
+          <span
+            class="w-3 flex items-center justify-center text-text-muted shrink-0 cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical :size="12" />
+          </span>
+          <span class="flex items-center shrink-0">
+            <FileText
+              v-if="files.pendingCreate?.type === 'file'"
+              :size="15"
+              class="text-text-secondary"
+            />
+            <Folder v-else :size="15" class="text-amber" />
+          </span>
+          <input
+            v-model="newName"
+            class="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary font-ui"
+            :placeholder="files.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'"
+            @keydown.enter="submitNew"
+            @keydown.escape="cancelNew"
+            @vue:mounted="($event as any).el.focus()"
+          />
+          <button
+            class="flex items-center justify-center w-4 h-4 rounded text-accent hover:bg-surface-overlay transition-colors cursor-pointer shrink-0"
+            @mousedown.prevent
+            @click="submitNew"
+          >
+            <Check :size="12" />
+          </button>
+        </div>
+
+        <FileExplorerNode :entry="entry" :depth="0" />
+      </template>
+
+      <!-- Pending row at end (insertBefore = null) -->
+      <div
+        v-if="showRootInput && files.pendingCreate?.insertBefore === null"
+        data-pending-input
+        class="flex items-center gap-1.5 py-1 px-2 rounded-sm bg-surface-elevated"
+        style="padding-left: 8px"
+        draggable="true"
+        @dragstart="onPendingDragStart"
+        @dragend="onPendingDragEnd"
+      >
+        <span
+          class="w-3 flex items-center justify-center text-text-muted shrink-0 cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical :size="12" />
+        </span>
+        <span class="flex items-center shrink-0">
+          <FileText
+            v-if="files.pendingCreate?.type === 'file'"
+            :size="15"
+            class="text-text-secondary"
+          />
+          <Folder v-else :size="15" class="text-amber" />
+        </span>
         <input
           v-model="newName"
-          class="w-full px-2 py-0.5 text-sm bg-bg border border-accent rounded outline-none text-text-primary font-ui"
-          :placeholder="showNewFileInput ? 'filename.md' : 'folder name'"
-          @keydown.enter="showNewFileInput ? submitNewFile() : submitNewFolder()"
+          class="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary font-ui"
+          :placeholder="files.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'"
+          @keydown.enter="submitNew"
           @keydown.escape="cancelNew"
           @vue:mounted="($event as any).el.focus()"
         />
+        <button
+          class="flex items-center justify-center w-4 h-4 rounded text-accent hover:bg-surface-overlay transition-colors cursor-pointer shrink-0"
+          @mousedown.prevent
+          @click="submitNew"
+        >
+          <Check :size="12" />
+        </button>
       </div>
-
-      <FileExplorerNode v-for="entry in files.tree" :key="entry.id" :entry="entry" :depth="0" />
 
       <!-- Empty state -->
       <div
-        v-if="files.tree.length === 0 && !showNewFileInput && !showNewFolderInput"
+        v-if="files.tree.length === 0 && !showRootInput"
         class="px-3 py-4"
       >
         <p class="text-xs text-text-muted text-center">No files yet</p>
