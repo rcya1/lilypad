@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { X, RotateCw, RotateCcw, ArrowLeftRight, ArrowUpDown } from 'lucide-vue-next'
+import { X, RotateCw, RotateCcw, ArrowLeftRight, ArrowUpDown, Loader2 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 
 defineProps<{
@@ -106,7 +106,10 @@ function onDragEnd() {
           "
           @click.stop="store.closeDocument(tab.id)"
         >
-          <template v-if="store.dirtyIds.has(tab.id)">
+          <template v-if="store.savingIds.has(tab.id)">
+            <Loader2 :size="13" class="animate-spin" />
+          </template>
+          <template v-else-if="store.dirtyIds.has(tab.id)">
             <span class="block group-hover/close:hidden w-1.5 h-1.5 rounded-full bg-current" />
             <X :size="13" class="hidden group-hover/close:block" />
           </template>

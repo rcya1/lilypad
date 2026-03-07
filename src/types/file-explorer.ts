@@ -2,7 +2,9 @@ export type Entry = Directory | Document
 
 export interface Directory {
   kind: 'directory'
+  id: string
   name: string
+  parentId: string | null
   children: (Directory | Document)[]
 }
 
@@ -10,7 +12,9 @@ export type DocumentType = 'pdf' | 'md'
 
 export interface Document {
   kind: 'document'
+  id: string
   name: string
+  parentId: string | null
   type: DocumentType
 }
 

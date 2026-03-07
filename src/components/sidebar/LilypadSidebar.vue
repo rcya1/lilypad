@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import FileExplorer from './FileExplorer.vue'
 import LilypadIcon from '@/assets/icon-light.svg'
+import { LogOut } from 'lucide-vue-next'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useEditorStore } from '@/stores/editor'
+import { useFilesStore } from '@/stores/files'
+import { useRouter } from 'vue-router'
+
+const auth = useAuthStore()
+const router = useRouter()
 
 const sidebarWidth = ref(250)
 const snapThreshold = 160
@@ -74,6 +82,30 @@ onBeforeUnmount(() => {
     <div class="border-t border-border-subtle" />
 
     <FileExplorer v-if="!isMinimized" />
+
+    <!-- User info + logout -->
+    <div
+      v-if="!isMinimized && auth.user"
+      class="mt-auto border-t border-border-subtle px-3 py-2 flex items-center gap-2"
+    >
+      <span class="flex-1 text-xs text-text-secondary truncate">
+        {{ auth.user.email }}
+      </span>
+      <button
+        class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0"
+        title="Sign out"
+        @click="
+          async () => {
+            useEditorStore().$reset()
+            useFilesStore().$reset()
+            await auth.signOut()
+            router.replace({ name: 'login' })
+          }
+        "
+      >
+        <LogOut :size="14" />
+      </button>
+    </div>
 
     <!-- Resize handle -->
     <div

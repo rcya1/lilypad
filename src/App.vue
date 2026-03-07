@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import LilypadSidebar from './components/sidebar/LilypadSidebar.vue'
-import EditorPane from './components/editor/EditorPane.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 </script>
 
 <template>
-  <div class="flex flex-row h-screen bg-bg overflow-hidden">
-    <LilypadSidebar />
-    <EditorPane />
+  <div v-if="auth.loading" class="flex items-center justify-center h-screen bg-bg">
+    <div class="text-text-muted text-sm font-ui">Loading...</div>
   </div>
+  <router-view v-else />
 </template>

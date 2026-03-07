@@ -116,7 +116,11 @@ onBeforeUnmount(() => {
       <!-- For each open tab, render stacked (only active is shown) -->
       <template v-for="id in store.tabOrder" :key="id">
         <div v-show="id === activeId" class="flex-1 min-h-0 overflow-hidden">
-          <div v-if="id === activeId" ref="splitPane" class="relative h-full bg-surface overflow-hidden">
+          <div
+            v-if="id === activeId"
+            ref="splitPane"
+            class="relative h-full bg-surface overflow-hidden"
+          >
             <!-- Editor panel -->
             <div
               class="absolute overflow-hidden split-panel"
@@ -143,9 +147,7 @@ onBeforeUnmount(() => {
               @mousedown="onDividerMouseDown"
               @dblclick="splitPct = 50"
             >
-              <div
-                :class="['absolute transition-all duration-150', dividerLineClass]"
-              />
+              <div :class="['absolute transition-all duration-150', dividerLineClass]" />
             </div>
           </div>
         </div>

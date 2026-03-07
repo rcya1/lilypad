@@ -3,7 +3,8 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
-import { vim, getCM } from '@replit/codemirror-vim'
+import { vim, getCM, Vim } from '@replit/codemirror-vim'
+import { keymap } from '@codemirror/view'
 import { useEditorStore } from '@/stores/editor'
 
 const props = defineProps<{ documentId: string; isActive: boolean }>()
@@ -124,11 +125,25 @@ onMounted(() => {
   if (!container.value) return
 
   const doc = store.openDocuments.get(props.documentId)
+  // Register :w command before creating the view
+  Vim.defineEx('w', 'w', () => {
+    store.saveDocument(props.documentId)
+  })
+
   view = new EditorView({
     state: EditorState.create({
       doc: doc?.content ?? '',
       extensions: [
         vim(),
+        keymap.of([
+          {
+            key: 'Mod-s',
+            run: () => {
+              store.saveDocument(props.documentId)
+              return true
+            },
+          },
+        ]),
         basicSetup,
         lilypadTheme,
         markdown(),

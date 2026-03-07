@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { DocumentType } from '@/types/file-explorer'
+import { useFilesStore } from './files'
 
 export interface OpenDocument {
   id: string
@@ -16,6 +17,7 @@ export const useEditorStore = defineStore('editor', () => {
   const activeDocumentId = ref<string | null>(null)
   const activeDocument = ref<OpenDocument | null>(null)
   const dirtyIds = ref(new Set<string>())
+  const savingIds = ref(new Set<string>())
 
   function openDocument(id: string, name: string, type: DocumentType, initialContent = '') {
     if (!openDocuments.value.has(id)) {
@@ -56,6 +58,31 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  async function saveDocument(id: string) {
+    if (savingIds.value.has(id)) return
+    const doc = openDocuments.value.get(id)
+    if (!doc) return
+
+    savingIds.value.add(id)
+    const contentAtSaveStart = doc.content
+    const filesStore = useFilesStore()
+    const success = await filesStore.uploadContent(id, doc.content)
+    savingIds.value.delete(id)
+
+    if (success && doc.content === contentAtSaveStart) {
+      dirtyIds.value.delete(id)
+    }
+  }
+
+  function $reset() {
+    openDocuments.value.clear()
+    tabOrder.value = []
+    activeDocumentId.value = null
+    activeDocument.value = null
+    dirtyIds.value.clear()
+    savingIds.value.clear()
+  }
+
   function moveTab(id: string, toIndex: number) {
     const from = tabOrder.value.indexOf(id)
     if (from === -1) return
@@ -71,10 +98,13 @@ export const useEditorStore = defineStore('editor', () => {
     activeDocumentId,
     activeDocument,
     dirtyIds,
+    savingIds,
     openDocument,
     setActiveDocument,
     updateContent,
     closeDocument,
+    saveDocument,
+    $reset,
     moveTab,
   }
 })
