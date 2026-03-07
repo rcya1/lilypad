@@ -15,12 +15,14 @@ export const useEditorStore = defineStore('editor', () => {
   const tabOrder = ref<string[]>([])
   const activeDocumentId = ref<string | null>(null)
   const activeDocument = ref<OpenDocument | null>(null)
+  const dirtyIds = ref(new Set<string>())
 
   function openDocument(id: string, name: string, type: DocumentType, initialContent = '') {
     if (!openDocuments.value.has(id)) {
       openDocuments.value.set(id, { id, name, type, content: initialContent })
       tabOrder.value.push(id)
     }
+    dirtyIds.value.delete(id)
     activeDocumentId.value = id
     activeDocument.value = openDocuments.value.get(id) ?? null
   }
@@ -36,11 +38,13 @@ export const useEditorStore = defineStore('editor', () => {
     const doc = openDocuments.value.get(id)
     if (doc) {
       doc.content = content
+      dirtyIds.value.add(id)
     }
   }
 
   function closeDocument(id: string) {
     openDocuments.value.delete(id)
+    dirtyIds.value.delete(id)
     const idx = tabOrder.value.indexOf(id)
     if (idx !== -1) tabOrder.value.splice(idx, 1)
 
@@ -66,6 +70,7 @@ export const useEditorStore = defineStore('editor', () => {
     tabOrder,
     activeDocumentId,
     activeDocument,
+    dirtyIds,
     openDocument,
     setActiveDocument,
     updateContent,

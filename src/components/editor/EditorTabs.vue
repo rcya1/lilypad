@@ -96,17 +96,21 @@ function onDragEnd() {
 
         <span class="truncate max-w-35 font-ui text-sm">{{ tab.name }}</span>
 
-        <!-- Close button -->
+        <!-- Close / dirty button -->
         <span
-          class="flex items-center justify-center w-5 h-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
+          class="group/close flex items-center justify-center w-5 h-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
           :class="
-            tab.id === store.activeDocumentId
+            tab.id === store.activeDocumentId || store.dirtyIds.has(tab.id)
               ? 'opacity-60 hover:opacity-100'
               : 'opacity-0 group-hover:opacity-70 hover:opacity-100!'
           "
           @click.stop="store.closeDocument(tab.id)"
         >
-          <X :size="13" />
+          <template v-if="store.dirtyIds.has(tab.id)">
+            <span class="block group-hover/close:hidden w-1.5 h-1.5 rounded-full bg-current" />
+            <X :size="13" class="hidden group-hover/close:block" />
+          </template>
+          <X v-else :size="13" />
         </span>
       </button>
     </template>
@@ -123,12 +127,13 @@ function onDragEnd() {
     <!-- Layout controls -->
     <div class="flex items-center gap-0.5 px-2 shrink-0 border-l border-border-subtle">
       <button
-        class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+        class="rotate-btn flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+        :class="rotationClockwise ? 'rotate-cw' : 'rotate-ccw'"
         :title="isVertical ? 'Switch to side-by-side' : 'Switch to top-bottom'"
         @click="emit('toggle-layout')"
       >
-        <RotateCw v-if="rotationClockwise" :size="15" />
-        <RotateCcw v-else :size="15" />
+        <RotateCw v-if="rotationClockwise" :size="15" class="rotate-icon" />
+        <RotateCcw v-else :size="15" class="rotate-icon" />
       </button>
       <button
         class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
@@ -141,3 +146,17 @@ function onDragEnd() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.rotate-icon {
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rotate-cw:hover .rotate-icon {
+  transform: rotate(90deg);
+}
+
+.rotate-ccw:hover .rotate-icon {
+  transform: rotate(-90deg);
+}
+</style>

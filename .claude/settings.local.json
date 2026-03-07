@@ -3,7 +3,10 @@
     "allow": [
       "Bash(yarn type-check:*)",
       "Bash(yarn build-only:*)",
-      "Bash(yarn lint:*)"
+      "Bash(yarn lint:*)",
+      "Bash(yarn add:*)",
+      "Bash(node:*)",
+      "WebSearch"
     ]
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, useTemplateRef, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, useTemplateRef, onBeforeUnmount } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
@@ -96,23 +96,9 @@ function onMouseUp() {
   window.removeEventListener('mouseup', onMouseUp)
 }
 
-function onKeyDown(e: KeyboardEvent) {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
-    e.preventDefault()
-    if (activeId.value) {
-      store.closeDocument(activeId.value)
-    }
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
-})
-
 onBeforeUnmount(() => {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', onMouseUp)
-  window.removeEventListener('keydown', onKeyDown)
 })
 </script>
 

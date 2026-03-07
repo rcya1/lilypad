@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
+import { vim, getCM } from '@replit/codemirror-vim'
 import { useEditorStore } from '@/stores/editor'
 
 const props = defineProps<{ documentId: string; isActive: boolean }>()
@@ -10,6 +11,34 @@ const props = defineProps<{ documentId: string; isActive: boolean }>()
 const store = useEditorStore()
 const container = ref<HTMLDivElement>()
 let view: EditorView | null = null
+
+const vimMode = ref<'normal' | 'insert' | 'visual' | 'replace'>('normal')
+
+const modeLabel = computed(() => {
+  switch (vimMode.value) {
+    case 'insert':
+      return '-- INSERT --'
+    case 'visual':
+      return '-- VISUAL --'
+    case 'replace':
+      return '-- REPLACE --'
+    default:
+      return ''
+  }
+})
+
+const modeLabelClass = computed(() => {
+  switch (vimMode.value) {
+    case 'insert':
+      return 'text-accent'
+    case 'visual':
+      return 'text-amber'
+    case 'replace':
+      return 'text-text-secondary'
+    default:
+      return ''
+  }
+})
 
 const lilypadTheme = EditorView.theme({
   '&': {
@@ -68,6 +97,15 @@ const lilypadTheme = EditorView.theme({
   '.cm-selectionMatch': {
     backgroundColor: 'var(--surface-elevated)',
   },
+  '.cm-fat-cursor': {
+    background: 'color-mix(in srgb, var(--accent) 35%, transparent) !important',
+    color: 'var(--text-primary) !important',
+  },
+  '&:not(.cm-focused) .cm-fat-cursor': {
+    background: 'none !important',
+    outline: '1px solid color-mix(in srgb, var(--accent) 50%, transparent) !important',
+    color: 'transparent !important',
+  },
 })
 
 watch(
@@ -84,11 +122,13 @@ watch(
 
 onMounted(() => {
   if (!container.value) return
+
   const doc = store.openDocuments.get(props.documentId)
   view = new EditorView({
     state: EditorState.create({
       doc: doc?.content ?? '',
       extensions: [
+        vim(),
         basicSetup,
         lilypadTheme,
         markdown(),
@@ -102,6 +142,12 @@ onMounted(() => {
     }),
     parent: container.value,
   })
+
+  const cm = getCM(view)
+  cm?.on('vim-mode-change', (e: { mode: string }) => {
+    vimMode.value = e.mode as typeof vimMode.value
+  })
+
   view.focus()
 })
 
@@ -112,5 +158,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="container" class="h-full w-full overflow-hidden" />
+  <div class="h-full w-full flex flex-col overflow-hidden">
+    <div ref="container" class="flex-1 overflow-hidden" />
+    <div class="flex items-center h-6 px-3 shrink-0 border-t border-border-subtle bg-surface">
+      <span class="font-mono text-xs font-medium tracking-wide" :class="modeLabelClass">
+        {{ modeLabel }}
+      </span>
+    </div>
+  </div>
 </template>
