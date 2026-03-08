@@ -2,15 +2,16 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from './auth'
+import { useToastStore } from './toast'
 import type { EntryRow } from '@/types/database'
 import type { Entry } from '@/types/file-explorer'
 import type { DocumentType } from '@/types/file-explorer'
 
 export const useFilesStore = defineStore('files', () => {
   const auth = useAuthStore()
+  const toast = useToastStore()
   const entries = ref<EntryRow[]>([])
   const loading = ref(false)
-  const error = ref<string | null>(null)
   const selectedFolderId = ref<string | null>(null)
   const pendingCreate = ref<{
     parentId: string | null
@@ -19,6 +20,17 @@ export const useFilesStore = defineStore('files', () => {
   } | null>(null)
 
   const tree = computed<Entry[]>(() => buildTree(null))
+
+  // Check if a name is already taken among siblings (excludeId = skip self when renaming)
+  function isDuplicateName(name: string, parentId: string | null, excludeId?: string): boolean {
+    return entries.value.some(
+      (e) => e.parent_id === parentId && e.name === name && e.id !== excludeId,
+    )
+  }
+
+  function showError(msg: string) {
+    toast.addToast(msg, 'error')
+  }
 
   function buildTree(parentId: string | null): Entry[] {
     const children = entries.value
@@ -89,7 +101,6 @@ export const useFilesStore = defineStore('files', () => {
   async function fetchEntries() {
     if (!auth.user) return
     loading.value = true
-    error.value = null
 
     const { data, error: err } = await supabase
       .from('entries')
@@ -99,7 +110,7 @@ export const useFilesStore = defineStore('files', () => {
       .returns<EntryRow[]>()
 
     if (err) {
-      error.value = err.message
+      showError('Failed to load files.')
     } else {
       entries.value = data ?? []
     }
@@ -113,6 +124,11 @@ export const useFilesStore = defineStore('files', () => {
     sortOrder?: number,
   ) {
     if (!auth.user) return null
+
+    if (isDuplicateName(name, parentId)) {
+      showError('A file with that name already exists in this location.')
+      return null
+    }
 
     const { data, error: err } = await supabase
       .from('entries')
@@ -129,7 +145,7 @@ export const useFilesStore = defineStore('files', () => {
       .single()
 
     if (err || !data) {
-      error.value = err?.message ?? 'Failed to create document'
+      showError('Unknown error.')
       return null
     }
 
@@ -157,6 +173,11 @@ export const useFilesStore = defineStore('files', () => {
   ) {
     if (!auth.user) return null
 
+    if (isDuplicateName(name, parentId)) {
+      showError('A folder with that name already exists in this location.')
+      return null
+    }
+
     const { data, error: err } = await supabase
       .from('entries')
       .insert({
@@ -171,7 +192,7 @@ export const useFilesStore = defineStore('files', () => {
       .single()
 
     if (err || !data) {
-      error.value = err?.message ?? 'Failed to create directory'
+      showError('Unknown error.')
       return null
     }
 
@@ -180,17 +201,22 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   async function renameEntry(id: string, newName: string) {
+    const entry = entries.value.find((e) => e.id === id)
+    if (entry && isDuplicateName(newName, entry.parent_id, id)) {
+      showError('A file or folder with that name already exists in this location.')
+      return false
+    }
+
     const { error: err } = await supabase
       .from('entries')
       .update({ name: newName } as never)
       .eq('id', id)
 
     if (err) {
-      error.value = err.message
+      showError('Unknown error.')
       return false
     }
 
-    const entry = entries.value.find((e) => e.id === id)
     if (entry) entry.name = newName
     return true
   }
@@ -210,7 +236,7 @@ export const useFilesStore = defineStore('files', () => {
     const { error: err } = await supabase.from('entries').delete().eq('id', id)
 
     if (err) {
-      error.value = err.message
+      showError('Unknown error.')
       return false
     }
 
@@ -240,20 +266,25 @@ export const useFilesStore = defineStore('files', () => {
     const descendants = collectDescendantIds(id)
     if (newParentId !== null && descendants.includes(newParentId)) return false
 
+    const moving = entries.value.find((e) => e.id === id)
+    if (moving && isDuplicateName(moving.name, newParentId, id)) {
+      showError('A file or folder with that name already exists in that location.')
+      return false
+    }
+
     const { error: err } = await supabase
       .from('entries')
       .update({ parent_id: newParentId, sort_order: newSortOrder } as never)
       .eq('id', id)
 
     if (err) {
-      error.value = err.message
+      showError('Unknown error.')
       return false
     }
 
-    const entry = entries.value.find((e) => e.id === id)
-    if (entry) {
-      entry.parent_id = newParentId
-      entry.sort_order = newSortOrder
+    if (moving) {
+      moving.parent_id = newParentId
+      moving.sort_order = newSortOrder
     }
     return true
   }
@@ -267,7 +298,7 @@ export const useFilesStore = defineStore('files', () => {
       .download(entry.storage_path)
 
     if (err) {
-      error.value = err.message
+      showError('Unknown error.')
       return null
     }
 
@@ -283,7 +314,7 @@ export const useFilesStore = defineStore('files', () => {
       .update(entry.storage_path, new Blob([content], { type: 'text/plain' }), { upsert: true })
 
     if (err) {
-      error.value = err.message
+      showError('Unknown error.')
       return false
     }
 
@@ -320,7 +351,6 @@ Happy note-taking!
   function $reset() {
     entries.value = []
     loading.value = false
-    error.value = null
     selectedFolderId.value = null
     pendingCreate.value = null
   }
@@ -329,7 +359,6 @@ Happy note-taking!
     entries,
     tree,
     loading,
-    error,
     selectedFolderId,
     pendingCreate,
     fetchEntries,

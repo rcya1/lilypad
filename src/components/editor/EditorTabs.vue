@@ -62,7 +62,6 @@ function onDragEnd() {
     @drop="onDrop"
   >
     <template v-for="(tab, i) in tabs" :key="tab.id">
-      <!-- Drop indicator line -->
       <div v-if="draggedId && dropIndex === i" class="w-0.5 bg-accent shrink-0 self-stretch" />
 
       <button
@@ -88,7 +87,6 @@ function onDragEnd() {
         @dragover="onDragOver($event, i)"
         @dragend="onDragEnd"
       >
-        <!-- Active indicator bar -->
         <span
           v-if="tab.id === store.activeDocumentId"
           class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
@@ -96,7 +94,6 @@ function onDragEnd() {
 
         <span class="truncate max-w-35 font-ui text-sm">{{ tab.name }}</span>
 
-        <!-- Close / dirty button -->
         <span
           class="group/close flex items-center justify-center w-5 h-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
           :class="
@@ -118,16 +115,13 @@ function onDragEnd() {
       </button>
     </template>
 
-    <!-- Drop indicator at the end -->
     <div
       v-if="draggedId && dropIndex === tabs.length"
       class="w-0.5 bg-accent shrink-0 self-stretch"
     />
 
-    <!-- Trailing drag target area (rest of the tab bar) -->
     <div class="flex-1" @dragover="onDragOverEnd" @drop="onDrop" />
 
-    <!-- Layout controls -->
     <div class="flex items-center gap-0.5 px-2 shrink-0 border-l border-border-subtle">
       <button
         class="rotate-btn flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"

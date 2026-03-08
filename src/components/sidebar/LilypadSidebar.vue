@@ -9,7 +9,16 @@ import { useFilesStore } from '@/stores/files'
 import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
+const editorStore = useEditorStore()
+const filesStore = useFilesStore()
 const router = useRouter()
+
+async function signOut() {
+  editorStore.$reset()
+  filesStore.$reset()
+  await auth.signOut()
+  router.replace({ name: 'login' })
+}
 
 const sidebarWidth = ref(250)
 const snapThreshold = 160
@@ -83,7 +92,6 @@ onBeforeUnmount(() => {
 
     <FileExplorer v-if="!isMinimized" />
 
-    <!-- User info + logout -->
     <div
       v-if="!isMinimized && auth.user"
       class="mt-auto border-t border-border-subtle px-3 py-2 flex items-center gap-2"
@@ -94,20 +102,12 @@ onBeforeUnmount(() => {
       <button
         class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0"
         title="Sign out"
-        @click="
-          async () => {
-            useEditorStore().$reset()
-            useFilesStore().$reset()
-            await auth.signOut()
-            router.replace({ name: 'login' })
-          }
-        "
+        @click="signOut"
       >
         <LogOut :size="14" />
       </button>
     </div>
 
-    <!-- Resize handle -->
     <div
       class="group absolute top-0 right-0 h-full w-4 cursor-col-resize -mr-2"
       @mousedown="startResize"

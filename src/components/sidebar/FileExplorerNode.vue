@@ -43,7 +43,6 @@ const isSelectedFolder = computed(
   () => isDirectory(props.entry) && filesStore.selectedFolderId === props.entry.id,
 )
 
-// Show pending input when pendingCreate targets this folder
 const showNewInput = computed(
   () => isDirectory(props.entry) && filesStore.pendingCreate?.parentId === props.entry.id,
 )

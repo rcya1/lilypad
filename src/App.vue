@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const auth = useAuthStore()
 </script>
@@ -9,4 +10,5 @@ const auth = useAuthStore()
     <div class="text-text-muted text-sm font-ui">Loading...</div>
   </div>
   <router-view v-else />
+  <ToastContainer />
 </template>

@@ -20,8 +20,6 @@ const isSwapped = ref(false)
 const rotationClockwise = ref(true)
 const isDragging = ref(false)
 
-// Panel positions — both panels are always absolutely positioned.
-// "first slot" is left (horizontal) or top (vertical).
 function slotStyle(inFirst: boolean) {
   if (!isVertical.value) {
     return inFirst
@@ -113,7 +111,6 @@ onBeforeUnmount(() => {
         @toggle-swap="toggleSwap"
       />
 
-      <!-- For each open tab, render stacked (only active is shown) -->
       <template v-for="id in store.tabOrder" :key="id">
         <div v-show="id === activeId" class="flex-1 min-h-0 overflow-hidden">
           <div
@@ -121,7 +118,6 @@ onBeforeUnmount(() => {
             ref="splitPane"
             class="relative h-full bg-surface overflow-hidden"
           >
-            <!-- Editor panel -->
             <div
               class="absolute overflow-hidden split-panel"
               :class="{ 'no-transition': isDragging }"
@@ -130,7 +126,6 @@ onBeforeUnmount(() => {
               <TextEditor :document-id="id" :is-active="id === activeId" class="h-full" />
             </div>
 
-            <!-- Preview panel -->
             <div
               class="absolute overflow-hidden split-panel"
               :class="{ 'no-transition': isDragging }"
@@ -139,7 +134,6 @@ onBeforeUnmount(() => {
               <MarkdownPreview :document-id="id" />
             </div>
 
-            <!-- Resize divider hit zone -->
             <div
               class="absolute z-10 group"
               :class="isVertical ? 'cursor-row-resize' : 'cursor-col-resize'"

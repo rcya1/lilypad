@@ -15,7 +15,6 @@ onMounted(async () => {
   await files.seedWelcomeFile()
 })
 
-// Pending input at root level
 const showRootInput = computed(() => files.pendingCreate?.parentId === null)
 
 watch(showRootInput, (val, _old, onCleanup) => {
@@ -227,9 +226,5 @@ function onPendingDragEnd() {
       </div>
     </div>
 
-    <!-- Error message -->
-    <div v-if="files.error" class="px-3 py-2">
-      <p class="text-xs text-red-600">{{ files.error }}</p>
-    </div>
   </div>
 </template>
