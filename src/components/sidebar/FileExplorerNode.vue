@@ -64,13 +64,34 @@ watch(showNewInput, (val, _old, onCleanup) => {
 
 async function handleClick() {
   if (isDirectory(props.entry)) {
+    const wasOpen = isOpen.value
     isOpen.value = !isOpen.value
     filesStore.selectFolder(props.entry.id)
+    // Prefetch direct md children when a folder is expanded
+    if (!wasOpen) {
+      props.entry.children
+        .filter((c) => !isDirectory(c) && c.type === 'md')
+        .forEach((c) => filesStore.prefetchContent(c.id))
+    }
   } else {
     filesStore.selectFolder(null)
     if (props.entry.type === 'md') {
-      const content = await filesStore.downloadContent(props.entry.id)
-      editorStore.openDocument(props.entry.id, props.entry.name, props.entry.type, content ?? '')
+      const id = props.entry.id
+      // Fast path: tab is already open, just switch to it
+      if (editorStore.openDocuments.has(id)) {
+        editorStore.setActiveDocument(id)
+        return
+      }
+      // Cache hit: open instantly with no loading state
+      const cached = filesStore.getCached(id)
+      if (cached !== undefined) {
+        editorStore.openDocument(id, props.entry.name, props.entry.type, cached)
+        return
+      }
+      // Cache miss: show tab + skeleton immediately, fetch in background
+      editorStore.openDocumentOptimistic(id, props.entry.name, props.entry.type)
+      const content = await filesStore.downloadContent(id)
+      editorStore.finishLoadingDocument(id, content ?? '')
     }
   }
 }
@@ -305,7 +326,9 @@ function onPendingDragEnd() {
             <input
               v-model="newChildName"
               class="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary font-ui"
-              :placeholder="filesStore.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'"
+              :placeholder="
+                filesStore.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'
+              "
               @keydown.enter="submitNew"
               @keydown.escape="cancelNew"
               @vue:mounted="($event as any).el.focus()"

@@ -7,6 +7,53 @@ import type { EntryRow } from '@/types/database'
 import type { Entry } from '@/types/file-explorer'
 import type { DocumentType } from '@/types/file-explorer'
 
+// ---------------------------------------------------------------------------
+// LRU content cache — keeps up to CACHE_MAX_BYTES of file content in memory.
+// Map insertion order tracks recency: newest entries are at the end.
+// ---------------------------------------------------------------------------
+const CACHE_MAX_BYTES = 10 * 1024 * 1024 // 10 MB
+interface CacheEntry {
+  content: string
+  byteSize: number
+}
+const contentCache = new Map<string, CacheEntry>()
+let cacheTotalBytes = 0
+
+function cacheGet(entryId: string): string | undefined {
+  const entry = contentCache.get(entryId)
+  if (!entry) return undefined
+  // Refresh recency: move to end of insertion-order
+  contentCache.delete(entryId)
+  contentCache.set(entryId, entry)
+  return entry.content
+}
+
+function cacheSet(entryId: string, content: string) {
+  const byteSize = new TextEncoder().encode(content).length
+  if (contentCache.has(entryId)) {
+    cacheTotalBytes -= contentCache.get(entryId)!.byteSize
+    contentCache.delete(entryId)
+  }
+  // Evict oldest (LRU) entries until we're under the limit
+  while (cacheTotalBytes + byteSize > CACHE_MAX_BYTES && contentCache.size > 0) {
+    const oldestKey = contentCache.keys().next().value!
+    cacheTotalBytes -= contentCache.get(oldestKey)!.byteSize
+    contentCache.delete(oldestKey)
+  }
+  contentCache.set(entryId, { content, byteSize })
+  cacheTotalBytes += byteSize
+}
+
+function cacheDelete(entryId: string) {
+  if (contentCache.has(entryId)) {
+    cacheTotalBytes -= contentCache.get(entryId)!.byteSize
+    contentCache.delete(entryId)
+  }
+}
+
+// Tracks in-flight prefetch requests so we don't duplicate work
+const prefetching = new Set<string>()
+
 export const useFilesStore = defineStore('files', () => {
   const auth = useAuthStore()
   const toast = useToastStore()
@@ -166,11 +213,7 @@ export const useFilesStore = defineStore('files', () => {
     return data
   }
 
-  async function createDirectory(
-    name: string,
-    parentId: string | null = null,
-    sortOrder?: number,
-  ) {
+  async function createDirectory(name: string, parentId: string | null = null, sortOrder?: number) {
     if (!auth.user) return null
 
     if (isDuplicateName(name, parentId)) {
@@ -241,6 +284,7 @@ export const useFilesStore = defineStore('files', () => {
     }
 
     entries.value = entries.value.filter((e) => !idsToDelete.includes(e.id))
+    idsToDelete.forEach(cacheDelete)
 
     if (selectedFolderId.value && idsToDelete.includes(selectedFolderId.value)) {
       selectedFolderId.value = null
@@ -289,7 +333,15 @@ export const useFilesStore = defineStore('files', () => {
     return true
   }
 
+  /** Returns cached content synchronously, or undefined on a cache miss. */
+  function getCached(entryId: string): string | undefined {
+    return cacheGet(entryId)
+  }
+
   async function downloadContent(entryId: string): Promise<string | null> {
+    const cached = cacheGet(entryId)
+    if (cached !== undefined) return cached
+
     const entry = entries.value.find((e) => e.id === entryId)
     if (!entry?.storage_path) return null
 
@@ -302,7 +354,25 @@ export const useFilesStore = defineStore('files', () => {
       return null
     }
 
-    return await data.text()
+    const content = await data.text()
+    cacheSet(entryId, content)
+    return content
+  }
+
+  /** Silently pre-warms the cache for a file without opening it. */
+  async function prefetchContent(entryId: string): Promise<void> {
+    if (contentCache.has(entryId) || prefetching.has(entryId)) return
+    const entry = entries.value.find((e) => e.id === entryId)
+    if (!entry?.storage_path) return
+    prefetching.add(entryId)
+    try {
+      const { data, error: err } = await supabase.storage
+        .from('user-files')
+        .download(entry.storage_path)
+      if (!err) cacheSet(entryId, await data.text())
+    } finally {
+      prefetching.delete(entryId)
+    }
   }
 
   async function uploadContent(entryId: string, content: string): Promise<boolean> {
@@ -318,6 +388,8 @@ export const useFilesStore = defineStore('files', () => {
       return false
     }
 
+    // Keep cache in sync with the saved version
+    cacheSet(entryId, content)
     return true
   }
 
@@ -373,7 +445,9 @@ Happy note-taking!
     updatePendingPosition,
     getPendingSortOrder,
     clearPendingCreate,
+    getCached,
     downloadContent,
+    prefetchContent,
     uploadContent,
     seedWelcomeFile,
     $reset,

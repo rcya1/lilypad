@@ -18,6 +18,8 @@ export const useEditorStore = defineStore('editor', () => {
   const activeDocument = ref<OpenDocument | null>(null)
   const dirtyIds = ref(new Set<string>())
   const savingIds = ref(new Set<string>())
+  /** IDs of documents whose content is still being fetched from the network */
+  const loadingIds = ref(new Set<string>())
 
   function openDocument(id: string, name: string, type: DocumentType, initialContent = '') {
     if (!openDocuments.value.has(id)) {
@@ -25,8 +27,28 @@ export const useEditorStore = defineStore('editor', () => {
       tabOrder.value.push(id)
     }
     dirtyIds.value.delete(id)
+    loadingIds.value.delete(id)
     activeDocumentId.value = id
     activeDocument.value = openDocuments.value.get(id) ?? null
+  }
+
+  /** Open a tab immediately (showing a loading skeleton) before content has arrived. */
+  function openDocumentOptimistic(id: string, name: string, type: DocumentType) {
+    if (!openDocuments.value.has(id)) {
+      openDocuments.value.set(id, { id, name, type, content: '' })
+      tabOrder.value.push(id)
+    }
+    loadingIds.value.add(id)
+    activeDocumentId.value = id
+    activeDocument.value = openDocuments.value.get(id) ?? null
+  }
+
+  /** Called once content has finished loading; replaces skeleton with real content. */
+  function finishLoadingDocument(id: string, content: string) {
+    const doc = openDocuments.value.get(id)
+    if (doc) doc.content = content
+    loadingIds.value.delete(id)
+    dirtyIds.value.delete(id)
   }
 
   function setActiveDocument(id: string) {
@@ -81,6 +103,7 @@ export const useEditorStore = defineStore('editor', () => {
     activeDocument.value = null
     dirtyIds.value.clear()
     savingIds.value.clear()
+    loadingIds.value.clear()
   }
 
   function moveTab(id: string, toIndex: number) {
@@ -99,7 +122,10 @@ export const useEditorStore = defineStore('editor', () => {
     activeDocument,
     dirtyIds,
     savingIds,
+    loadingIds,
     openDocument,
+    openDocumentOptimistic,
+    finishLoadingDocument,
     setActiveDocument,
     updateContent,
     closeDocument,

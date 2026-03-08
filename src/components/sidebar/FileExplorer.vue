@@ -13,6 +13,10 @@ const newName = ref('')
 onMounted(async () => {
   await files.fetchEntries()
   await files.seedWelcomeFile()
+  // Background-prefetch all visible md documents (all folders start expanded)
+  files.entries
+    .filter((e) => e.kind === 'document' && e.document_type === 'md')
+    .forEach((e) => files.prefetchContent(e.id))
 })
 
 const showRootInput = computed(() => files.pendingCreate?.parentId === null)
