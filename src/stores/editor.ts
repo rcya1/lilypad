@@ -20,6 +20,11 @@ export const useEditorStore = defineStore('editor', () => {
   const savingIds = ref(new Set<string>())
   /** IDs of documents whose content is still being fetched from the network */
   const loadingIds = ref(new Set<string>())
+  const scrollToLineRequest = ref<{ documentId: string; line: number } | null>(null)
+
+  function requestScrollToLine(documentId: string, line: number) {
+    scrollToLineRequest.value = { documentId, line }
+  }
 
   function openDocument(id: string, name: string, type: DocumentType, initialContent = '') {
     if (!openDocuments.value.has(id)) {
@@ -104,6 +109,7 @@ export const useEditorStore = defineStore('editor', () => {
     dirtyIds.value.clear()
     savingIds.value.clear()
     loadingIds.value.clear()
+    scrollToLineRequest.value = null
   }
 
   function moveTab(id: string, toIndex: number) {
@@ -130,6 +136,8 @@ export const useEditorStore = defineStore('editor', () => {
     updateContent,
     closeDocument,
     saveDocument,
+    scrollToLineRequest,
+    requestScrollToLine,
     $reset,
     moveTab,
   }

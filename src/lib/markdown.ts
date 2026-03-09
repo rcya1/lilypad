@@ -1,6 +1,7 @@
 import { Marked } from 'marked'
-import type { Token, Tokens } from 'marked'
+import type { Token, Tokens, RendererObject } from 'marked'
 import markedKatex from 'marked-katex-extension'
+import katex from 'katex'
 
 const macros = {
   '\\integers': '\\mathbb{Z}',
@@ -99,22 +100,156 @@ const admonition = {
     const icon = admonitionIcons[t.admonitionType] ?? ''
     // @ts-expect-error — marked extension parser is injected at runtime
     const body: string = this.parser.parse(t.tokens)
-    return `<div class="admonition admonition-${t.admonitionType}">
+    const a = attr(token)
+    return `<div${a} class="admonition admonition-${t.admonitionType}">
       <div class="admonition-title">${icon}<span>${t.title}</span></div>
       <div class="admonition-body">${body}</div>
     </div>`
   },
 }
 
-export async function parseMarkdown(content: string): Promise<string> {
-  // Strip YAML front matter
-  if (content.startsWith('---')) {
-    content = content.split('---').slice(2).join('---')
-  }
+const escapeMap: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
 
+function escapeHtml(s: string, encode = false): string {
+  if (encode) return s.replace(/[&<>"']/g, (ch) => escapeMap[ch] ?? ch)
+  return s.replace(/&(?!#?\w+;)|[<>"']/g, (ch) => escapeMap[ch] ?? ch)
+}
+
+function annotateSourceLines(tokens: Token[], lineOffset: number) {
+  let currentLine = 1
+  for (const token of tokens) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(token as any)._sourceLine = lineOffset + currentLine
+
+    // Annotate individual list items and recurse into nested lists
+    if (token.type === 'list') {
+      annotateListItems((token as Tokens.List).items, lineOffset + currentLine - 1)
+    }
+
+    if (token.raw) {
+      currentLine += (token.raw.match(/\n/g) || []).length
+    }
+  }
+}
+
+function annotateListItems(items: Tokens.ListItem[], lineOffset: number) {
+  let itemLine = 1
+  for (const item of items) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(item as any)._sourceLine = lineOffset + itemLine
+
+    // Recurse into child tokens to find nested lists.
+    // Count newlines in preceding sibling tokens to determine where the nested list starts.
+    let childNewlines = 0
+    for (const child of item.tokens) {
+      if (child.type === 'list') {
+        const linesBeforeNested = childNewlines + 1 // +1 because nested list starts on next line
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(child as any)._sourceLine = lineOffset + itemLine + linesBeforeNested - 1
+        annotateListItems(
+          (child as Tokens.List).items,
+          lineOffset + itemLine + linesBeforeNested - 2,
+        )
+      }
+      if (child.raw) {
+        childNewlines += (child.raw.match(/\n/g) || []).length
+      }
+    }
+
+    if (item.raw) {
+      itemLine += (item.raw.match(/\n/g) || []).length
+    }
+  }
+}
+
+function attr(token: Tokens.Generic): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const line = (token as any)._sourceLine
+  return line != null ? ` data-source-line="${line}"` : ''
+}
+
+const sourceLineRenderer: RendererObject = {
+  heading(token: Tokens.Heading) {
+    return `<h${token.depth}${attr(token)}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`
+  },
+  paragraph(token: Tokens.Paragraph) {
+    return `<p${attr(token)}>${this.parser.parseInline(token.tokens)}</p>\n`
+  },
+  code(token: Tokens.Code) {
+    const lang = (token.lang || '').match(/^\S*/)?.[0]
+    const text = token.text.replace(/\n$/, '') + '\n'
+    const escaped = token.escaped ? text : escapeHtml(text, true)
+    if (lang) {
+      return `<pre${attr(token)}><code class="language-${escapeHtml(lang)}">${escaped}</code></pre>\n`
+    }
+    return `<pre${attr(token)}><code>${escaped}</code></pre>\n`
+  },
+  blockquote(token: Tokens.Blockquote) {
+    return `<blockquote${attr(token)}>\n${this.parser.parse(token.tokens)}</blockquote>\n`
+  },
+  list(token: Tokens.List) {
+    const tag = token.ordered ? 'ol' : 'ul'
+    const startAttr = token.ordered && token.start !== 1 ? ` start="${token.start}"` : ''
+    let body = ''
+    for (const item of token.items) {
+      body += `<li${attr(item as unknown as Tokens.Generic)}>${this.parser.parse(item.tokens)}</li>\n`
+    }
+    return `<${tag}${startAttr}${attr(token)}>\n${body}</${tag}>\n`
+  },
+  table(token: Tokens.Table) {
+    let header = ''
+    for (const cell of token.header) {
+      const alignAttr = cell.align ? ` align="${cell.align}"` : ''
+      header += `<th${alignAttr}>${this.parser.parseInline(cell.tokens)}</th>\n`
+    }
+    header = `<tr>\n${header}</tr>\n`
+
+    let body = ''
+    for (const row of token.rows) {
+      let rowStr = ''
+      for (const cell of row) {
+        const alignAttr = cell.align ? ` align="${cell.align}"` : ''
+        rowStr += `<td${alignAttr}>${this.parser.parseInline(cell.tokens)}</td>\n`
+      }
+      body += `<tr>\n${rowStr}</tr>\n`
+    }
+    if (body) body = `<tbody>${body}</tbody>`
+
+    return `<table${attr(token)}>\n<thead>\n${header}</thead>\n${body}</table>\n`
+  },
+  hr(token: Tokens.Hr) {
+    return `<hr${attr(token)}>\n`
+  },
+}
+
+export function parseMarkdown(content: string): string {
   const marked = new Marked()
   marked.use(markedKatex({ throwOnError: false, macros }))
   marked.use({ extensions: [admonition] })
+  marked.use({ breaks: true, renderer: sourceLineRenderer })
+  marked.use({
+    extensions: [
+      {
+        name: 'blockKatex',
+        renderer(token: Tokens.Generic) {
+          const a = attr(token)
+          return `<div${a}>${katex.renderToString(token.text, {
+            throwOnError: false,
+            displayMode: token.displayMode,
+            macros,
+          })}</div>\n`
+        },
+      },
+    ],
+  })
 
-  return await marked.parse(content, { breaks: true })
+  const tokens = marked.lexer(content)
+  annotateSourceLines(tokens, 0)
+  return marked.parser(tokens)
 }

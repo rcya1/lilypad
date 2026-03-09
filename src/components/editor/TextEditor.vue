@@ -1,17 +1,35 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState } from '@codemirror/state'
+import { EditorState, StateEffect, StateField } from '@codemirror/state'
+import { Decoration, type DecorationSet, keymap } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
-import { keymap } from '@codemirror/view'
 import { useEditorStore } from '@/stores/editor'
+
+const highlightLineEffect = StateEffect.define<number | null>()
+
+const highlightLineField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(value, tr) {
+    for (const effect of tr.effects) {
+      if (effect.is(highlightLineEffect)) {
+        if (effect.value == null) return Decoration.none
+        const line = tr.state.doc.line(effect.value)
+        return Decoration.set([Decoration.line({ class: 'cm-highlight-line' }).range(line.from)])
+      }
+    }
+    return value
+  },
+  provide: (f) => EditorView.decorations.from(f),
+})
 
 const props = defineProps<{ documentId: string; isActive: boolean }>()
 
 const store = useEditorStore()
 const container = ref<HTMLDivElement>()
 let view: EditorView | null = null
+let highlightTimer: ReturnType<typeof setTimeout> | undefined
 
 const vimMode = ref<'normal' | 'insert' | 'visual' | 'replace'>('normal')
 
@@ -95,6 +113,10 @@ const lilypadTheme = EditorView.theme({
   '.cm-activeLine': {
     backgroundColor: 'var(--surface) !important',
   },
+  '.cm-highlight-line.cm-activeLine, .cm-highlight-line': {
+    animation: 'cm-line-flash 1.5s ease-out forwards !important',
+    backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent) !important',
+  },
   '.cm-selectionMatch': {
     backgroundColor: 'var(--surface-elevated)',
   },
@@ -153,6 +175,7 @@ onMounted(() => {
           }
         }),
         EditorView.lineWrapping,
+        highlightLineField,
       ],
     }),
     parent: container.value,
@@ -166,7 +189,31 @@ onMounted(() => {
   view.focus()
 })
 
+watch(
+  () => store.scrollToLineRequest,
+  (req) => {
+    if (!req || req.documentId !== props.documentId || !view) return
+    store.scrollToLineRequest = null
+
+    const targetLine = Math.min(Math.max(1, req.line), view.state.doc.lines)
+    const lineInfo = view.state.doc.line(targetLine)
+
+    view.dispatch({
+      effects: [
+        EditorView.scrollIntoView(lineInfo.from, { y: 'center' }),
+        highlightLineEffect.of(targetLine),
+      ],
+    })
+
+    if (highlightTimer) clearTimeout(highlightTimer)
+    highlightTimer = setTimeout(() => {
+      view?.dispatch({ effects: highlightLineEffect.of(null) })
+    }, 1500)
+  },
+)
+
 onBeforeUnmount(() => {
+  if (highlightTimer) clearTimeout(highlightTimer)
   view?.destroy()
   view = null
 })
@@ -182,3 +229,14 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
+
+<style>
+@keyframes cm-line-flash {
+  0% {
+    background-color: color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+</style>

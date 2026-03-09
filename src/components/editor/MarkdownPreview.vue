@@ -13,8 +13,8 @@ const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
-async function render(content: string) {
-  html.value = await parseMarkdown(content)
+function render(content: string) {
+  html.value = parseMarkdown(content)
   renderKey.value++
 }
 
@@ -41,10 +41,18 @@ watch(
     if (scrollContainer.value) scrollContainer.value.scrollTop = 0
   },
 )
+
+function onPreviewDblClick(event: MouseEvent) {
+  const target = (event.target as HTMLElement).closest?.('[data-source-line]')
+  if (!target) return
+  const line = parseInt(target.getAttribute('data-source-line') || '', 10)
+  if (Number.isNaN(line)) return
+  store.requestScrollToLine(props.documentId, line)
+}
 </script>
 
 <template>
-  <div ref="scrollContainer" class="h-full overflow-y-auto bg-surface">
+  <div ref="scrollContainer" class="h-full overflow-y-auto bg-surface" @dblclick="onPreviewDblClick">
     <div
       :key="renderKey"
       class="markdown-body preview-fade m-2 rounded-md bg-bg px-5 py-5 font-preview text-[15px] leading-[1.6] text-text-primary border border-border-subtle"
