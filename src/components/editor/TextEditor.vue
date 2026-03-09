@@ -176,6 +176,10 @@ onMounted(() => {
           if (update.focusChanged && update.view.hasFocus) {
             store.setFocusedPane('editor')
           }
+          if (update.selectionSet || update.docChanged) {
+            const line = update.state.doc.lineAt(update.state.selection.main.head).number
+            store.setEditorCursorLine(props.documentId, line)
+          }
         }),
         EditorView.lineWrapping,
         highlightLineField,

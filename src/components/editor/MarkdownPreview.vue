@@ -202,7 +202,10 @@ function updateHighlights() {
 }
 
 watch([hoveredLine, selectedLine], updateHighlights)
-watch(renderKey, () => nextTick(updateHighlights))
+watch(renderKey, () => nextTick(() => {
+  updateHighlights()
+  syncFromEditorCursor()
+}))
 
 // --- Sync from store ---
 
@@ -211,6 +214,32 @@ watch(
   (line) => {
     if (line != null) selectedLine.value = line
   },
+)
+
+// When the editor cursor moves, highlight the closest block in the preview
+function syncFromEditorCursor() {
+  const cursorLine = store.editorCursorLine.get(props.documentId)
+  if (cursorLine == null || store.focusedPane !== 'editor') return
+  const elements = getSelectableElements()
+  if (elements.length === 0) return
+  let best: HTMLElement | null = null
+  let bestLine = -1
+  for (const el of elements) {
+    const line = getSourceLine(el)
+    if (line <= cursorLine && line > bestLine) {
+      bestLine = line
+      best = el
+    }
+  }
+  if (best && bestLine !== selectedLine.value) {
+    selectedLine.value = bestLine
+    best.scrollIntoView({ block: 'nearest' })
+  }
+}
+
+watch(
+  () => store.editorCursorLine.get(props.documentId),
+  syncFromEditorCursor,
 )
 </script>
 

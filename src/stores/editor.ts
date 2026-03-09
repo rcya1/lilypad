@@ -22,6 +22,9 @@ export const useEditorStore = defineStore('editor', () => {
   const loadingIds = ref(new Set<string>())
   const scrollToLineRequest = ref<{ documentId: string; line: number } | null>(null)
 
+  /** Current editor cursor line, per document */
+  const editorCursorLine = ref<Map<string, number>>(new Map())
+
   /** Source line of the currently selected block in the preview, per document */
   const previewCursorLine = ref<Map<string, number>>(new Map())
 
@@ -30,6 +33,10 @@ export const useEditorStore = defineStore('editor', () => {
 
   function requestScrollToLine(documentId: string, line: number) {
     scrollToLineRequest.value = { documentId, line }
+  }
+
+  function setEditorCursorLine(documentId: string, line: number) {
+    editorCursorLine.value.set(documentId, line)
   }
 
   function setPreviewCursor(documentId: string, line: number) {
@@ -125,6 +132,7 @@ export const useEditorStore = defineStore('editor', () => {
     savingIds.value.clear()
     loadingIds.value.clear()
     scrollToLineRequest.value = null
+    editorCursorLine.value.clear()
     previewCursorLine.value.clear()
     focusedPane.value = 'editor'
   }
@@ -155,6 +163,8 @@ export const useEditorStore = defineStore('editor', () => {
     saveDocument,
     scrollToLineRequest,
     requestScrollToLine,
+    editorCursorLine,
+    setEditorCursorLine,
     previewCursorLine,
     focusedPane,
     setPreviewCursor,
