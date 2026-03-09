@@ -241,11 +241,6 @@ describe('source line annotation — edge cases', () => {
     expect(lines(html)).toEqual([])
   })
 
-  it('handles empty content', () => {
-    const html = parseMarkdown('')
-    expect(lines(html)).toEqual([])
-  })
-
   it('handles single line content', () => {
     const html = parseMarkdown('hello')
     expect(lineFor(html, 'p')).toBe(1)

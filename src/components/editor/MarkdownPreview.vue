@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
@@ -10,6 +10,9 @@ const store = useEditorStore()
 const html = ref('')
 const renderKey = ref(0)
 const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
+
+const selectedLine = ref<number | null>(null)
+const hoveredLine = ref<number | null>(null)
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -42,17 +45,187 @@ watch(
   },
 )
 
-function onPreviewDblClick(event: MouseEvent) {
-  const target = (event.target as HTMLElement).closest?.('[data-source-line]')
-  if (!target) return
-  const line = parseInt(target.getAttribute('data-source-line') || '', 10)
-  if (Number.isNaN(line)) return
-  store.requestScrollToLine(props.documentId, line)
+// --- Selectable block helpers ---
+
+function getSelectableElements(): HTMLElement[] {
+  const container = scrollContainer.value?.querySelector('.markdown-body')
+  if (!container) return []
+  // Filter out list containers (ul/ol) that wrap annotated <li> children —
+  // but keep <li> elements even if they contain nested lists, since they have
+  // their own content worth selecting.
+  return (Array.from(container.querySelectorAll('[data-source-line]')) as HTMLElement[]).filter(
+    (el) => {
+      const tag = el.tagName.toLowerCase()
+      if ((tag === 'ul' || tag === 'ol') && el.querySelector('[data-source-line]')) return false
+      return true
+    },
+  )
 }
+
+function getSourceLine(el: HTMLElement): number {
+  return parseInt(el.getAttribute('data-source-line') || '', 10)
+}
+
+// --- Mouse handlers ---
+
+function findSelectableSourceLine(el: HTMLElement): HTMLElement | null {
+  const target = el.closest?.('[data-source-line]') as HTMLElement | null
+  if (!target) return null
+  const tag = target.tagName.toLowerCase()
+  // If we hit a list container (ul/ol), don't highlight anything —
+  // the cursor is in the gap between items, not over actual content
+  if ((tag === 'ul' || tag === 'ol') && target.querySelector('[data-source-line]')) return null
+  return target
+}
+
+function onMouseOver(event: MouseEvent) {
+  const target = findSelectableSourceLine(event.target as HTMLElement)
+  if (!target) return
+  const line = getSourceLine(target)
+  if (!Number.isNaN(line) && line !== hoveredLine.value) {
+    hoveredLine.value = line
+  }
+}
+
+function onMouseLeave() {
+  hoveredLine.value = null
+}
+
+function onClick(event: MouseEvent) {
+  const target = findSelectableSourceLine(event.target as HTMLElement)
+  if (!target) return
+  const line = getSourceLine(target)
+  if (Number.isNaN(line)) return
+  selectedLine.value = line
+  store.setPreviewCursor(props.documentId, line)
+  store.setFocusedPane('preview')
+  // Ensure the container has focus for keyboard nav
+  scrollContainer.value?.focus()
+}
+
+// --- Keyboard handler ---
+
+function onKeyDown(event: KeyboardEvent) {
+  const key = event.key
+
+  if (key === 'j' || key === 'ArrowDown' || key === 'k' || key === 'ArrowUp') {
+    event.preventDefault()
+    const elements = getSelectableElements()
+    if (elements.length === 0) return
+
+    const direction = key === 'j' || key === 'ArrowDown' ? 1 : -1
+
+    if (selectedLine.value == null) {
+      // Select first or last element
+      const el = direction === 1 ? elements[0]! : elements[elements.length - 1]!
+      const line = getSourceLine(el)
+      selectedLine.value = line
+      store.setPreviewCursor(props.documentId, line)
+      el.scrollIntoView({ block: 'nearest' })
+      return
+    }
+
+    // Find current index
+    const currentIdx = elements.findIndex(
+      (el) => getSourceLine(el) === selectedLine.value,
+    )
+    const nextIdx = Math.max(0, Math.min(elements.length - 1, currentIdx + direction))
+    const nextEl = elements[nextIdx]!
+    const line = getSourceLine(nextEl)
+    selectedLine.value = line
+    store.setPreviewCursor(props.documentId, line)
+    nextEl.scrollIntoView({ block: 'nearest' })
+  } else if (key === 'y') {
+    if (selectedLine.value == null) return
+    const container = scrollContainer.value?.querySelector('.markdown-body')
+    if (!container) return
+    const el = findSelectableByLine(container, selectedLine.value)
+    if (el?.textContent) {
+      navigator.clipboard.writeText(el.textContent)
+    }
+  } else if (key === 'Escape') {
+    store.setFocusedPane('editor')
+    scrollContainer.value?.blur()
+  }
+}
+
+// --- Focus management ---
+
+function onFocus() {
+  store.setFocusedPane('preview')
+}
+
+function onBlur() {
+  // no-op — focus state tracked via store.focusedPane
+}
+
+watch(
+  () => store.focusedPane,
+  (pane) => {
+    if (pane === 'editor') {
+      scrollContainer.value?.blur()
+    }
+  },
+)
+
+// --- Highlight class management ---
+
+/** Find the selectable element for a given source line (skip ul/ol containers) */
+function findSelectableByLine(container: Element, line: number): Element | null {
+  const all = container.querySelectorAll(`[data-source-line="${line}"]`)
+  for (const el of all) {
+    const tag = el.tagName.toLowerCase()
+    if ((tag === 'ul' || tag === 'ol') && el.querySelector('[data-source-line]')) continue
+    return el
+  }
+  return null
+}
+
+function updateHighlights() {
+  const container = scrollContainer.value?.querySelector('.markdown-body')
+  if (!container) return
+
+  container
+    .querySelectorAll('.preview-hover')
+    .forEach((el) => el.classList.remove('preview-hover'))
+  container
+    .querySelectorAll('.preview-selected')
+    .forEach((el) => el.classList.remove('preview-selected'))
+
+  if (hoveredLine.value != null && hoveredLine.value !== selectedLine.value) {
+    findSelectableByLine(container, hoveredLine.value)?.classList.add('preview-hover')
+  }
+
+  if (selectedLine.value != null) {
+    findSelectableByLine(container, selectedLine.value)?.classList.add('preview-selected')
+  }
+}
+
+watch([hoveredLine, selectedLine], updateHighlights)
+watch(renderKey, () => nextTick(updateHighlights))
+
+// --- Sync from store ---
+
+watch(
+  () => store.previewCursorLine.get(props.documentId),
+  (line) => {
+    if (line != null) selectedLine.value = line
+  },
+)
 </script>
 
 <template>
-  <div ref="scrollContainer" class="h-full overflow-y-auto bg-surface" @dblclick="onPreviewDblClick">
+  <div
+    ref="scrollContainer"
+    class="h-full overflow-y-auto bg-surface outline-none"
+    tabindex="0"
+    @mouseover="onMouseOver"
+    @mouseleave="onMouseLeave"
+    @click="onClick"
+    @keydown="onKeyDown"
+    @focus="onFocus"
+    @blur="onBlur"
+  >
     <div
       :key="renderKey"
       class="markdown-body preview-fade m-2 rounded-md bg-bg px-5 py-5 font-preview text-[15px] leading-[1.6] text-text-primary border border-border-subtle"
@@ -79,6 +252,28 @@ function onPreviewDblClick(event: MouseEvent) {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.07),
     0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* Hover highlight — light */
+.markdown-body :deep([data-source-line].preview-hover) {
+  background-color: var(--surface-elevated);
+  border-radius: 3px;
+  transition: background-color 100ms ease;
+}
+
+/* Selected — darker */
+.markdown-body :deep([data-source-line].preview-selected) {
+  background-color: var(--surface-overlay);
+  border-radius: 3px;
+}
+
+/* Prevent highlighted li from painting over nested lists */
+.markdown-body :deep(li.preview-hover > ul),
+.markdown-body :deep(li.preview-hover > ol),
+.markdown-body :deep(li.preview-selected > ul),
+.markdown-body :deep(li.preview-selected > ol) {
+  background-color: var(--bg);
+  border-radius: 3px;
 }
 
 /* Headings */

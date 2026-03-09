@@ -7,7 +7,9 @@
       "Bash(yarn add:*)",
       "Bash(node:*)",
       "WebSearch",
-      "Bash(yarn build:*)"
+      "Bash(yarn build:*)",
+      "Bash(yarn test:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

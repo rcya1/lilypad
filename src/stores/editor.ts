@@ -22,8 +22,23 @@ export const useEditorStore = defineStore('editor', () => {
   const loadingIds = ref(new Set<string>())
   const scrollToLineRequest = ref<{ documentId: string; line: number } | null>(null)
 
+  /** Source line of the currently selected block in the preview, per document */
+  const previewCursorLine = ref<Map<string, number>>(new Map())
+
+  /** Which pane has focus: 'editor' or 'preview' */
+  const focusedPane = ref<'editor' | 'preview'>('editor')
+
   function requestScrollToLine(documentId: string, line: number) {
     scrollToLineRequest.value = { documentId, line }
+  }
+
+  function setPreviewCursor(documentId: string, line: number) {
+    previewCursorLine.value.set(documentId, line)
+    scrollToLineRequest.value = { documentId, line }
+  }
+
+  function setFocusedPane(pane: 'editor' | 'preview') {
+    focusedPane.value = pane
   }
 
   function openDocument(id: string, name: string, type: DocumentType, initialContent = '') {
@@ -110,6 +125,8 @@ export const useEditorStore = defineStore('editor', () => {
     savingIds.value.clear()
     loadingIds.value.clear()
     scrollToLineRequest.value = null
+    previewCursorLine.value.clear()
+    focusedPane.value = 'editor'
   }
 
   function moveTab(id: string, toIndex: number) {
@@ -138,6 +155,10 @@ export const useEditorStore = defineStore('editor', () => {
     saveDocument,
     scrollToLineRequest,
     requestScrollToLine,
+    previewCursorLine,
+    focusedPane,
+    setPreviewCursor,
+    setFocusedPane,
     $reset,
     moveTab,
   }

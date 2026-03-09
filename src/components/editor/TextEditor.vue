@@ -173,6 +173,9 @@ onMounted(() => {
           if (update.docChanged) {
             store.updateContent(props.documentId, update.state.doc.toString())
           }
+          if (update.focusChanged && update.view.hasFocus) {
+            store.setFocusedPane('editor')
+          }
         }),
         EditorView.lineWrapping,
         highlightLineField,
