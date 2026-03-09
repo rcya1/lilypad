@@ -96,6 +96,8 @@ export const useEditorStore = defineStore('editor', () => {
   function closeDocument(id: string) {
     openDocuments.value.delete(id)
     dirtyIds.value.delete(id)
+    editorCursorLine.value.delete(id)
+    previewCursorLine.value.delete(id)
     const idx = tabOrder.value.indexOf(id)
     if (idx !== -1) tabOrder.value.splice(idx, 1)
 

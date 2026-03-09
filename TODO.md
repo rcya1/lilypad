@@ -1,2 +1,2 @@
 markdown incremental compiler
-linking the text to the markdown generated
+something weird with the cursor select on the render

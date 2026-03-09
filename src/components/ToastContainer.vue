@@ -19,11 +19,7 @@ const toast = useToastStore()
           }"
         >
           <!-- Icon -->
-          <AlertCircle
-            v-if="t.type === 'error'"
-            :size="15"
-            class="text-red-500 shrink-0 mt-px"
-          />
+          <AlertCircle v-if="t.type === 'error'" :size="15" class="text-red-500 shrink-0 mt-px" />
           <CheckCircle2
             v-else-if="t.type === 'success'"
             :size="15"

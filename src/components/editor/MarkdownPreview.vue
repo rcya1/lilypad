@@ -93,7 +93,10 @@ function onMouseLeave() {
 
 function onClick(event: MouseEvent) {
   const target = findSelectableSourceLine(event.target as HTMLElement)
-  if (!target) return
+  if (!target) {
+    selectedLine.value = null
+    return
+  }
   const line = getSourceLine(target)
   if (Number.isNaN(line)) return
   selectedLine.value = line
@@ -126,9 +129,7 @@ function onKeyDown(event: KeyboardEvent) {
     }
 
     // Find current index
-    const currentIdx = elements.findIndex(
-      (el) => getSourceLine(el) === selectedLine.value,
-    )
+    const currentIdx = elements.findIndex((el) => getSourceLine(el) === selectedLine.value)
     const nextIdx = Math.max(0, Math.min(elements.length - 1, currentIdx + direction))
     const nextEl = elements[nextIdx]!
     const line = getSourceLine(nextEl)
@@ -156,7 +157,7 @@ function onFocus() {
 }
 
 function onBlur() {
-  // no-op — focus state tracked via store.focusedPane
+  selectedLine.value = null
 }
 
 watch(
@@ -185,9 +186,7 @@ function updateHighlights() {
   const container = scrollContainer.value?.querySelector('.markdown-body')
   if (!container) return
 
-  container
-    .querySelectorAll('.preview-hover')
-    .forEach((el) => el.classList.remove('preview-hover'))
+  container.querySelectorAll('.preview-hover').forEach((el) => el.classList.remove('preview-hover'))
   container
     .querySelectorAll('.preview-selected')
     .forEach((el) => el.classList.remove('preview-selected'))
@@ -202,10 +201,12 @@ function updateHighlights() {
 }
 
 watch([hoveredLine, selectedLine], updateHighlights)
-watch(renderKey, () => nextTick(() => {
-  updateHighlights()
-  syncFromEditorCursor()
-}))
+watch(renderKey, () =>
+  nextTick(() => {
+    updateHighlights()
+    syncFromEditorCursor()
+  }),
+)
 
 // --- Sync from store ---
 
@@ -237,10 +238,7 @@ function syncFromEditorCursor() {
   }
 }
 
-watch(
-  () => store.editorCursorLine.get(props.documentId),
-  syncFromEditorCursor,
-)
+watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 </script>
 
 <template>

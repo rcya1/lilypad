@@ -4,8 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
 import type { EntryRow } from '@/types/database'
-import type { Entry } from '@/types/file-explorer'
-import type { DocumentType } from '@/types/file-explorer'
+import type { Entry, DocumentType } from '@/types/file-explorer'
 
 // ---------------------------------------------------------------------------
 // LRU content cache — keeps up to CACHE_MAX_BYTES of file content in memory.
@@ -192,7 +191,7 @@ export const useFilesStore = defineStore('files', () => {
       .single()
 
     if (err || !data) {
-      showError('Unknown error.')
+      showError('Failed to create file.')
       return null
     }
 
@@ -203,10 +202,7 @@ export const useFilesStore = defineStore('files', () => {
       .from('user-files')
       .upload(storagePath, new Blob([''], { type: 'text/plain' }))
 
-    await supabase
-      .from('entries')
-      .update({ storage_path: storagePath } as never)
-      .eq('id', data.id)
+    await supabase.from('entries').update({ storage_path: storagePath }).eq('id', data.id)
 
     data.storage_path = storagePath
     entries.value.push(data)
@@ -235,7 +231,7 @@ export const useFilesStore = defineStore('files', () => {
       .single()
 
     if (err || !data) {
-      showError('Unknown error.')
+      showError('Failed to create folder.')
       return null
     }
 
@@ -250,13 +246,10 @@ export const useFilesStore = defineStore('files', () => {
       return false
     }
 
-    const { error: err } = await supabase
-      .from('entries')
-      .update({ name: newName } as never)
-      .eq('id', id)
+    const { error: err } = await supabase.from('entries').update({ name: newName }).eq('id', id)
 
     if (err) {
-      showError('Unknown error.')
+      showError('Failed to rename entry.')
       return false
     }
 
@@ -279,7 +272,7 @@ export const useFilesStore = defineStore('files', () => {
     const { error: err } = await supabase.from('entries').delete().eq('id', id)
 
     if (err) {
-      showError('Unknown error.')
+      showError('Failed to delete entry.')
       return false
     }
 
@@ -318,11 +311,11 @@ export const useFilesStore = defineStore('files', () => {
 
     const { error: err } = await supabase
       .from('entries')
-      .update({ parent_id: newParentId, sort_order: newSortOrder } as never)
+      .update({ parent_id: newParentId, sort_order: newSortOrder })
       .eq('id', id)
 
     if (err) {
-      showError('Unknown error.')
+      showError('Failed to move entry.')
       return false
     }
 
@@ -350,7 +343,7 @@ export const useFilesStore = defineStore('files', () => {
       .download(entry.storage_path)
 
     if (err) {
-      showError('Unknown error.')
+      showError('Failed to download file.')
       return null
     }
 
@@ -384,7 +377,7 @@ export const useFilesStore = defineStore('files', () => {
       .update(entry.storage_path, new Blob([content], { type: 'text/plain' }), { upsert: true })
 
     if (err) {
-      showError('Unknown error.')
+      showError('Failed to save file.')
       return false
     }
 

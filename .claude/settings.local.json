@@ -9,7 +9,8 @@
       "WebSearch",
       "Bash(yarn build:*)",
       "Bash(yarn test:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(yarn format:*)"
     ]
   }
 }

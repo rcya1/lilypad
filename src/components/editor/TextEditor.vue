@@ -1,3 +1,7 @@
+<script lang="ts">
+let vimExRegistered = false
+</script>
+
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
@@ -147,10 +151,6 @@ onMounted(() => {
   if (!container.value) return
 
   const doc = store.openDocuments.get(props.documentId)
-  // Register :w command before creating the view
-  Vim.defineEx('w', 'w', () => {
-    store.saveDocument(props.documentId)
-  })
 
   view = new EditorView({
     state: EditorState.create({
@@ -187,6 +187,14 @@ onMounted(() => {
     }),
     parent: container.value,
   })
+
+  if (!vimExRegistered) {
+    Vim.defineEx('w', 'w', () => {
+      const activeId = store.activeDocumentId
+      if (activeId) store.saveDocument(activeId)
+    })
+    vimExRegistered = true
+  }
 
   const cm = getCM(view)
   cm?.on('vim-mode-change', (e: { mode: string }) => {

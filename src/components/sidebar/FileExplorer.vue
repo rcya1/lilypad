@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { FilePlus, FolderPlus, FileText, Folder, Check, GripVertical } from 'lucide-vue-next'
+import { FilePlus, FolderPlus } from 'lucide-vue-next'
 import FileExplorerNode from './FileExplorerNode.vue'
+import PendingInputRow from './PendingInputRow.vue'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import { draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
@@ -138,97 +139,35 @@ function onPendingDragEnd() {
 
     <div v-else class="text-sm select-none" @click.self="files.selectFolder(null)">
       <template v-for="entry in files.tree" :key="entry.id">
-        <!-- Pending row before the entry whose ID matches insertBefore -->
-        <div
+        <PendingInputRow
           v-if="showRootInput && files.pendingCreate?.insertBefore === entry.id"
-          data-pending-input
-          class="flex items-center gap-1.5 py-1 px-2 rounded-sm bg-surface-elevated"
-          style="padding-left: 8px"
-          draggable="true"
+          v-model="newName"
+          :type="files.pendingCreate?.type ?? 'file'"
+          :depth="0"
+          @submit="submitNew"
+          @cancel="cancelNew"
           @dragstart="onPendingDragStart"
           @dragend="onPendingDragEnd"
-        >
-          <span
-            class="w-3 flex items-center justify-center text-text-muted shrink-0 cursor-grab active:cursor-grabbing"
-          >
-            <GripVertical :size="12" />
-          </span>
-          <span class="flex items-center shrink-0">
-            <FileText
-              v-if="files.pendingCreate?.type === 'file'"
-              :size="15"
-              class="text-text-secondary"
-            />
-            <Folder v-else :size="15" class="text-amber" />
-          </span>
-          <input
-            v-model="newName"
-            class="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary font-ui"
-            :placeholder="files.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'"
-            @keydown.enter="submitNew"
-            @keydown.escape="cancelNew"
-            @vue:mounted="($event as any).el.focus()"
-          />
-          <button
-            class="flex items-center justify-center w-4 h-4 rounded text-accent hover:bg-surface-overlay transition-colors cursor-pointer shrink-0"
-            @mousedown.prevent
-            @click="submitNew"
-          >
-            <Check :size="12" />
-          </button>
-        </div>
+        />
 
         <FileExplorerNode :entry="entry" :depth="0" />
       </template>
 
-      <!-- Pending row at end (insertBefore = null) -->
-      <div
+      <PendingInputRow
         v-if="showRootInput && files.pendingCreate?.insertBefore === null"
-        data-pending-input
-        class="flex items-center gap-1.5 py-1 px-2 rounded-sm bg-surface-elevated"
-        style="padding-left: 8px"
-        draggable="true"
+        v-model="newName"
+        :type="files.pendingCreate?.type ?? 'file'"
+        :depth="0"
+        @submit="submitNew"
+        @cancel="cancelNew"
         @dragstart="onPendingDragStart"
         @dragend="onPendingDragEnd"
-      >
-        <span
-          class="w-3 flex items-center justify-center text-text-muted shrink-0 cursor-grab active:cursor-grabbing"
-        >
-          <GripVertical :size="12" />
-        </span>
-        <span class="flex items-center shrink-0">
-          <FileText
-            v-if="files.pendingCreate?.type === 'file'"
-            :size="15"
-            class="text-text-secondary"
-          />
-          <Folder v-else :size="15" class="text-amber" />
-        </span>
-        <input
-          v-model="newName"
-          class="flex-1 min-w-0 bg-transparent outline-none text-sm text-text-primary font-ui"
-          :placeholder="files.pendingCreate?.type === 'file' ? 'filename.md' : 'folder name'"
-          @keydown.enter="submitNew"
-          @keydown.escape="cancelNew"
-          @vue:mounted="($event as any).el.focus()"
-        />
-        <button
-          class="flex items-center justify-center w-4 h-4 rounded text-accent hover:bg-surface-overlay transition-colors cursor-pointer shrink-0"
-          @mousedown.prevent
-          @click="submitNew"
-        >
-          <Check :size="12" />
-        </button>
-      </div>
+      />
 
       <!-- Empty state -->
-      <div
-        v-if="files.tree.length === 0 && !showRootInput"
-        class="px-3 py-4"
-      >
+      <div v-if="files.tree.length === 0 && !showRootInput" class="px-3 py-4">
         <p class="text-xs text-text-muted text-center">No files yet</p>
       </div>
     </div>
-
   </div>
 </template>

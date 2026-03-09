@@ -66,7 +66,7 @@ const admonition = {
   start(src: string) {
     return src.match(/\|\|/)?.index
   },
-  tokenizer(src: string, _tokens: Token[]): AdmonitionToken | undefined {
+  tokenizer(src: string): AdmonitionToken | undefined {
     const rule = /^\|\|([\s\S]*?)\|\|/
     const match = rule.exec(src)
     if (match) {
