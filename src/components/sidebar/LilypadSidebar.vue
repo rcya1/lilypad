@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import FileExplorer from './FileExplorer.vue'
-import LilypadIcon from '@/assets/icon-light.svg'
-import { LogOut } from 'lucide-vue-next'
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+// import SearchPanel from './SearchPanel.vue' // full-text search not ready — see docs/features/05-full-text-search.md
+import LilypadIcon from '@/assets/icon.svg'
+import { LogOut, Loader2 } from 'lucide-vue-next'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
+// import { useSearchStore } from '@/stores/search' // full-text search not ready
 import { useRouter } from 'vue-router'
 
 const auth = useAuthStore()
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
+// const searchStore = useSearchStore() // full-text search not ready
 const router = useRouter()
+
+const isSyncing = computed(() => editorStore.savingIds.size > 0)
 
 async function signOut() {
   editorStore.$reset()
@@ -27,6 +32,17 @@ const minimizedWidth = 64
 
 const isMinimized = ref(false)
 const isResizing = ref(false)
+
+// When a pending file creation is triggered (e.g. via Ctrl+N), ensure the
+// sidebar is visible so the inline input can be shown.
+watch(
+  () => filesStore.pendingCreate,
+  (val) => {
+    if (val && isMinimized.value) {
+      isMinimized.value = false
+    }
+  },
+)
 
 const startResize = () => {
   isResizing.value = true
@@ -60,6 +76,12 @@ function onKeyDown(e: KeyboardEvent) {
     e.preventDefault()
     isMinimized.value = !isMinimized.value
   }
+  // Ctrl+Shift+F: full-text search (not ready — see docs/features/05-full-text-search.md)
+  // if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'F') {
+  //   e.preventDefault()
+  //   searchStore.toggle()
+  //   if (searchStore.isOpen && isMinimized.value) isMinimized.value = false
+  // }
 }
 
 onMounted(() => {
@@ -83,13 +105,20 @@ onBeforeUnmount(() => {
       <LilypadIcon class="w-8 h-8 shrink-0" :class="{ 'mr-2': !isMinimized }" />
       <h1
         v-if="!isMinimized"
-        class="font-display font-medium text-xl text-text-primary leading-none"
+        class="font-display font-medium text-xl text-text-primary leading-none flex-1"
       >
         Lilypad
       </h1>
+      <Loader2
+        v-if="!isMinimized && isSyncing"
+        :size="14"
+        class="animate-spin text-text-muted shrink-0"
+        title="Saving…"
+      />
     </div>
     <div class="border-t border-border-subtle" />
 
+    <!-- SearchPanel disabled — full-text search not ready, see docs/features/05-full-text-search.md -->
     <FileExplorer v-if="!isMinimized" />
 
     <div

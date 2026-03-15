@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { DocumentType } from '@/types/file-explorer'
 import { useFilesStore } from './files'
+import { useToastStore } from './toast'
 
 export interface OpenDocument {
   id: string
@@ -18,9 +19,13 @@ export const useEditorStore = defineStore('editor', () => {
   const activeDocument = ref<OpenDocument | null>(null)
   const dirtyIds = ref(new Set<string>())
   const savingIds = ref(new Set<string>())
+  /** Per-document debounce timers for auto-save (1500 ms idle) */
+  const saveTimers = new Map<string, ReturnType<typeof setTimeout>>()
   /** IDs of documents whose content is still being fetched from the network */
   const loadingIds = ref(new Set<string>())
   const scrollToLineRequest = ref<{ documentId: string; line: number } | null>(null)
+  /** Set to a documentId to ask the editor to immediately cancel its line-flash highlight */
+  const clearHighlightRequest = ref<string | null>(null)
   /** ID of the tab currently in preview (single-click) mode; null if none */
   const previewDocumentId = ref<string | null>(null)
 
@@ -35,6 +40,10 @@ export const useEditorStore = defineStore('editor', () => {
 
   function requestScrollToLine(documentId: string, line: number) {
     scrollToLineRequest.value = { documentId, line }
+  }
+
+  function requestClearEditorHighlight(documentId: string) {
+    clearHighlightRequest.value = documentId
   }
 
   function setEditorCursorLine(documentId: string, line: number) {
@@ -167,10 +176,32 @@ export const useEditorStore = defineStore('editor', () => {
       dirtyIds.value.add(id)
       // Editing a preview tab promotes it to permanent (like VSCode)
       promotePreview(id)
+      // Reset idle auto-save timer
+      const existing = saveTimers.get(id)
+      if (existing !== undefined) clearTimeout(existing)
+      saveTimers.set(
+        id,
+        setTimeout(() => {
+          saveTimers.delete(id)
+          if (dirtyIds.value.has(id)) saveDocument(id)
+        }, 5000),
+      )
     }
   }
 
-  function closeDocument(id: string) {
+  async function closeDocument(id: string) {
+    // Cancel any pending idle timer for this document
+    const timer = saveTimers.get(id)
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      saveTimers.delete(id)
+    }
+
+    // Save before closing if there are unsaved changes
+    if (dirtyIds.value.has(id)) {
+      await saveDocument(id)
+    }
+
     if (previewDocumentId.value === id) previewDocumentId.value = null
     openDocuments.value.delete(id)
     dirtyIds.value.delete(id)
@@ -197,15 +228,28 @@ export const useEditorStore = defineStore('editor', () => {
     savingIds.value.add(id)
     const contentAtSaveStart = doc.content
     const filesStore = useFilesStore()
+    const toastStore = useToastStore()
     const success = await filesStore.uploadContent(id, doc.content)
     savingIds.value.delete(id)
 
     if (success && doc.content === contentAtSaveStart) {
       dirtyIds.value.delete(id)
+    } else if (!success) {
+      toastStore.addToast(`Failed to save ${doc.name}. Changes may be lost.`, 'error')
+    }
+  }
+
+  /** Save all dirty documents — used by the beforeunload handler. */
+  function saveAll() {
+    for (const id of dirtyIds.value) {
+      saveDocument(id)
     }
   }
 
   function $reset() {
+    // Clear all pending auto-save timers
+    for (const timer of saveTimers.values()) clearTimeout(timer)
+    saveTimers.clear()
     openDocuments.value.clear()
     tabOrder.value = []
     activeDocumentId.value = null
@@ -248,8 +292,11 @@ export const useEditorStore = defineStore('editor', () => {
     updateContent,
     closeDocument,
     saveDocument,
+    saveAll,
     scrollToLineRequest,
     requestScrollToLine,
+    clearHighlightRequest,
+    requestClearEditorHighlight,
     editorCursorLine,
     setEditorCursorLine,
     previewCursorLine,

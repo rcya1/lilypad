@@ -90,6 +90,12 @@ async function handleClick() {
   }
 }
 
+function handleDblClick() {
+  if (!isDirectory(props.entry) && props.entry.type === 'md') {
+    editorStore.promotePreview(props.entry.id)
+  }
+}
+
 function onContextMenu(e: MouseEvent) {
   e.preventDefault()
   contextMenuPos.value = { x: e.clientX, y: e.clientY }
@@ -202,6 +208,14 @@ function onPendingDragEnd() {
     <!-- Normal display -->
     <div
       v-else
+      class="relative rounded-sm"
+      :class="isInvalidTarget && draggingEntry ? 'opacity-40' : ''"
+    >
+      <div
+        v-if="isDirectory(entry) && dropRegion === 'into' && !isInvalidTarget"
+        class="absolute inset-1 ring-1 ring-accent rounded-sm pointer-events-none z-10"
+      />
+    <div
       class="relative flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
       :class="[
         isActive
@@ -209,8 +223,7 @@ function onPendingDragEnd() {
           : isSelectedFolder
             ? 'bg-surface-elevated text-text-primary'
             : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
-        dropRegion === 'into' && !isInvalidTarget ? 'ring-1 ring-inset ring-accent' : '',
-        isInvalidTarget && draggingEntry ? 'opacity-40' : '',
+        !isDirectory(entry) && dropRegion === 'into' && !isInvalidTarget ? 'ring-1 ring-inset ring-accent' : '',
       ]"
       :style="{ paddingLeft: depth * 14 + 8 + 'px' }"
       draggable="true"
@@ -220,6 +233,7 @@ function onPendingDragEnd() {
       @dragleave="onDragLeave"
       @drop="onDrop"
       @click="handleClick"
+      @dblclick="handleDblClick"
       @contextmenu="onContextMenu"
     >
       <!-- Before drop indicator -->
@@ -262,6 +276,42 @@ function onPendingDragEnd() {
       />
     </div>
 
+    <!-- Children (inside wrapper so the drop ring encompasses them) -->
+    <div
+      v-if="isDirectory(entry)"
+      class="grid transition-[grid-template-rows] duration-150 ease-in-out"
+      :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
+    >
+      <div class="overflow-hidden min-h-0">
+        <template v-for="child in entry.children" :key="child.id">
+          <PendingInputRow
+            v-if="showNewInput && filesStore.pendingCreate?.insertBefore === child.id"
+            v-model="newChildName"
+            :type="filesStore.pendingCreate?.type ?? 'file'"
+            :depth="depth + 1"
+            @submit="submitNew"
+            @cancel="cancelNew"
+            @dragstart="onPendingDragStart"
+            @dragend="onPendingDragEnd"
+          />
+
+          <FileExplorerNode :entry="child" :depth="depth + 1" />
+        </template>
+
+        <PendingInputRow
+          v-if="showNewInput && filesStore.pendingCreate?.insertBefore === null"
+          v-model="newChildName"
+          :type="filesStore.pendingCreate?.type ?? 'file'"
+          :depth="depth + 1"
+          @submit="submitNew"
+          @cancel="cancelNew"
+          @dragstart="onPendingDragStart"
+          @dragend="onPendingDragEnd"
+        />
+      </div>
+    </div>
+    </div>
+
     <!-- Context menu -->
     <Teleport to="body">
       <div
@@ -298,40 +348,5 @@ function onPendingDragEnd() {
         </button>
       </div>
     </Teleport>
-
-    <!-- Children -->
-    <div
-      v-if="isDirectory(entry)"
-      class="grid transition-[grid-template-rows] duration-150 ease-in-out"
-      :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
-    >
-      <div class="overflow-hidden min-h-0">
-        <template v-for="child in entry.children" :key="child.id">
-          <PendingInputRow
-            v-if="showNewInput && filesStore.pendingCreate?.insertBefore === child.id"
-            v-model="newChildName"
-            :type="filesStore.pendingCreate?.type ?? 'file'"
-            :depth="depth + 1"
-            @submit="submitNew"
-            @cancel="cancelNew"
-            @dragstart="onPendingDragStart"
-            @dragend="onPendingDragEnd"
-          />
-
-          <FileExplorerNode :entry="child" :depth="depth + 1" />
-        </template>
-
-        <PendingInputRow
-          v-if="showNewInput && filesStore.pendingCreate?.insertBefore === null"
-          v-model="newChildName"
-          :type="filesStore.pendingCreate?.type ?? 'file'"
-          :depth="depth + 1"
-          @submit="submitNew"
-          @cancel="cancelNew"
-          @dragstart="onPendingDragStart"
-          @dragend="onPendingDragEnd"
-        />
-      </div>
-    </div>
   </div>
 </template>

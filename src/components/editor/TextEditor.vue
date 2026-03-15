@@ -8,6 +8,7 @@ import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, StateEffect, StateField } from '@codemirror/state'
 import { Decoration, type DecorationSet, keymap } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
+import { search, searchKeymap } from '@codemirror/search'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
 import { useEditorStore } from '@/stores/editor'
 
@@ -124,6 +125,100 @@ const lilypadTheme = EditorView.theme({
   '.cm-selectionMatch': {
     backgroundColor: 'var(--surface-elevated)',
   },
+  // Search panel
+  '.cm-panels': {
+    backgroundColor: 'var(--surface)',
+    borderTop: '1px solid var(--border-subtle)',
+  },
+  '.cm-search': {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    paddingTop: '12px',
+    paddingBottom: '8px',
+    paddingLeft: '12px',
+    paddingRight: '12px',
+    flexWrap: 'wrap',
+  },
+  '.cm-search label': {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    fontFamily: 'var(--font-family-ui)',
+    textTransform: 'capitalize',
+  },
+  '.cm-search input[type="checkbox"]': {
+    accentColor: 'var(--accent)',
+    cursor: 'pointer',
+  },
+  // Close button — make it larger with a visible hover area
+  '.cm-search button[name="close"]': {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '24px',
+    height: '24px',
+    padding: '0',
+    backgroundColor: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: '4px',
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    backgroundImage: 'none',
+    fontSize: '20px',
+    lineHeight: '1',
+    marginLeft: '4px',
+  },
+  '.cm-search button[name="close"]:hover': {
+    backgroundColor: 'var(--surface-elevated)',
+    borderColor: 'var(--border)',
+    color: 'var(--text-primary)',
+  },
+  '.cm-search button[name="close"]:active': {
+    backgroundColor: 'var(--surface-overlay)',
+  },
+  '.cm-textfield': {
+    backgroundColor: 'var(--bg)',
+    border: '1px solid var(--border)',
+    borderRadius: '4px',
+    padding: '3px 8px',
+    fontSize: '12px',
+    color: 'var(--text-primary)',
+    fontFamily: 'var(--font-family-ui)',
+    outline: 'none',
+    minWidth: '130px',
+  },
+  '.cm-textfield:focus': {
+    borderColor: 'var(--accent)',
+  },
+  '.cm-button': {
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    backgroundColor: 'var(--surface-elevated)',
+    border: '1px solid var(--border)',
+    borderRadius: '4px',
+    padding: '3px 10px',
+    fontSize: '12px',
+    color: 'var(--text-secondary)',
+    fontFamily: 'var(--font-family-ui)',
+    cursor: 'pointer',
+    backgroundImage: 'none',
+    textTransform: 'capitalize',
+  },
+  '.cm-button:hover': {
+    backgroundColor: 'var(--surface-overlay)',
+    color: 'var(--text-primary)',
+  },
+  '.cm-button:active': {
+    backgroundColor: 'var(--border)',
+    color: 'var(--text-primary)',
+  },
+  '.cm-button:focus': {
+    outline: '2px solid var(--accent)',
+    outlineOffset: '1px',
+  },
   '.cm-fat-cursor': {
     background: 'color-mix(in srgb, var(--accent) 35%, transparent) !important',
     color: 'var(--text-primary) !important',
@@ -158,6 +253,7 @@ onMounted(() => {
       extensions: [
         vim(),
         keymap.of([
+          ...searchKeymap,
           {
             key: 'Mod-s',
             run: () => {
@@ -166,6 +262,7 @@ onMounted(() => {
             },
           },
         ]),
+        search(),
         basicSetup,
         lilypadTheme,
         markdown(),
@@ -203,6 +300,16 @@ onMounted(() => {
 
   view.focus()
 })
+
+watch(
+  () => store.clearHighlightRequest,
+  (docId) => {
+    if (docId !== props.documentId || !view) return
+    store.clearHighlightRequest = null
+    if (highlightTimer) { clearTimeout(highlightTimer); highlightTimer = undefined }
+    view.dispatch({ effects: highlightLineEffect.of(null) })
+  },
+)
 
 watch(
   () => store.scrollToLineRequest,
@@ -253,5 +360,21 @@ onBeforeUnmount(() => {
   100% {
     background-color: transparent;
   }
+}
+
+/* Force search panel overrides — CodeMirror theme styles have higher specificity
+   due to a generated scope class, so !important is needed here. */
+.cm-search {
+  padding-top: 9px !important;
+}
+
+.cm-search button[name='close'] {
+  font-size: 18px !important;
+  width: 22px !important;
+  height: 22px !important;
+  line-height: 1 !important;
+  position: absolute !important;
+  top: 11px !important;
+  right: 8px !important;
 }
 </style>

@@ -127,6 +127,27 @@ export const useFilesStore = defineStore('files', () => {
     selectedFolderId.value = id
   }
 
+  /**
+   * Given a file/document id, returns the id of its parent folder, or null if
+   * the entry lives at the root (or is not found).
+   */
+  function getParentFolderId(fileId: string): string | null {
+    const entry = entries.value.find((e) => e.id === fileId)
+    return entry?.parent_id ?? null
+  }
+
+  /**
+   * Programmatic entry point for starting an inline file creation. Used by the
+   * global Ctrl+N shortcut. Mirrors the priority logic in FileExplorer's
+   * startNewFile: selectedFolderId → parent of active tab → root.
+   */
+  function beginCreate(
+    kind: 'document' | 'folder',
+    parentId: string | null,
+  ) {
+    triggerCreate(parentId, kind === 'document' ? 'file' : 'folder')
+  }
+
   function triggerCreate(
     parentId: string | null,
     type: 'file' | 'folder',
@@ -331,6 +352,15 @@ export const useFilesStore = defineStore('files', () => {
     return cacheGet(entryId)
   }
 
+  /** Returns all currently cached entry IDs and their content. Used by the search store. */
+  function getCachedEntries(): Map<string, string> {
+    const result = new Map<string, string>()
+    for (const [id, entry] of contentCache) {
+      result.set(id, entry.content)
+    }
+    return result
+  }
+
   async function downloadContent(entryId: string): Promise<string | null> {
     const cached = cacheGet(entryId)
     if (cached !== undefined) return cached
@@ -377,7 +407,6 @@ export const useFilesStore = defineStore('files', () => {
       .update(entry.storage_path, new Blob([content], { type: 'text/plain' }), { upsert: true })
 
     if (err) {
-      showError('Failed to save file.')
       return false
     }
 
@@ -434,11 +463,14 @@ Happy note-taking!
     moveEntry,
     collectDescendantIds,
     selectFolder,
+    getParentFolderId,
+    beginCreate,
     triggerCreate,
     updatePendingPosition,
     getPendingSortOrder,
     clearPendingCreate,
     getCached,
+    getCachedEntries,
     downloadContent,
     prefetchContent,
     uploadContent,

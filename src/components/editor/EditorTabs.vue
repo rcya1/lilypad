@@ -9,14 +9,17 @@ import {
   Loader2,
   FileText,
   File,
+  PanelRight,
+  PanelRightClose,
 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
-import { useConfirm } from '@/composables/useConfirm'
+import { useUiStore } from '@/stores/ui'
 
 defineProps<{
   isVertical: boolean
   isSwapped: boolean
   rotationClockwise: boolean
+  previewVisible: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,7 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useEditorStore()
-const { confirm } = useConfirm()
+const uiStore = useUiStore()
 const tabs = computed(() => store.tabOrder.map((id) => store.openDocuments.get(id)!))
 
 const draggedId = ref<string | null>(null)
@@ -69,18 +72,7 @@ function onDragEnd() {
   dropIndex.value = null
 }
 
-async function handleClose(id: string) {
-  if (store.dirtyIds.has(id)) {
-    const name = stripExtension(store.openDocuments.get(id)?.name ?? 'this file')
-    const ok = await confirm({
-      title: 'Discard changes?',
-      message: `Your unsaved changes to "${name}" will be lost.`,
-      confirmLabel: 'Discard',
-      cancelLabel: 'Keep editing',
-      danger: true,
-    })
-    if (!ok) return
-  }
+function handleClose(id: string) {
   store.closeDocument(id)
 }
 </script>
@@ -141,19 +133,13 @@ async function handleClose(id: string) {
         <span
           class="group/close flex items-center justify-center w-5 h-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
           :class="
-            tab.id === store.activeDocumentId || store.dirtyIds.has(tab.id)
+            tab.id === store.activeDocumentId
               ? 'opacity-60 hover:opacity-100'
               : 'opacity-0 group-hover:opacity-70 hover:opacity-100!'
           "
           @click.stop="handleClose(tab.id)"
         >
-          <template v-if="store.savingIds.has(tab.id)">
-            <Loader2 :size="13" class="animate-spin" />
-          </template>
-          <template v-else-if="store.dirtyIds.has(tab.id)">
-            <span class="block group-hover/close:hidden w-1.5 h-1.5 rounded-full bg-current" />
-            <X :size="13" class="hidden group-hover/close:block" />
-          </template>
+          <Loader2 v-if="store.savingIds.has(tab.id)" :size="13" class="animate-spin" />
           <X v-else :size="13" />
         </span>
       </button>
@@ -167,23 +153,35 @@ async function handleClose(id: string) {
     <div class="flex-1" @dragover="onDragOverEnd" @drop="onDrop" />
 
     <div class="flex items-center gap-0.5 px-2 shrink-0 border-l border-border-subtle">
-      <button
-        class="rotate-btn flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-        :class="rotationClockwise ? 'rotate-cw' : 'rotate-ccw'"
-        :title="isVertical ? 'Switch to side-by-side' : 'Switch to top-bottom'"
-        @click="emit('toggle-layout')"
-      >
-        <RotateCw v-if="rotationClockwise" :size="15" class="rotate-icon" />
-        <RotateCcw v-else :size="15" class="rotate-icon" />
-      </button>
-      <button
-        class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-        :title="isSwapped ? 'Move editor to primary position' : 'Swap editor and preview'"
-        @click="emit('toggle-swap')"
-      >
-        <ArrowLeftRight v-if="!isVertical" :size="15" />
-        <ArrowUpDown v-else :size="15" />
-      </button>
+      <template v-if="store.activeDocument?.type === 'md'">
+        <button
+          class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+          :title="previewVisible ? 'Hide preview' : 'Show preview'"
+          @click="uiStore.togglePreview()"
+        >
+          <PanelRight v-if="previewVisible" :size="15" />
+          <PanelRightClose v-else :size="15" />
+        </button>
+      </template>
+      <template v-if="previewVisible">
+        <button
+          class="rotate-btn flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+          :class="rotationClockwise ? 'rotate-cw' : 'rotate-ccw'"
+          :title="isVertical ? 'Switch to side-by-side' : 'Switch to top-bottom'"
+          @click="emit('toggle-layout')"
+        >
+          <RotateCw v-if="rotationClockwise" :size="15" class="rotate-icon" />
+          <RotateCcw v-else :size="15" class="rotate-icon" />
+        </button>
+        <button
+          class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+          :title="isSwapped ? 'Move editor to primary position' : 'Swap editor and preview'"
+          @click="emit('toggle-swap')"
+        >
+          <ArrowLeftRight v-if="!isVertical" :size="15" />
+          <ArrowUpDown v-else :size="15" />
+        </button>
+      </template>
     </div>
   </div>
 </template>

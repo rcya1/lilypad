@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
-import LilypadIcon from '@/assets/icon-light.svg'
+import LilypadIcon from '@/assets/icon.svg'
 
 const auth = useAuthStore()
 </script>

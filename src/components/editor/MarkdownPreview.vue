@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
@@ -13,6 +13,11 @@ const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
 
 const selectedLine = ref<number | null>(null)
 const hoveredLine = ref<number | null>(null)
+
+const wordCount = computed(() => {
+  const content = store.openDocuments.get(props.documentId)?.content ?? ''
+  return content.trim().split(/\s+/).filter(Boolean).length
+})
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -98,6 +103,8 @@ function onClick(event: MouseEvent) {
   const target = findSelectableSourceLine(event.target as HTMLElement)
   if (!target) {
     selectedLine.value = null
+    hoveredLine.value = null
+    store.requestClearEditorHighlight(props.documentId)
     return
   }
   const line = getSourceLine(target)
@@ -161,6 +168,8 @@ function onFocus() {
 
 function onBlur() {
   selectedLine.value = null
+  hoveredLine.value = null
+  store.requestClearEditorHighlight(props.documentId)
 }
 
 watch(
@@ -203,7 +212,7 @@ function updateHighlights() {
   }
 }
 
-watch([hoveredLine, selectedLine], updateHighlights)
+watch([hoveredLine, selectedLine], updateHighlights, { flush: 'sync' })
 watch(renderKey, () =>
   nextTick(() => {
     updateHighlights()
@@ -261,6 +270,9 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
       class="markdown-body preview-fade m-2 rounded-md bg-bg px-5 py-5 font-preview text-[15px] leading-[1.6] text-text-primary border border-border-subtle"
       v-html="html"
     />
+    <div v-if="wordCount > 0" class="flex justify-end px-4 pb-3 pt-1">
+      <span class="text-xs text-text-muted font-ui">{{ wordCount.toLocaleString() }} words</span>
+    </div>
   </div>
 </template>
 

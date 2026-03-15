@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, onBeforeUnmount } from 'vue'
 import { useEditorStore } from '@/stores/editor'
+import { useUiStore } from '@/stores/ui'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
 import EditorTabs from './EditorTabs.vue'
-import LilypadIcon from '@/assets/icon-light.svg'
+import LilypadIcon from '@/assets/icon.svg'
 
 const store = useEditorStore()
+const uiStore = useUiStore()
 const hasTabs = computed(() => store.tabOrder.length > 0)
 const activeId = computed(() => store.activeDocumentId)
 
@@ -32,8 +34,22 @@ function slotStyle(inFirst: boolean) {
   }
 }
 
-const editorPanelStyle = computed(() => slotStyle(!isSwapped.value))
-const previewPanelStyle = computed(() => slotStyle(isSwapped.value))
+const editorPanelStyle = computed(() => {
+  if (!uiStore.previewVisible) return { left: '0', top: '0', width: '100%', height: '100%' }
+  return slotStyle(!isSwapped.value)
+})
+const previewPanelStyle = computed(() => {
+  if (!uiStore.previewVisible) {
+    if (isVertical.value) {
+      const top = isSwapped.value ? '0%' : `${splitPct.value}%`
+      return { left: '0%', top, width: '100%', height: '0%' }
+    } else {
+      const left = isSwapped.value ? '0%' : `${splitPct.value}%`
+      return { left, top: '0%', width: '0%', height: '100%' }
+    }
+  }
+  return slotStyle(isSwapped.value)
+})
 
 const dividerHitZoneStyle = computed(() => {
   if (!isVertical.value) {
@@ -107,6 +123,7 @@ onBeforeUnmount(() => {
         :is-vertical="isVertical"
         :is-swapped="isSwapped"
         :rotation-clockwise="rotationClockwise"
+        :preview-visible="uiStore.previewVisible"
         @toggle-layout="toggleLayout"
         @toggle-swap="toggleSwap"
       />
@@ -151,6 +168,7 @@ onBeforeUnmount(() => {
               </div>
 
               <div
+                v-if="uiStore.previewVisible"
                 class="absolute z-10 group"
                 :class="isVertical ? 'cursor-row-resize' : 'cursor-col-resize'"
                 :style="dividerHitZoneStyle"
