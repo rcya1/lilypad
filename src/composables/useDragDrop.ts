@@ -2,6 +2,7 @@ import { ref, computed, type Ref } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
 import type { useFilesStore } from '@/stores/files'
+import { useToastStore } from '@/stores/toast'
 
 type FilesStore = ReturnType<typeof useFilesStore>
 
@@ -17,11 +18,16 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
 
   const isInvalidTarget = computed(() => {
     if (!draggingEntry.value) return false
-    if (draggingEntry.value.id === PENDING_ID) return false // pending row can go anywhere
+    if (draggingEntry.value.id === PENDING_ID) return false
     const entry = entryRef.value
-    if (draggingEntry.value.id === entry.id) return true
-    if (isDirectory(entry)) {
-      return filesStore.collectDescendantIds(draggingEntry.value.id).includes(entry.id)
+    const dragIds =
+      filesStore.selectedIds.size >= 2 && filesStore.selectedIds.has(draggingEntry.value.id)
+        ? [...filesStore.selectedIds]
+        : [draggingEntry.value.id]
+    for (const dragId of dragIds) {
+      if (dragId === entry.id) return true
+      if (isDirectory(entry) && filesStore.collectDescendantIds(dragId).includes(entry.id))
+        return true
     }
     return false
   })
@@ -101,7 +107,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
     clearHoverTimer()
   }
 
-  function onDrop(e: DragEvent) {
+  async function onDrop(e: DragEvent) {
     e.preventDefault()
     const region = dropRegion.value
     dropRegion.value = null
@@ -141,7 +147,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
       return
     }
 
-    // Normal entry move
+    // Normal entry move — compute destination
     let newParentId: string | null
     let newSortOrder: number
 
@@ -169,6 +175,51 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
         const nextOrder = idx < siblings.length - 1 ? siblings[idx + 1]!.sort_order : cur + 1000
         newSortOrder = (cur + nextOrder) / 2
       }
+    }
+
+    // Multi-drag: move all top-level selected entries
+    const isMultiDrag = filesStore.selectedIds.size >= 2 && filesStore.selectedIds.has(dragId)
+    if (isMultiDrag) {
+      const idSet = filesStore.selectedIds
+      const topLevel = [...idSet].filter((id) => {
+        let parentId = filesStore.entries.find((e) => e.id === id)?.parent_id ?? null
+        while (parentId) {
+          if (idSet.has(parentId)) return false
+          parentId = filesStore.entries.find((e) => e.id === parentId)?.parent_id ?? null
+        }
+        return true
+      })
+
+      // Snapshot names + source folders before any moves mutate local state
+      const snapshot = topLevel.map((id) => {
+        const e = filesStore.entries.find((en) => en.id === id)
+        const srcFolder = e?.parent_id
+          ? (filesStore.entries.find((en) => en.id === e.parent_id)?.name ?? 'root')
+          : 'root'
+        return { id, label: e ? e.name.replace(/\.[^.]+$/, '') : id, srcFolder }
+      })
+
+      // Move sequentially so each attempt sees the updated state from prior moves
+      const failed: typeof snapshot = []
+      for (let i = 0; i < topLevel.length; i++) {
+        const ok = await filesStore.moveEntry(topLevel[i]!, newParentId, newSortOrder + i, true)
+        if (!ok) failed.push(snapshot[i]!)
+      }
+
+      if (failed.length > 0) {
+        const toast = useToastStore()
+        const destName = newParentId
+          ? (filesStore.entries.find((e) => e.id === newParentId)?.name ?? 'destination')
+          : 'root'
+        const srcGroups = [...new Set(failed.map((f) => f.srcFolder))]
+        const srcLabel = srcGroups.join(', ')
+        const fileNames = failed.map((f) => `"${f.label}"`).join(', ')
+        toast.addToast(
+          `Couldn't move ${fileNames} from "${srcLabel}" to "${destName}": name conflict.`,
+          'error',
+        )
+      }
+      return
     }
 
     filesStore.moveEntry(dragId, newParentId, newSortOrder)

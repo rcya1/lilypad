@@ -119,11 +119,13 @@ onBeforeUnmount(() => {
     <div class="border-t border-border-subtle" />
 
     <!-- SearchPanel disabled — full-text search not ready, see docs/features/05-full-text-search.md -->
-    <FileExplorer v-if="!isMinimized" />
+    <div v-if="!isMinimized" class="relative flex-1 flex flex-col overflow-hidden">
+      <FileExplorer />
+    </div>
 
     <div
       v-if="!isMinimized && auth.user"
-      class="mt-auto border-t border-border-subtle px-3 py-2 flex items-center gap-2"
+      class="border-t border-border-subtle px-3 py-2 flex items-center gap-2"
     >
       <span class="flex-1 text-xs text-text-secondary truncate">
         {{ auth.user.email }}

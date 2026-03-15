@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, onBeforeUnmount } from 'vue'
+import { AArrowDown, AArrowUp } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
 import EditorTabs from './EditorTabs.vue'
+import BreadcrumbBar from './BreadcrumbBar.vue'
 import LilypadIcon from '@/assets/icon.svg'
 
 const store = useEditorStore()
@@ -70,6 +72,22 @@ const dividerLineClass = computed(() => {
     : 'left-1/2 -translate-x-1/2 inset-y-0 w-px bg-border-subtle group-hover:bg-border'
 })
 
+// Font size control positioning: editor controls anchor to the right edge of the
+// editor panel; preview controls anchor to the far right of the bar.
+const showPreviewFontControls = computed(
+  () => uiStore.previewVisible && !isVertical.value,
+)
+
+const editorFontControlsStyle = computed(() => {
+  if (!uiStore.previewVisible || isVertical.value || isSwapped.value) return { right: '0' }
+  return { right: `${100 - splitPct.value}%` }
+})
+
+const previewFontControlsStyle = computed(() => {
+  if (isSwapped.value) return { right: `${100 - splitPct.value}%` }
+  return { right: '0' }
+})
+
 function toggleLayout() {
   isVertical.value = !isVertical.value
   rotationClockwise.value = !rotationClockwise.value
@@ -127,6 +145,57 @@ onBeforeUnmount(() => {
         @toggle-layout="toggleLayout"
         @toggle-swap="toggleSwap"
       />
+
+      <div class="relative shrink-0">
+        <BreadcrumbBar />
+
+        <!-- Editor font size controls — anchored to right edge of editor panel -->
+        <div
+          class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
+          :style="editorFontControlsStyle"
+        >
+          <button
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-75 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Decrease editor font size"
+            :disabled="uiStore.editorFontSize <= 12"
+            @click="uiStore.setEditorFontSize(uiStore.editorFontSize - 1)"
+          >
+            <AArrowDown :size="18" />
+          </button>
+          <button
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-75 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Increase editor font size"
+            :disabled="uiStore.editorFontSize >= 24"
+            @click="uiStore.setEditorFontSize(uiStore.editorFontSize + 1)"
+          >
+            <AArrowUp :size="18" />
+          </button>
+        </div>
+
+        <!-- Preview font size controls — anchored to far right of preview panel -->
+        <div
+          v-if="showPreviewFontControls"
+          class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-l border-border-subtle"
+          :style="previewFontControlsStyle"
+        >
+          <button
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-75 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Decrease preview font size"
+            :disabled="uiStore.previewFontSize <= 12"
+            @click="uiStore.setPreviewFontSize(uiStore.previewFontSize - 1)"
+          >
+            <AArrowDown :size="18" />
+          </button>
+          <button
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-75 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Increase preview font size"
+            :disabled="uiStore.previewFontSize >= 24"
+            @click="uiStore.setPreviewFontSize(uiStore.previewFontSize + 1)"
+          >
+            <AArrowUp :size="18" />
+          </button>
+        </div>
+      </div>
 
       <template v-for="id in store.tabOrder" :key="id">
         <div v-show="id === activeId" class="flex-1 min-h-0 overflow-hidden">

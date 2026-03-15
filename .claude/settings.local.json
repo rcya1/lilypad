@@ -10,7 +10,8 @@
       "Bash(yarn build:*)",
       "Bash(yarn test:*)",
       "Bash(npx vitest:*)",
-      "Bash(yarn format:*)"
+      "Bash(yarn format:*)",
+      "Bash(cd:*)"
     ]
   }
 }

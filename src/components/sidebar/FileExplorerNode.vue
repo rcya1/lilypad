@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type WritableComputedRef } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
 import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, File } from 'lucide-vue-next'
@@ -17,10 +17,19 @@ const props = defineProps<{
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
 const { confirm } = useConfirm()
-const isOpen = ref(true)
+
+// Writable computed so useDragDrop can set isOpen.value = true while state stays in store
+const isOpen: WritableComputedRef<boolean> = computed({
+  get: () => !filesStore.isFolderCollapsed(props.entry.id),
+  set: (val: boolean) => {
+    if (val) filesStore.expandFolder(props.entry.id)
+    else filesStore.collapseFolder(props.entry.id)
+  },
+})
 
 const showContextMenu = ref(false)
 const contextMenuPos = ref({ x: 0, y: 0 })
+const contextMenuInsertBefore = ref<string | null>(null)
 const isRenaming = ref(false)
 const renameValue = ref('')
 const newChildName = ref('')
@@ -36,6 +45,20 @@ const isActive = computed(
 const isSelectedFolder = computed(
   () => isDirectory(props.entry) && filesStore.selectedFolderId === props.entry.id,
 )
+
+const isSelected = computed(() => filesStore.selectedIds.has(props.entry.id))
+
+const isCoveredBySelection = computed(() => {
+  if (filesStore.selectedIds.size === 0) return false
+  let parentId: string | null = props.entry.parentId
+  while (parentId) {
+    if (filesStore.selectedIds.has(parentId)) return true
+    parentId = filesStore.entries.find((e) => e.id === parentId)?.parent_id ?? null
+  }
+  return false
+})
+
+const inSelectionMode = computed(() => filesStore.selectedIds.size >= 2)
 
 const showNewInput = computed(
   () => isDirectory(props.entry) && filesStore.pendingCreate?.parentId === props.entry.id,
@@ -56,37 +79,70 @@ watch(showNewInput, (val, _old, onCleanup) => {
   }
 })
 
-async function handleClick() {
+function handleChevronClick() {
+  if (!isDirectory(props.entry)) return
+  const wasOpen = isOpen.value
+  isOpen.value = !isOpen.value
+  if (!wasOpen) {
+    props.entry.children
+      .filter((c) => !isDirectory(c) && c.type === 'md')
+      .forEach((c) => filesStore.prefetchContent(c.id))
+  }
+}
+
+async function handleClick(e: MouseEvent) {
   if (isDirectory(props.entry)) {
+    if (e.ctrlKey || e.metaKey) {
+      filesStore.toggleSelection(props.entry.id)
+      return
+    }
+    if (e.shiftKey) {
+      filesStore.rangeSelectTo(props.entry.id)
+      return
+    }
+    // Plain click: expand/collapse + navigate + select
     const wasOpen = isOpen.value
     isOpen.value = !isOpen.value
     filesStore.selectFolder(props.entry.id)
-    // Prefetch direct md children when a folder is expanded
+    filesStore.selectSingle(props.entry.id)
     if (!wasOpen) {
       props.entry.children
         .filter((c) => !isDirectory(c) && c.type === 'md')
         .forEach((c) => filesStore.prefetchContent(c.id))
     }
-  } else {
-    filesStore.selectFolder(null)
-    if (props.entry.type === 'md') {
-      const id = props.entry.id
-      // Already open as a permanent tab — just switch to it
-      if (editorStore.openDocuments.has(id) && editorStore.previewDocumentId !== id) {
-        editorStore.setActiveDocument(id)
-        return
-      }
-      // Cache hit: open as preview instantly
-      const cached = filesStore.getCached(id)
-      if (cached !== undefined) {
-        editorStore.openDocumentAsPreview(id, props.entry.name, props.entry.type, cached)
-        return
-      }
-      // Cache miss: show tab + skeleton immediately, fetch in background
-      editorStore.openDocumentOptimisticAsPreview(id, props.entry.name, props.entry.type)
-      const content = await filesStore.downloadContent(id)
-      editorStore.finishLoadingDocument(id, content ?? '')
+    return
+  }
+
+  // Document entry
+  if (e.ctrlKey || e.metaKey) {
+    filesStore.explodeAndToggle(props.entry.id)
+    return
+  }
+  if (e.shiftKey) {
+    filesStore.rangeSelectTo(props.entry.id)
+    return
+  }
+  if (inSelectionMode.value) {
+    filesStore.selectSingle(props.entry.id)
+    return
+  }
+
+  filesStore.selectFolder(null)
+  filesStore.selectSingle(props.entry.id)
+  if (props.entry.type === 'md') {
+    const id = props.entry.id
+    if (editorStore.openDocuments.has(id) && editorStore.previewDocumentId !== id) {
+      editorStore.setActiveDocument(id)
+      return
     }
+    const cached = filesStore.getCached(id)
+    if (cached !== undefined) {
+      editorStore.openDocumentAsPreview(id, props.entry.name, props.entry.type, cached)
+      return
+    }
+    editorStore.openDocumentOptimisticAsPreview(id, props.entry.name, props.entry.type)
+    const content = await filesStore.downloadContent(id)
+    editorStore.finishLoadingDocument(id, content ?? '')
   }
 }
 
@@ -96,10 +152,27 @@ function handleDblClick() {
   }
 }
 
+function getNextSiblingId(): string | null {
+  const parentId = props.entry.parentId
+  const siblings = filesStore.entries
+    .filter((e) => e.parent_id === parentId)
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+  const idx = siblings.findIndex((s) => s.id === props.entry.id)
+  if (idx === -1 || idx >= siblings.length - 1) return null
+  return siblings[idx + 1]!.id
+}
+
 function onContextMenu(e: MouseEvent) {
   e.preventDefault()
   contextMenuPos.value = { x: e.clientX, y: e.clientY }
   showContextMenu.value = true
+
+  // Determine insert position: top half → before this entry, bottom half → after
+  const rowEl = e.currentTarget as HTMLElement
+  const rect = rowEl.getBoundingClientRect()
+  const relY = e.clientY - rect.top
+  contextMenuInsertBefore.value =
+    relY < rect.height / 2 ? props.entry.id : getNextSiblingId()
 
   const close = () => {
     showContextMenu.value = false
@@ -124,6 +197,24 @@ async function submitRename() {
 
 async function handleDelete() {
   showContextMenu.value = false
+
+  const isInSelection = isSelected.value || isCoveredBySelection.value
+  if (filesStore.selectedIds.size >= 2 && isInSelection) {
+    const count = filesStore.selectedIds.size
+    const ok = await confirm({
+      title: `Delete ${count} items?`,
+      message: 'These items will be permanently deleted.',
+      confirmLabel: 'Delete',
+      danger: true,
+    })
+    if (!ok) return
+    for (const id of filesStore.selectedIds) {
+      editorStore.closeDocument(id)
+    }
+    await filesStore.bulkDelete([...filesStore.selectedIds])
+    return
+  }
+
   const label = isDirectory(props.entry) ? props.entry.name : stripExtension(props.entry.name)
   const ok = await confirm({
     title: `Delete "${label}"?`,
@@ -146,6 +237,16 @@ function startNewChildFile() {
 function startNewChildFolder() {
   showContextMenu.value = false
   filesStore.triggerCreate(props.entry.id, 'folder')
+}
+
+function startNewSiblingFile() {
+  showContextMenu.value = false
+  filesStore.triggerCreate(props.entry.parentId, 'file', contextMenuInsertBefore.value)
+}
+
+function startNewSiblingFolder() {
+  showContextMenu.value = false
+  filesStore.triggerCreate(props.entry.parentId, 'folder', contextMenuInsertBefore.value)
 }
 
 async function submitNew() {
@@ -218,7 +319,7 @@ function onPendingDragEnd() {
     <div
       class="relative flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
       :class="[
-        isActive
+        isSelected || isCoveredBySelection
           ? 'bg-surface-overlay text-text-primary'
           : isSelectedFolder
             ? 'bg-surface-elevated text-text-primary'
@@ -242,8 +343,11 @@ function onPendingDragEnd() {
         class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
       />
 
-      <!-- Chevron -->
-      <span class="w-3 flex items-center justify-center text-text-muted shrink-0">
+      <!-- Chevron (expand/collapse only — stops click propagation) -->
+      <span
+        class="w-3 flex items-center justify-center text-text-muted shrink-0"
+        @click.stop="handleChevronClick"
+      >
         <template v-if="isDirectory(entry)">
           <ChevronDown v-if="isOpen" :size="12" />
           <ChevronRight v-else :size="12" />
@@ -319,33 +423,60 @@ function onPendingDragEnd() {
         class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36"
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
       >
-        <button
-          class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-          @click="startRename"
-        >
-          Rename
-        </button>
-        <template v-if="isDirectory(entry)">
+        <!-- Multi-select mode: only Delete -->
+        <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
           <button
-            class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-            @click="startNewChildFile"
+            class="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-surface-elevated transition-colors cursor-pointer"
+            @click="handleDelete"
           >
-            New file
-          </button>
-          <button
-            class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-            @click="startNewChildFolder"
-          >
-            New folder
+            Delete {{ filesStore.selectedIds.size }} items
           </button>
         </template>
-        <div class="border-t border-border-subtle my-1" />
-        <button
-          class="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-surface-elevated transition-colors cursor-pointer"
-          @click="handleDelete"
-        >
-          Delete
-        </button>
+
+        <!-- Single-item menu -->
+        <template v-else>
+          <button
+            class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
+            @click="startRename"
+          >
+            Rename
+          </button>
+          <template v-if="isDirectory(entry)">
+            <button
+              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
+              @click="startNewChildFile"
+            >
+              New file
+            </button>
+            <button
+              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
+              @click="startNewChildFolder"
+            >
+              New folder
+            </button>
+          </template>
+          <template v-else>
+            <button
+              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
+              @click="startNewSiblingFile"
+            >
+              New file
+            </button>
+            <button
+              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
+              @click="startNewSiblingFolder"
+            >
+              New folder
+            </button>
+          </template>
+          <div class="border-t border-border-subtle my-1" />
+          <button
+            class="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-surface-elevated transition-colors cursor-pointer"
+            @click="handleDelete"
+          >
+            Delete
+          </button>
+        </template>
       </div>
     </Teleport>
   </div>

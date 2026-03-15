@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useEditorStore } from '@/stores/editor'
+import { useUiStore } from '@/stores/ui'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
 
 const props = defineProps<{ documentId: string }>()
 
 const store = useEditorStore()
+const uiStore = useUiStore()
 const html = ref('')
 const renderKey = ref(0)
 const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
@@ -267,7 +269,8 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
   >
     <div
       :key="renderKey"
-      class="markdown-body preview-fade m-2 rounded-md bg-bg px-5 py-5 font-preview text-[15px] leading-[1.6] text-text-primary border border-border-subtle"
+      class="markdown-body preview-fade m-2 rounded-md bg-bg px-5 py-5 font-preview leading-[1.6] text-text-primary border border-border-subtle"
+      :style="{ fontSize: uiStore.previewFontSize + 'px' }"
       v-html="html"
     />
     <div v-if="wordCount > 0" class="flex justify-end px-4 pb-3 pt-1">

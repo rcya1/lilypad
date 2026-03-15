@@ -5,12 +5,13 @@ let vimExRegistered = false
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState, StateEffect, StateField } from '@codemirror/state'
+import { EditorState, StateEffect, StateField, Compartment } from '@codemirror/state'
 import { Decoration, type DecorationSet, keymap } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
 import { search, searchKeymap } from '@codemirror/search'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
 import { useEditorStore } from '@/stores/editor'
+import { useUiStore } from '@/stores/ui'
 
 const highlightLineEffect = StateEffect.define<number | null>()
 
@@ -32,9 +33,11 @@ const highlightLineField = StateField.define<DecorationSet>({
 const props = defineProps<{ documentId: string; isActive: boolean }>()
 
 const store = useEditorStore()
+const uiStore = useUiStore()
 const container = ref<HTMLDivElement>()
 let view: EditorView | null = null
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
+const fontSizeCompartment = new Compartment()
 
 const vimMode = ref<'normal' | 'insert' | 'visual' | 'replace'>('normal')
 
@@ -67,7 +70,6 @@ const modeLabelClass = computed(() => {
 const lilypadTheme = EditorView.theme({
   '&': {
     height: '100%',
-    fontSize: '13px',
     backgroundColor: 'var(--bg)',
     color: 'var(--text-primary)',
   },
@@ -242,6 +244,18 @@ watch(
   },
 )
 
+watch(
+  () => uiStore.editorFontSize,
+  (size) => {
+    if (!view) return
+    view.dispatch({
+      effects: fontSizeCompartment.reconfigure(
+        EditorView.theme({ '&': { fontSize: `${size}px` } }),
+      ),
+    })
+  },
+)
+
 onMounted(() => {
   if (!container.value) return
 
@@ -265,6 +279,7 @@ onMounted(() => {
         search(),
         basicSetup,
         lilypadTheme,
+        fontSizeCompartment.of(EditorView.theme({ '&': { fontSize: `${uiStore.editorFontSize}px` } })),
         markdown(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

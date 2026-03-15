@@ -14,6 +14,7 @@ import {
 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
+import { useFilesStore } from '@/stores/files'
 
 defineProps<{
   isVertical: boolean
@@ -29,6 +30,12 @@ const emit = defineEmits<{
 
 const store = useEditorStore()
 const uiStore = useUiStore()
+const filesStore = useFilesStore()
+
+function switchToTab(id: string) {
+  store.setActiveDocument(id)
+  filesStore.selectSingle(id)
+}
 const tabs = computed(() => store.tabOrder.map((id) => store.openDocuments.get(id)!))
 
 const draggedId = ref<string | null>(null)
@@ -96,7 +103,7 @@ function handleClose(id: string) {
           draggedId === tab.id ? 'opacity-40' : '',
         ]"
         draggable="true"
-        @click="store.setActiveDocument(tab.id)"
+        @click="switchToTab(tab.id)"
         @dblclick="store.promotePreview(tab.id)"
         @mousedown="
           (e: MouseEvent) => {

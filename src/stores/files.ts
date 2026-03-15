@@ -5,6 +5,7 @@ import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
 import type { EntryRow } from '@/types/database'
 import type { Entry, DocumentType } from '@/types/file-explorer'
+import { isDirectory } from '@/types/file-explorer'
 
 // ---------------------------------------------------------------------------
 // LRU content cache — keeps up to CACHE_MAX_BYTES of file content in memory.
@@ -59,6 +60,9 @@ export const useFilesStore = defineStore('files', () => {
   const entries = ref<EntryRow[]>([])
   const loading = ref(false)
   const selectedFolderId = ref<string | null>(null)
+  const collapsedFolderIds = ref(new Set<string>())
+  const selectedIds = ref(new Set<string>())
+  const lastClickedId = ref<string | null>(null)
   const pendingCreate = ref<{
     parentId: string | null
     type: 'file' | 'folder'
@@ -127,6 +131,146 @@ export const useFilesStore = defineStore('files', () => {
     selectedFolderId.value = id
   }
 
+  function isFolderCollapsed(id: string): boolean {
+    return collapsedFolderIds.value.has(id)
+  }
+
+  function expandFolder(id: string) {
+    const next = new Set(collapsedFolderIds.value)
+    next.delete(id)
+    collapsedFolderIds.value = next
+  }
+
+  function collapseFolder(id: string) {
+    const next = new Set(collapsedFolderIds.value)
+    next.add(id)
+    collapsedFolderIds.value = next
+  }
+
+  function collapseAll() {
+    const allFolderIds = entries.value.filter((e) => e.kind === 'directory').map((e) => e.id)
+    collapsedFolderIds.value = new Set(allFolderIds)
+  }
+
+  function expandAll() {
+    collapsedFolderIds.value = new Set()
+  }
+
+  function toggleSelection(id: string) {
+    const next = new Set(selectedIds.value)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    selectedIds.value = next
+    lastClickedId.value = id
+  }
+
+  function setSelection(ids: string[]) {
+    selectedIds.value = new Set(ids)
+  }
+
+  function selectSingle(id: string) {
+    selectedIds.value = new Set([id])
+    lastClickedId.value = id
+  }
+
+  function clearSelection() {
+    selectedIds.value = new Set()
+    lastClickedId.value = null
+  }
+
+  function isSelected(id: string): boolean {
+    return selectedIds.value.has(id)
+  }
+
+  /** Flat ordered list of all visible entry IDs (folders + documents, respects collapse). */
+  function getFlatVisibleEntryIds(): string[] {
+    const result: string[] = []
+    function walk(nodes: Entry[]) {
+      for (const node of nodes) {
+        result.push(node.id)
+        if (isDirectory(node) && !collapsedFolderIds.value.has(node.id)) {
+          walk(node.children)
+        }
+      }
+    }
+    walk(tree.value)
+    return result
+  }
+
+  function rangeSelectTo(id: string) {
+    const flat = getFlatVisibleEntryIds()
+    const lastId = lastClickedId.value
+    if (!lastId) {
+      toggleSelection(id)
+      return
+    }
+    const a = flat.indexOf(lastId)
+    const b = flat.indexOf(id)
+    if (a === -1 || b === -1) {
+      toggleSelection(id)
+      return
+    }
+    const [from, to] = a < b ? [a, b] : [b, a]
+    setSelection(flat.slice(from, to + 1))
+  }
+
+  /** Walk up the tree to find the closest ancestor whose ID is in selectedIds. */
+  function findSelectedAncestor(id: string): string | null {
+    let parentId = entries.value.find((e) => e.id === id)?.parent_id ?? null
+    while (parentId) {
+      if (selectedIds.value.has(parentId)) return parentId
+      parentId = entries.value.find((e) => e.id === parentId)?.parent_id ?? null
+    }
+    return null
+  }
+
+  /**
+   * If a selected ancestor exists: "explode" it by replacing it with all its
+   * direct children, then toggle the clicked item. Otherwise, plain toggle.
+   */
+  function explodeAndToggle(id: string) {
+    const ancestorId = findSelectedAncestor(id)
+    if (!ancestorId) {
+      toggleSelection(id)
+      return
+    }
+    const next = new Set(selectedIds.value)
+    next.delete(ancestorId)
+    const siblings = entries.value.filter((e) => e.parent_id === ancestorId)
+    for (const sibling of siblings) {
+      if (sibling.id !== id) next.add(sibling.id)
+    }
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    selectedIds.value = next
+    lastClickedId.value = id
+  }
+
+  async function bulkDelete(ids: string[]): Promise<boolean> {
+    // Only delete top-level entries (skip if an ancestor is also in the set)
+    const idSet = new Set(ids)
+    const topLevel = ids.filter((id) => {
+      let parentId = entries.value.find((e) => e.id === id)?.parent_id ?? null
+      while (parentId) {
+        if (idSet.has(parentId)) return false
+        parentId = entries.value.find((e) => e.id === parentId)?.parent_id ?? null
+      }
+      return true
+    })
+    const results = await Promise.all(topLevel.map((id) => deleteEntry(id)))
+    clearSelection()
+    return results.every(Boolean)
+  }
+
+  async function bulkMove(ids: string[], targetFolderId: string | null): Promise<boolean> {
+    const base = getNextSortOrder(targetFolderId)
+    const results = await Promise.all(
+      ids.map((id, i) => moveEntry(id, targetFolderId, base + i * 1000)),
+    )
+    clearSelection()
+    return results.every(Boolean)
+  }
+
   /**
    * Given a file/document id, returns the id of its parent folder, or null if
    * the entry lives at the root (or is not found).
@@ -134,6 +278,24 @@ export const useFilesStore = defineStore('files', () => {
   function getParentFolderId(fileId: string): string | null {
     const entry = entries.value.find((e) => e.id === fileId)
     return entry?.parent_id ?? null
+  }
+
+  /**
+   * Returns the ordered list of ancestor directories from root to immediate
+   * parent for the given file id.
+   */
+  function getAncestorPath(fileId: string): { id: string; name: string }[] {
+    const entry = entries.value.find((e) => e.id === fileId)
+    if (!entry?.parent_id) return []
+    const segments: { id: string; name: string }[] = []
+    let currentId: string | null = entry.parent_id
+    while (currentId) {
+      const parent = entries.value.find((e) => e.id === currentId)
+      if (!parent) break
+      segments.unshift({ id: parent.id, name: parent.name })
+      currentId = parent.parent_id
+    }
+    return segments
   }
 
   /**
@@ -320,13 +482,14 @@ export const useFilesStore = defineStore('files', () => {
     id: string,
     newParentId: string | null,
     newSortOrder: number,
+    silent = false,
   ): Promise<boolean> {
     const descendants = collectDescendantIds(id)
     if (newParentId !== null && descendants.includes(newParentId)) return false
 
     const moving = entries.value.find((e) => e.id === id)
     if (moving && isDuplicateName(moving.name, newParentId, id)) {
-      showError('A file or folder with that name already exists in that location.')
+      if (!silent) showError('A file or folder with that name already exists in that location.')
       return false
     }
 
@@ -336,7 +499,7 @@ export const useFilesStore = defineStore('files', () => {
       .eq('id', id)
 
     if (err) {
-      showError('Failed to move entry.')
+      if (!silent) showError(`Failed to move "${moving?.name ?? id}": ${err.message}`)
       return false
     }
 
@@ -446,6 +609,9 @@ Happy note-taking!
     entries.value = []
     loading.value = false
     selectedFolderId.value = null
+    collapsedFolderIds.value = new Set()
+    selectedIds.value = new Set()
+    lastClickedId.value = null
     pendingCreate.value = null
   }
 
@@ -454,6 +620,9 @@ Happy note-taking!
     tree,
     loading,
     selectedFolderId,
+    collapsedFolderIds,
+    selectedIds,
+    lastClickedId,
     pendingCreate,
     fetchEntries,
     createDocument,
@@ -463,12 +632,27 @@ Happy note-taking!
     moveEntry,
     collectDescendantIds,
     selectFolder,
+    isFolderCollapsed,
+    expandFolder,
+    collapseFolder,
+    collapseAll,
+    expandAll,
+    toggleSelection,
+    explodeAndToggle,
+    setSelection,
+    selectSingle,
+    clearSelection,
+    isSelected,
+    rangeSelectTo,
+    bulkDelete,
+    bulkMove,
     getParentFolderId,
     beginCreate,
     triggerCreate,
     updatePendingPosition,
     getPendingSortOrder,
     clearPendingCreate,
+    getAncestorPath,
     getCached,
     getCachedEntries,
     downloadContent,
