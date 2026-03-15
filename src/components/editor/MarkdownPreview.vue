@@ -80,7 +80,10 @@ function findSelectableSourceLine(el: HTMLElement): HTMLElement | null {
 
 function onMouseOver(event: MouseEvent) {
   const target = findSelectableSourceLine(event.target as HTMLElement)
-  if (!target) return
+  if (!target) {
+    hoveredLine.value = null
+    return
+  }
   const line = getSourceLine(target)
   if (!Number.isNaN(line) && line !== hoveredLine.value) {
     hoveredLine.value = line
