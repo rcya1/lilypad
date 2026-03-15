@@ -136,7 +136,7 @@ function onKeyDown(event: KeyboardEvent) {
       const line = getSourceLine(el)
       selectedLine.value = line
       store.setPreviewCursor(props.documentId, line)
-      el.scrollIntoView({ block: 'nearest' })
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
       return
     }
 
@@ -147,7 +147,7 @@ function onKeyDown(event: KeyboardEvent) {
     const line = getSourceLine(nextEl)
     selectedLine.value = line
     store.setPreviewCursor(props.documentId, line)
-    nextEl.scrollIntoView({ block: 'nearest' })
+    nextEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   } else if (key === 'y') {
     if (selectedLine.value == null) return
     const container = scrollContainer.value?.querySelector('.markdown-body')
@@ -205,7 +205,7 @@ function updateHighlights() {
     .querySelectorAll('.preview-selected')
     .forEach((el) => el.classList.remove('preview-selected'))
 
-  if (hoveredLine.value != null && hoveredLine.value !== selectedLine.value) {
+  if (hoveredLine.value != null) {
     findSelectableByLine(container, hoveredLine.value)?.classList.add('preview-hover')
   }
 
@@ -248,7 +248,7 @@ function syncFromEditorCursor() {
   }
   if (best && bestLine !== selectedLine.value) {
     selectedLine.value = bestLine
-    best.scrollIntoView({ block: 'nearest' })
+    best.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }
 }
 
@@ -258,7 +258,7 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 <template>
   <div
     ref="scrollContainer"
-    class="h-full overflow-y-auto bg-surface outline-none"
+    class="h-full overflow-y-auto bg-surface outline-none scroll-py-16"
     tabindex="0"
     @mouseover="onMouseOver"
     @mouseleave="onMouseLeave"
@@ -299,24 +299,26 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
     0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
-/* Hover highlight — light */
-.markdown-body :deep([data-source-line].preview-hover) {
+/* Hover or selected — same light tone */
+.markdown-body :deep([data-source-line].preview-hover),
+.markdown-body :deep([data-source-line].preview-selected) {
   background-color: var(--surface-elevated);
   border-radius: 3px;
   transition: background-color 100ms ease;
 }
 
-/* Selected — darker */
-.markdown-body :deep([data-source-line].preview-selected) {
+/* Hover over the selected element — darker accent */
+.markdown-body :deep([data-source-line].preview-hover.preview-selected) {
   background-color: var(--surface-overlay);
-  border-radius: 3px;
 }
 
 /* Prevent highlighted li from painting over nested lists */
 .markdown-body :deep(li.preview-hover > ul),
 .markdown-body :deep(li.preview-hover > ol),
 .markdown-body :deep(li.preview-selected > ul),
-.markdown-body :deep(li.preview-selected > ol) {
+.markdown-body :deep(li.preview-selected > ol),
+.markdown-body :deep(li.preview-hover.preview-selected > ul),
+.markdown-body :deep(li.preview-hover.preview-selected > ol) {
   background-color: var(--bg);
   border-radius: 3px;
 }

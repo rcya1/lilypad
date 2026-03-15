@@ -80,6 +80,7 @@ const lilypadTheme = EditorView.theme({
     fontFamily: 'var(--font-family-mono)',
     overflow: 'auto',
     lineHeight: '1.6',
+    scrollBehavior: 'smooth',
   },
   '.cm-content': {
     caretColor: 'var(--accent)',
@@ -337,9 +338,10 @@ watch(
 
     view.dispatch({
       effects: [
-        EditorView.scrollIntoView(lineInfo.from, { y: 'center' }),
+        EditorView.scrollIntoView(lineInfo.from, { y: 'nearest', yMargin: 80 }),
         highlightLineEffect.of(targetLine),
       ],
+      ...(req.moveCursor ? { selection: { anchor: lineInfo.to } } : {}),
     })
 
     if (highlightTimer) clearTimeout(highlightTimer)

@@ -23,7 +23,7 @@ export const useEditorStore = defineStore('editor', () => {
   const saveTimers = new Map<string, ReturnType<typeof setTimeout>>()
   /** IDs of documents whose content is still being fetched from the network */
   const loadingIds = ref(new Set<string>())
-  const scrollToLineRequest = ref<{ documentId: string; line: number } | null>(null)
+  const scrollToLineRequest = ref<{ documentId: string; line: number; moveCursor?: boolean } | null>(null)
   /** Set to a documentId to ask the editor to immediately cancel its line-flash highlight */
   const clearHighlightRequest = ref<string | null>(null)
   /** ID of the tab currently in preview (single-click) mode; null if none */
@@ -52,7 +52,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   function setPreviewCursor(documentId: string, line: number) {
     previewCursorLine.value.set(documentId, line)
-    scrollToLineRequest.value = { documentId, line }
+    scrollToLineRequest.value = { documentId, line, moveCursor: true }
   }
 
   function setFocusedPane(pane: 'editor' | 'preview') {
