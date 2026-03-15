@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import ToastContainer from '@/components/ToastContainer.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const auth = useAuthStore()
 </script>
@@ -11,4 +12,5 @@ const auth = useAuthStore()
   </div>
   <router-view v-else />
   <ToastContainer />
+  <ConfirmDialog />
 </template>

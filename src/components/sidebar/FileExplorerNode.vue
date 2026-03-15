@@ -6,6 +6,7 @@ import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, File } from 'l
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
+import { useConfirm } from '@/composables/useConfirm'
 import PendingInputRow from './PendingInputRow.vue'
 
 const props = defineProps<{
@@ -15,6 +16,7 @@ const props = defineProps<{
 
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
+const { confirm } = useConfirm()
 const isOpen = ref(true)
 
 const showContextMenu = ref(false)
@@ -69,19 +71,19 @@ async function handleClick() {
     filesStore.selectFolder(null)
     if (props.entry.type === 'md') {
       const id = props.entry.id
-      // Fast path: tab is already open, just switch to it
-      if (editorStore.openDocuments.has(id)) {
+      // Already open as a permanent tab — just switch to it
+      if (editorStore.openDocuments.has(id) && editorStore.previewDocumentId !== id) {
         editorStore.setActiveDocument(id)
         return
       }
-      // Cache hit: open instantly with no loading state
+      // Cache hit: open as preview instantly
       const cached = filesStore.getCached(id)
       if (cached !== undefined) {
-        editorStore.openDocument(id, props.entry.name, props.entry.type, cached)
+        editorStore.openDocumentAsPreview(id, props.entry.name, props.entry.type, cached)
         return
       }
       // Cache miss: show tab + skeleton immediately, fetch in background
-      editorStore.openDocumentOptimistic(id, props.entry.name, props.entry.type)
+      editorStore.openDocumentOptimisticAsPreview(id, props.entry.name, props.entry.type)
       const content = await filesStore.downloadContent(id)
       editorStore.finishLoadingDocument(id, content ?? '')
     }
@@ -116,7 +118,16 @@ async function submitRename() {
 
 async function handleDelete() {
   showContextMenu.value = false
-  if (!confirm(`Delete "${props.entry.name}"?`)) return
+  const label = isDirectory(props.entry) ? props.entry.name : stripExtension(props.entry.name)
+  const ok = await confirm({
+    title: `Delete "${label}"?`,
+    message: isDirectory(props.entry)
+      ? 'This folder and all its contents will be permanently deleted.'
+      : 'This file will be permanently deleted.',
+    confirmLabel: 'Delete',
+    danger: true,
+  })
+  if (!ok) return
   editorStore.closeDocument(props.entry.id)
   await filesStore.deleteEntry(props.entry.id)
 }
@@ -152,6 +163,10 @@ async function submitNew() {
 function cancelNew() {
   filesStore.clearPendingCreate()
   newChildName.value = ''
+}
+
+function stripExtension(name: string) {
+  return name.replace(/\.[^.]+$/, '')
 }
 
 function onPendingDragStart(e: DragEvent) {
@@ -237,7 +252,7 @@ function onPendingDragEnd() {
 
       <!-- Name -->
       <span class="truncate">
-        {{ entry.name }}
+        {{ isDirectory(entry) ? entry.name : stripExtension(entry.name) }}
       </span>
 
       <!-- After drop indicator -->

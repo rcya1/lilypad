@@ -21,6 +21,8 @@ export const useEditorStore = defineStore('editor', () => {
   /** IDs of documents whose content is still being fetched from the network */
   const loadingIds = ref(new Set<string>())
   const scrollToLineRequest = ref<{ documentId: string; line: number } | null>(null)
+  /** ID of the tab currently in preview (single-click) mode; null if none */
+  const previewDocumentId = ref<string | null>(null)
 
   /** Current editor cursor line, per document */
   const editorCursorLine = ref<Map<string, number>>(new Map())
@@ -70,6 +72,79 @@ export const useEditorStore = defineStore('editor', () => {
     activeDocument.value = openDocuments.value.get(id) ?? null
   }
 
+  /** Open a file as a preview tab, replacing the existing preview tab if any. */
+  function openDocumentAsPreview(id: string, name: string, type: DocumentType, content: string) {
+    // Already the preview — just activate
+    if (previewDocumentId.value === id) {
+      activeDocumentId.value = id
+      activeDocument.value = openDocuments.value.get(id) ?? null
+      return
+    }
+    // Already a permanent tab — just activate, don't convert to preview
+    if (openDocuments.value.has(id) && previewDocumentId.value !== id) {
+      activeDocumentId.value = id
+      activeDocument.value = openDocuments.value.get(id) ?? null
+      return
+    }
+
+    // Replace the existing preview tab in-place
+    let insertIndex = tabOrder.value.length
+    if (previewDocumentId.value) {
+      const oldId = previewDocumentId.value
+      insertIndex = tabOrder.value.indexOf(oldId)
+      openDocuments.value.delete(oldId)
+      dirtyIds.value.delete(oldId)
+      loadingIds.value.delete(oldId)
+      tabOrder.value.splice(insertIndex, 1)
+    }
+
+    openDocuments.value.set(id, { id, name, type, content })
+    tabOrder.value.splice(insertIndex, 0, id)
+    previewDocumentId.value = id
+    dirtyIds.value.delete(id)
+    loadingIds.value.delete(id)
+    activeDocumentId.value = id
+    activeDocument.value = openDocuments.value.get(id) ?? null
+  }
+
+  /** Optimistic preview open: shows skeleton immediately, call finishLoadingDocument when ready. */
+  function openDocumentOptimisticAsPreview(id: string, name: string, type: DocumentType) {
+    if (previewDocumentId.value === id) {
+      activeDocumentId.value = id
+      activeDocument.value = openDocuments.value.get(id) ?? null
+      return
+    }
+    if (openDocuments.value.has(id) && previewDocumentId.value !== id) {
+      activeDocumentId.value = id
+      activeDocument.value = openDocuments.value.get(id) ?? null
+      return
+    }
+
+    let insertIndex = tabOrder.value.length
+    if (previewDocumentId.value) {
+      const oldId = previewDocumentId.value
+      insertIndex = tabOrder.value.indexOf(oldId)
+      openDocuments.value.delete(oldId)
+      dirtyIds.value.delete(oldId)
+      loadingIds.value.delete(oldId)
+      tabOrder.value.splice(insertIndex, 1)
+    }
+
+    openDocuments.value.set(id, { id, name, type, content: '' })
+    tabOrder.value.splice(insertIndex, 0, id)
+    previewDocumentId.value = id
+    loadingIds.value.add(id)
+    activeDocumentId.value = id
+    activeDocument.value = openDocuments.value.get(id) ?? null
+  }
+
+  /** Promote a preview tab to a permanent tab. */
+  function promotePreview(id: string) {
+    if (previewDocumentId.value === id) {
+      previewDocumentId.value = null
+    }
+  }
+
   /** Called once content has finished loading; replaces skeleton with real content. */
   function finishLoadingDocument(id: string, content: string) {
     const doc = openDocuments.value.get(id)
@@ -90,10 +165,13 @@ export const useEditorStore = defineStore('editor', () => {
     if (doc) {
       doc.content = content
       dirtyIds.value.add(id)
+      // Editing a preview tab promotes it to permanent (like VSCode)
+      promotePreview(id)
     }
   }
 
   function closeDocument(id: string) {
+    if (previewDocumentId.value === id) previewDocumentId.value = null
     openDocuments.value.delete(id)
     dirtyIds.value.delete(id)
     editorCursorLine.value.delete(id)
@@ -110,6 +188,8 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   async function saveDocument(id: string) {
+    // Saving always promotes a preview tab to permanent
+    promotePreview(id)
     if (savingIds.value.has(id)) return
     const doc = openDocuments.value.get(id)
     if (!doc) return
@@ -133,6 +213,7 @@ export const useEditorStore = defineStore('editor', () => {
     dirtyIds.value.clear()
     savingIds.value.clear()
     loadingIds.value.clear()
+    previewDocumentId.value = null
     scrollToLineRequest.value = null
     editorCursorLine.value.clear()
     previewCursorLine.value.clear()
@@ -156,8 +237,12 @@ export const useEditorStore = defineStore('editor', () => {
     dirtyIds,
     savingIds,
     loadingIds,
+    previewDocumentId,
     openDocument,
     openDocumentOptimistic,
+    openDocumentAsPreview,
+    openDocumentOptimisticAsPreview,
+    promotePreview,
     finishLoadingDocument,
     setActiveDocument,
     updateContent,

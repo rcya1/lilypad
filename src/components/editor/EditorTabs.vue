@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { X, RotateCw, RotateCcw, ArrowLeftRight, ArrowUpDown, Loader2 } from 'lucide-vue-next'
+import {
+  X,
+  RotateCw,
+  RotateCcw,
+  ArrowLeftRight,
+  ArrowUpDown,
+  Loader2,
+  FileText,
+  File,
+} from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
+import { useConfirm } from '@/composables/useConfirm'
 
 defineProps<{
   isVertical: boolean
@@ -15,10 +25,15 @@ const emit = defineEmits<{
 }>()
 
 const store = useEditorStore()
+const { confirm } = useConfirm()
 const tabs = computed(() => store.tabOrder.map((id) => store.openDocuments.get(id)!))
 
 const draggedId = ref<string | null>(null)
 const dropIndex = ref<number | null>(null)
+
+function stripExtension(name: string) {
+  return name.replace(/\.[^.]+$/, '')
+}
 
 function onDragStart(e: DragEvent, id: string) {
   draggedId.value = id
@@ -53,6 +68,21 @@ function onDragEnd() {
   draggedId.value = null
   dropIndex.value = null
 }
+
+async function handleClose(id: string) {
+  if (store.dirtyIds.has(id)) {
+    const name = stripExtension(store.openDocuments.get(id)?.name ?? 'this file')
+    const ok = await confirm({
+      title: 'Discard changes?',
+      message: `Your unsaved changes to "${name}" will be lost.`,
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      danger: true,
+    })
+    if (!ok) return
+  }
+  store.closeDocument(id)
+}
 </script>
 
 <template>
@@ -75,11 +105,12 @@ function onDragEnd() {
         ]"
         draggable="true"
         @click="store.setActiveDocument(tab.id)"
+        @dblclick="store.promotePreview(tab.id)"
         @mousedown="
           (e: MouseEvent) => {
             if (e.button === 1) {
               e.preventDefault()
-              store.closeDocument(tab.id)
+              handleClose(tab.id)
             }
           }
         "
@@ -92,7 +123,20 @@ function onDragEnd() {
           class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
         />
 
-        <span class="truncate max-w-35 font-ui text-sm">{{ tab.name }}</span>
+        <FileText
+          v-if="tab.type === 'md'"
+          :size="13"
+          class="shrink-0 text-text-muted"
+          :class="tab.id === store.activeDocumentId ? 'text-accent' : ''"
+        />
+        <File v-else :size="13" class="shrink-0 text-amber" />
+
+        <span
+          class="truncate max-w-35 font-ui text-sm"
+          :class="store.previewDocumentId === tab.id ? 'italic pr-0.5' : ''"
+        >
+          {{ stripExtension(tab.name) }}
+        </span>
 
         <span
           class="group/close flex items-center justify-center w-5 h-5 rounded-sm text-text-muted hover:text-text-primary hover:bg-surface-overlay transition-colors duration-100"
@@ -101,7 +145,7 @@ function onDragEnd() {
               ? 'opacity-60 hover:opacity-100'
               : 'opacity-0 group-hover:opacity-70 hover:opacity-100!'
           "
-          @click.stop="store.closeDocument(tab.id)"
+          @click.stop="handleClose(tab.id)"
         >
           <template v-if="store.savingIds.has(tab.id)">
             <Loader2 :size="13" class="animate-spin" />
