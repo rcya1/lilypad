@@ -2,13 +2,14 @@
 import FileExplorer from './FileExplorer.vue'
 // import SearchPanel from './SearchPanel.vue' // full-text search not ready — see docs/features/05-full-text-search.md
 import LilypadIcon from '@/assets/icon.svg'
-import { LogOut, Loader2 } from 'lucide-vue-next'
+import { LogOut, Loader2, Settings } from 'lucide-vue-next'
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 // import { useSearchStore } from '@/stores/search' // full-text search not ready
 import { useRouter } from 'vue-router'
+import SettingsModal from '@/components/settings/SettingsModal.vue'
 
 const auth = useAuthStore()
 const editorStore = useEditorStore()
@@ -17,6 +18,7 @@ const filesStore = useFilesStore()
 const router = useRouter()
 
 const isSyncing = computed(() => editorStore.savingIds.size > 0)
+const showSettings = ref(false)
 
 async function signOut() {
   editorStore.$reset()
@@ -132,12 +134,21 @@ onBeforeUnmount(() => {
       </span>
       <button
         class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0"
+        title="Settings"
+        @click="showSettings = true"
+      >
+        <Settings :size="14" />
+      </button>
+      <button
+        class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0"
         title="Sign out"
         @click="signOut"
       >
         <LogOut :size="14" />
       </button>
     </div>
+
+    <SettingsModal :show="showSettings" @close="showSettings = false" />
 
     <div
       class="group absolute top-0 right-0 h-full w-4 cursor-col-resize -mr-2"

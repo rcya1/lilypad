@@ -1,5 +1,7 @@
 <script lang="ts">
 let vimExRegistered = false
+// Module-level tracking of applied mappings so any instance can unmap before re-mapping
+let appliedMappings: Array<{ lhs: string; mode: string }> = []
 </script>
 
 <script setup lang="ts">
@@ -30,6 +32,25 @@ const highlightLineField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 })
 
+const yankFlashEffect = StateEffect.define<{ from: number; to: number } | null>()
+
+const yankFlashField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(value, tr) {
+    value = value.map(tr.changes)
+    for (const effect of tr.effects) {
+      if (effect.is(yankFlashEffect)) {
+        if (effect.value == null) return Decoration.none
+        const { from, to } = effect.value
+        if (from >= to) return Decoration.none
+        return Decoration.set([Decoration.mark({ class: 'cm-yank-flash' }).range(from, to)])
+      }
+    }
+    return value
+  },
+  provide: (f) => EditorView.decorations.from(f),
+})
+
 const props = defineProps<{ documentId: string; isActive: boolean }>()
 
 const store = useEditorStore()
@@ -37,7 +58,9 @@ const uiStore = useUiStore()
 const container = ref<HTMLDivElement>()
 let view: EditorView | null = null
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
+let yankFlashTimer: ReturnType<typeof setTimeout> | undefined
 const fontSizeCompartment = new Compartment()
+const vimCompartment = new Compartment()
 
 const vimMode = ref<'normal' | 'insert' | 'visual' | 'replace'>('normal')
 
@@ -66,6 +89,70 @@ const modeLabelClass = computed(() => {
       return ''
   }
 })
+
+function applyVimSettings() {
+  for (const m of appliedMappings) {
+    try {
+      Vim.unmap(m.lhs, m.mode)
+    } catch {}
+  }
+  appliedMappings = []
+
+  Vim.setOption('insertModeEscKeysTimeout', uiStore.vimEscTimeout)
+
+  for (const m of uiStore.vimMappings) {
+    if (!m.lhs || !m.rhs) continue
+    try {
+      if (m.noremap) {
+        Vim.noremap(m.lhs, m.rhs, m.mode)
+      } else {
+        Vim.map(m.lhs, m.rhs, m.mode)
+      }
+      appliedMappings.push({ lhs: m.lhs, mode: m.mode })
+    } catch {}
+  }
+}
+
+function flashYankRange(from: number, to: number) {
+  if (!view) return
+  if (yankFlashTimer) clearTimeout(yankFlashTimer)
+  view.dispatch({ effects: yankFlashEffect.of({ from, to }) })
+  yankFlashTimer = setTimeout(() => {
+    view?.dispatch({ effects: yankFlashEffect.of(null) })
+    yankFlashTimer = undefined
+  }, 350)
+}
+
+function handleYank(from: number, to: number, lineType = false) {
+  if (!view) return
+  if (uiStore.highlightOnYank) flashYankRange(from, to)
+  if (uiStore.vimClipboardSync && uiStore.vimEnabled) {
+    const text = lineType
+      ? view.state.doc.sliceString(from, to) + '\n'
+      : view.state.doc.sliceString(from, to)
+    navigator.clipboard.writeText(text).catch(() => {})
+  }
+}
+
+function syncClipboardToVimRegister() {
+  if (!uiStore.vimClipboardSync || !uiStore.vimEnabled || !view) return
+  navigator.clipboard
+    .readText()
+    .then((text) => {
+      if (!text) return
+      const cm = getCM(view!)
+      if (cm) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;(cm as any).state.vim.registers['"'] = {
+            text,
+            type: text.endsWith('\n') ? 'l' : 'c',
+          }
+        } catch {}
+      }
+    })
+    .catch(() => {})
+}
 
 const lilypadTheme = EditorView.theme({
   '&': {
@@ -257,6 +344,23 @@ watch(
   },
 )
 
+watch(
+  () => uiStore.vimEnabled,
+  (enabled) => {
+    if (!view) return
+    view.dispatch({ effects: vimCompartment.reconfigure(enabled ? vim() : []) })
+    if (enabled) applyVimSettings()
+  },
+)
+
+watch(
+  () => [uiStore.vimMappings, uiStore.vimEscTimeout] as const,
+  () => {
+    if (uiStore.vimEnabled) applyVimSettings()
+  },
+  { deep: true },
+)
+
 onMounted(() => {
   if (!container.value) return
 
@@ -266,7 +370,7 @@ onMounted(() => {
     state: EditorState.create({
       doc: doc?.content ?? '',
       extensions: [
-        vim(),
+        vimCompartment.of(uiStore.vimEnabled ? vim() : []),
         keymap.of([
           ...searchKeymap,
           {
@@ -288,6 +392,7 @@ onMounted(() => {
           }
           if (update.focusChanged && update.view.hasFocus) {
             store.setFocusedPane('editor')
+            syncClipboardToVimRegister()
           }
           if (update.selectionSet || update.docChanged) {
             const line = update.state.doc.lineAt(update.state.selection.main.head).number
@@ -296,6 +401,7 @@ onMounted(() => {
         }),
         EditorView.lineWrapping,
         highlightLineField,
+        yankFlashField,
       ],
     }),
     parent: container.value,
@@ -309,9 +415,65 @@ onMounted(() => {
     vimExRegistered = true
   }
 
+  if (uiStore.vimEnabled) applyVimSettings()
+
   const cm = getCM(view)
+
+  // Per-instance yank tracking
+  let visualYankPending: { from: number; to: number } | null = null
+  // yyPending: set after first 'y' in non-visual mode, used to detect the second 'y' of yy
+  let yyPending: { from: number; to: number } | null = null
+
+  cm?.on('vim-keypress', (key: string) => {
+    if (!view) return
+    const mode = vimMode.value
+
+    if (mode === 'visual' && key === 'y') {
+      // Visual yank — capture selection now; vim-mode-change fires after and triggers the flash.
+      // Also set a rAF backup in case mode-change doesn't fire.
+      const sel = view.state.selection.main
+      visualYankPending = {
+        from: Math.min(sel.from, sel.to),
+        to: Math.max(sel.from, sel.to),
+      }
+      requestAnimationFrame(() => {
+        if (visualYankPending) {
+          const range = visualYankPending
+          visualYankPending = null
+          handleYank(range.from, range.to)
+        }
+      })
+    } else if (key === 'y' && yyPending) {
+      // Second 'y' — complete yy
+      const range = yyPending
+      yyPending = null
+      requestAnimationFrame(() => handleYank(range.from, range.to, true))
+    } else if (key === 'y' && mode !== 'visual') {
+      // First 'y' in normal/op-pending — save current line for potential yy
+      const head = view.state.selection.main.head
+      const line = view.state.doc.lineAt(head)
+      yyPending = { from: line.from, to: line.to }
+    } else if (key === 'Y' && mode !== 'visual') {
+      // Y — yank to end of line
+      const head = view.state.selection.main.head
+      const line = view.state.doc.lineAt(head)
+      requestAnimationFrame(() => handleYank(head, line.to))
+      yyPending = null
+    } else {
+      yyPending = null
+    }
+  })
+
   cm?.on('vim-mode-change', (e: { mode: string }) => {
+    const prevMode = vimMode.value
     vimMode.value = e.mode as typeof vimMode.value
+
+    // Flash + copy yanked range when exiting visual mode after a yank
+    if (prevMode === 'visual' && e.mode !== 'visual' && visualYankPending) {
+      const range = visualYankPending
+      visualYankPending = null
+      handleYank(range.from, range.to)
+    }
   })
 
   view.focus()
@@ -353,6 +515,7 @@ watch(
 
 onBeforeUnmount(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
+  if (yankFlashTimer) clearTimeout(yankFlashTimer)
   view?.destroy()
   view = null
 })
@@ -361,7 +524,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="h-full w-full flex flex-col overflow-hidden">
     <div ref="container" class="flex-1 overflow-hidden" />
-    <div class="flex items-center h-6 px-3 shrink-0 border-t border-border-subtle bg-surface">
+    <div
+      v-if="uiStore.vimEnabled"
+      class="flex items-center h-6 px-3 shrink-0 border-t border-border-subtle bg-surface"
+    >
       <span class="font-mono text-xs font-medium tracking-wide" :class="modeLabelClass">
         {{ modeLabel }}
       </span>
@@ -393,5 +559,10 @@ onBeforeUnmount(() => {
   position: absolute !important;
   top: 11px !important;
   right: 8px !important;
+}
+
+.cm-yank-flash {
+  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 2px;
 }
 </style>
