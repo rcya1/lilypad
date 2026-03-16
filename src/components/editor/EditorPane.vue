@@ -198,9 +198,8 @@ onBeforeUnmount(() => {
       </div>
 
       <template v-for="id in store.tabOrder" :key="id">
-        <div v-show="id === activeId" class="flex-1 min-h-0 overflow-hidden">
+        <div v-if="id === activeId" class="flex-1 min-h-0 overflow-hidden">
           <div
-            v-if="id === activeId"
             ref="splitPane"
             class="relative h-full bg-surface overflow-hidden"
           >

@@ -12,12 +12,16 @@ export interface VimMapping {
   noremap: boolean
 }
 
+function clampFontSize(n: number): number {
+  return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, n))
+}
+
 function readFontSize(key: string, defaultVal: number): number {
   const raw = localStorage.getItem(key)
   if (raw === null) return defaultVal
   const n = parseInt(raw, 10)
   if (isNaN(n)) return defaultVal
-  return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, n))
+  return clampFontSize(n)
 }
 
 function readVimEscTimeout(): number {
@@ -52,12 +56,12 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   function setPreviewFontSize(size: number) {
-    previewFontSize.value = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, size))
+    previewFontSize.value = clampFontSize(size)
     localStorage.setItem('preview-font-size', String(previewFontSize.value))
   }
 
   function setEditorFontSize(size: number) {
-    editorFontSize.value = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, size))
+    editorFontSize.value = clampFontSize(size)
     localStorage.setItem('editor-font-size', String(editorFontSize.value))
   }
 
