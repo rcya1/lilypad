@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { Plus, X } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import type { VimMapping } from '@/stores/ui'
 
 const uiStore = useUiStore()
+const auth = useAuthStore()
+const uid = () => auth.user?.id
 
 function handleEscTimeoutChange(e: Event) {
   const val = parseInt((e.target as HTMLInputElement).value, 10)
-  if (!isNaN(val) && val >= 0 && val <= 5000) uiStore.setVimEscTimeout(val)
+  if (!isNaN(val) && val >= 0 && val <= 5000) uiStore.setVimEscTimeout(val, uid())
 }
 
 function updateField(
@@ -15,11 +18,11 @@ function updateField(
   field: keyof Omit<VimMapping, 'id'>,
   value: string | boolean,
 ) {
-  uiStore.updateVimMapping(id, { [field]: value } as Partial<Omit<VimMapping, 'id'>>)
+  uiStore.updateVimMapping(id, { [field]: value } as Partial<Omit<VimMapping, 'id'>>, uid())
 }
 
 function addMapping() {
-  uiStore.addVimMapping({ lhs: '', rhs: '', mode: 'normal', noremap: true })
+  uiStore.addVimMapping({ lhs: '', rhs: '', mode: 'normal', noremap: true }, uid())
 }
 </script>
 
@@ -33,7 +36,7 @@ function addMapping() {
         :aria-checked="uiStore.vimEnabled"
         class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
         :class="uiStore.vimEnabled ? 'bg-[#548f54]' : 'bg-surface-overlay'"
-        @click="uiStore.setVimEnabled(!uiStore.vimEnabled)"
+        @click="uiStore.setVimEnabled(!uiStore.vimEnabled, uid())"
       >
         <span
           class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-150"
@@ -77,7 +80,7 @@ function addMapping() {
           :aria-checked="uiStore.highlightOnYank"
           class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
           :class="uiStore.highlightOnYank ? 'bg-[#548f54]' : 'bg-surface-overlay'"
-          @click="uiStore.setHighlightOnYank(!uiStore.highlightOnYank)"
+          @click="uiStore.setHighlightOnYank(!uiStore.highlightOnYank, uid())"
         >
           <span
             class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-150"
@@ -94,7 +97,7 @@ function addMapping() {
           :aria-checked="uiStore.vimClipboardSync"
           class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
           :class="uiStore.vimClipboardSync ? 'bg-[#548f54]' : 'bg-surface-overlay'"
-          @click="uiStore.setVimClipboardSync(!uiStore.vimClipboardSync)"
+          @click="uiStore.setVimClipboardSync(!uiStore.vimClipboardSync, uid())"
         >
           <span
             class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-150"
@@ -161,7 +164,7 @@ function addMapping() {
             </div>
             <button
               class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
-              @click="uiStore.removeVimMapping(m.id)"
+              @click="uiStore.removeVimMapping(m.id, uid())"
             >
               <X :size="12" />
             </button>

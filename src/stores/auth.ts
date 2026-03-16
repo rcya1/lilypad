@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useUiStore } from './ui'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -16,9 +17,16 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = currentSession?.user ?? null
     loading.value = false
 
+    if (currentSession?.user) {
+      useUiStore().loadSettings(currentSession.user.id)
+    }
+
     supabase.auth.onAuthStateChange((_event, newSession) => {
       session.value = newSession
       user.value = newSession?.user ?? null
+      if (newSession?.user) {
+        useUiStore().loadSettings(newSession.user.id)
+      }
     })
   }
 
