@@ -19,13 +19,13 @@ const toast = useToastStore()
           }"
         >
           <!-- Icon -->
-          <AlertCircle v-if="t.type === 'error'" :size="15" class="text-red-500 shrink-0 mt-px" />
+          <AlertCircle v-if="t.type === 'error'" :size="16" class="text-red-500 shrink-0 mt-px" />
           <CheckCircle2
             v-else-if="t.type === 'success'"
-            :size="15"
+            :size="16"
             class="text-accent shrink-0 mt-px"
           />
-          <Info v-else :size="15" class="text-text-muted shrink-0 mt-px" />
+          <Info v-else :size="16" class="text-text-muted shrink-0 mt-px" />
 
           <!-- Message -->
           <p class="flex-1 text-sm text-text-primary font-ui leading-snug">{{ t.message }}</p>
@@ -35,7 +35,7 @@ const toast = useToastStore()
             class="shrink-0 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             @click="toast.removeToast(t.id)"
           >
-            <X :size="14" />
+            <X :size="15" />
           </button>
 
           <!-- Progress bar -->

@@ -565,4 +565,9 @@ onBeforeUnmount(() => {
   background-color: color-mix(in srgb, var(--accent) 22%, transparent);
   border-radius: 2px;
 }
+
+.cm-cursor,
+.cm-dropCursor {
+  border-left-color: var(--text-primary) !important;
+}
 </style>

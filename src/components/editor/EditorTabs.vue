@@ -98,7 +98,7 @@ function handleClose(id: string) {
         class="group relative flex items-center gap-1.5 pl-3 pr-1 text-sm border-r border-border-subtle shrink-0 transition-colors duration-100 cursor-pointer select-none"
         :class="[
           tab.id === store.activeDocumentId
-            ? 'bg-bg text-text-primary'
+            ? 'bg-tab-active-bg text-text-primary'
             : 'bg-surface text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
           draggedId === tab.id ? 'opacity-40' : '',
         ]"
@@ -124,11 +124,11 @@ function handleClose(id: string) {
 
         <FileText
           v-if="tab.type === 'md'"
-          :size="13"
+          :size="16"
           class="shrink-0 text-text-muted"
           :class="tab.id === store.activeDocumentId ? 'text-accent' : ''"
         />
-        <File v-else :size="13" class="shrink-0 text-amber" />
+        <File v-else :size="16" class="shrink-0 text-amber" />
 
         <span
           class="truncate max-w-35 font-ui text-sm"
@@ -146,8 +146,8 @@ function handleClose(id: string) {
           "
           @click.stop="handleClose(tab.id)"
         >
-          <Loader2 v-if="store.savingIds.has(tab.id)" :size="13" class="animate-spin" />
-          <X v-else :size="13" />
+          <Loader2 v-if="store.savingIds.has(tab.id)" :size="16" class="animate-spin" />
+          <X v-else :size="16" />
         </span>
       </button>
     </template>
@@ -166,8 +166,8 @@ function handleClose(id: string) {
           :title="previewVisible ? 'Hide preview' : 'Show preview'"
           @click="uiStore.togglePreview()"
         >
-          <PanelRight v-if="previewVisible" :size="15" />
-          <PanelRightClose v-else :size="15" />
+          <PanelRight v-if="previewVisible" :size="16" />
+          <PanelRightClose v-else :size="16" />
         </button>
       </template>
       <template v-if="previewVisible">
@@ -177,16 +177,16 @@ function handleClose(id: string) {
           :title="isVertical ? 'Switch to side-by-side' : 'Switch to top-bottom'"
           @click="emit('toggle-layout')"
         >
-          <RotateCw v-if="rotationClockwise" :size="15" class="rotate-icon" />
-          <RotateCcw v-else :size="15" class="rotate-icon" />
+          <RotateCw v-if="rotationClockwise" :size="16" class="rotate-icon" />
+          <RotateCcw v-else :size="16" class="rotate-icon" />
         </button>
         <button
           class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
           :title="isSwapped ? 'Move editor to primary position' : 'Swap editor and preview'"
           @click="emit('toggle-swap')"
         >
-          <ArrowLeftRight v-if="!isVertical" :size="15" />
-          <ArrowUpDown v-else :size="15" />
+          <ArrowLeftRight v-if="!isVertical" :size="16" />
+          <ArrowUpDown v-else :size="16" />
         </button>
       </template>
     </div>

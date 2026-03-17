@@ -54,7 +54,7 @@ async function handleMove(targetFolderId: string | null) {
       title="Move to folder"
       @click="showMoveModal = true"
     >
-      <FolderInput :size="13" />
+      <FolderInput :size="14" />
       Move
     </button>
 
@@ -63,7 +63,7 @@ async function handleMove(targetFolderId: string | null) {
       title="Delete selected files"
       @click="handleDelete"
     >
-      <Trash2 :size="13" />
+      <Trash2 :size="14" />
       Delete
     </button>
   </div>

@@ -35,7 +35,7 @@ function addMapping() {
         role="switch"
         :aria-checked="uiStore.vimEnabled"
         class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
-        :class="uiStore.vimEnabled ? 'bg-[#548f54]' : 'bg-surface-overlay'"
+        :class="uiStore.vimEnabled ? 'bg-accent' : 'bg-surface-overlay'"
         @click="uiStore.setVimEnabled(!uiStore.vimEnabled, uid())"
       >
         <span
@@ -79,7 +79,7 @@ function addMapping() {
           role="switch"
           :aria-checked="uiStore.highlightOnYank"
           class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
-          :class="uiStore.highlightOnYank ? 'bg-[#548f54]' : 'bg-surface-overlay'"
+          :class="uiStore.highlightOnYank ? 'bg-accent' : 'bg-surface-overlay'"
           @click="uiStore.setHighlightOnYank(!uiStore.highlightOnYank, uid())"
         >
           <span
@@ -96,7 +96,7 @@ function addMapping() {
           role="switch"
           :aria-checked="uiStore.vimClipboardSync"
           class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
-          :class="uiStore.vimClipboardSync ? 'bg-[#548f54]' : 'bg-surface-overlay'"
+          :class="uiStore.vimClipboardSync ? 'bg-accent' : 'bg-surface-overlay'"
           @click="uiStore.setVimClipboardSync(!uiStore.vimClipboardSync, uid())"
         >
           <span
@@ -156,7 +156,7 @@ function addMapping() {
               <input
                 type="checkbox"
                 :checked="m.noremap"
-                class="accent-[#548f54] cursor-pointer w-4 h-4"
+                class="accent-accent cursor-pointer w-4 h-4"
                 @change="
                   updateField(m.id, 'noremap', ($event.target as HTMLInputElement).checked)
                 "
@@ -166,7 +166,7 @@ function addMapping() {
               class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
               @click="uiStore.removeVimMapping(m.id, uid())"
             >
-              <X :size="12" />
+              <X :size="13" />
             </button>
           </div>
         </div>
@@ -175,7 +175,7 @@ function addMapping() {
           class="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer mt-1"
           @click="addMapping"
         >
-          <Plus :size="12" />
+          <Plus :size="13" />
           Add mapping
         </button>
           </div>

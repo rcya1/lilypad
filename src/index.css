@@ -3,6 +3,7 @@
 :root {
   --bg: #f4f8f4;
   --surface: #eaf2ea;
+  --tab-active-bg: #f0f5f0;
   --surface-elevated: #deeade;
   --surface-overlay: #d0e2d0;
   --border: #b8cfb8;
@@ -18,24 +19,26 @@
 }
 
 .dark {
-  --bg: #0f1a0f;
-  --surface: #141f14;
-  --surface-elevated: #1c2a1c;
-  --surface-overlay: #243024;
-  --border: #3a4f3a;
-  --border-subtle: #2d3f2d;
-  --text-primary: #e8f2e8;
-  --text-secondary: #a8c4a8;
-  --text-muted: #6b8c6b;
-  --accent: #5a9a5a;
-  --accent-hover: #6aaa6a;
-  --accent-subtle: #1c3a1c;
-  --amber: #c99648;
-  --amber-subtle: #3d2e10;
+  --bg: #1e1e2e;
+  --surface: #181825;
+  --tab-active-bg: #1c1c2a;
+  --surface-elevated: #313244;
+  --surface-overlay: #45475a;
+  --border: #585b70;
+  --border-subtle: #2a2a3c;
+  --text-primary: #cdd6f4;
+  --text-secondary: #bac2de;
+  --text-muted: #a6adc8;
+  --accent: #89b4fa;
+  --accent-hover: #b4befe;
+  --accent-subtle: #1a1d2e;
+  --amber: #fab387;
+  --amber-subtle: #2d1a10;
 }
 
 @theme {
   --color-bg: var(--bg);
+  --color-tab-active-bg: var(--tab-active-bg);
   --color-surface: var(--surface);
   --color-surface-elevated: var(--surface-elevated);
   --color-surface-overlay: var(--surface-overlay);

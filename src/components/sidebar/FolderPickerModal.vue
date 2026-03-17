@@ -47,7 +47,7 @@ const folderList = computed<FolderItem[]>(() => {
             class="text-text-muted hover:text-text-primary cursor-pointer"
             @click="emit('cancel')"
           >
-            <X :size="14" />
+            <X :size="15" />
           </button>
         </div>
 
@@ -63,7 +63,7 @@ const folderList = computed<FolderItem[]>(() => {
             "
             @click="selected = null"
           >
-            <Folder :size="13" class="text-amber shrink-0" />
+            <Folder :size="15" class="text-amber shrink-0" />
             <span class="truncate">Root</span>
           </button>
 
@@ -79,7 +79,7 @@ const folderList = computed<FolderItem[]>(() => {
             "
             @click="selected = folder.id"
           >
-            <Folder :size="13" class="text-amber shrink-0" />
+            <Folder :size="15" class="text-amber shrink-0" />
             <span class="truncate">{{ folder.name }}</span>
           </button>
 

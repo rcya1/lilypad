@@ -113,7 +113,7 @@ onBeforeUnmount(() => {
       </h1>
       <Loader2
         v-if="!isMinimized && isSyncing"
-        :size="14"
+        :size="15"
         class="animate-spin text-text-muted shrink-0"
         title="Saving…"
       />
@@ -137,14 +137,14 @@ onBeforeUnmount(() => {
         title="Settings"
         @click="showSettings = true"
       >
-        <Settings :size="14" />
+        <Settings :size="15" />
       </button>
       <button
         class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0"
         title="Sign out"
         @click="signOut"
       >
-        <LogOut :size="14" />
+        <LogOut :size="15" />
       </button>
     </div>
 

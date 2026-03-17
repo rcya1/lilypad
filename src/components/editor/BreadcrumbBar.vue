@@ -41,7 +41,7 @@ function selectFolder(id: string) {
       <span class="text-text-muted text-xs shrink-0 select-none">/</span>
     </template>
 
-    <FileText :size="12" class="text-accent shrink-0" />
+    <FileText :size="14" class="text-accent shrink-0" />
     <span
       class="text-xs font-ui font-medium text-text-secondary max-w-[200px] truncate shrink-0"
       :title="fileName"

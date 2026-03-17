@@ -62,7 +62,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
                 class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
                 @click="emit('close')"
               >
-                <X :size="14" />
+                <X :size="15" />
               </button>
             </div>
 
@@ -79,7 +79,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
                     role="switch"
                     :aria-checked="uiStore.isDarkMode"
                     class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
-                    :class="uiStore.isDarkMode ? 'bg-[#548f54]' : 'bg-surface-overlay'"
+                    :class="uiStore.isDarkMode ? 'bg-accent' : 'bg-surface-overlay'"
                     @click="uiStore.toggleDarkMode(auth.user?.id)"
                   >
                     <span

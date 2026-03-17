@@ -349,22 +349,22 @@ function onPendingDragEnd() {
         @click.stop="handleChevronClick"
       >
         <template v-if="isDirectory(entry)">
-          <ChevronDown v-if="isOpen" :size="12" />
-          <ChevronRight v-else :size="12" />
+          <ChevronDown v-if="isOpen" :size="14" />
+          <ChevronRight v-else :size="14" />
         </template>
       </span>
 
       <!-- Icon -->
       <span class="flex items-center shrink-0">
         <template v-if="isDirectory(entry)">
-          <FolderOpen v-if="isOpen" :size="15" class="text-amber" />
-          <Folder v-else :size="15" class="text-amber" />
+          <FolderOpen v-if="isOpen" :size="17" class="text-amber" />
+          <Folder v-else :size="17" class="text-amber" />
         </template>
         <template v-else-if="!isDirectory(entry) && entry.type === 'pdf'">
-          <File :size="15" class="text-amber" />
+          <File :size="17" class="text-amber" />
         </template>
         <template v-else>
-          <FileText :size="15" :class="isActive ? 'text-accent' : 'text-text-secondary'" />
+          <FileText :size="17" :class="isActive ? 'text-accent' : 'text-text-secondary'" />
         </template>
       </span>
 

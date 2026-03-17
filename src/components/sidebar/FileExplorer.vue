@@ -204,22 +204,22 @@ function onPendingDragEnd() {
           :title="anyExpanded ? 'Collapse all' : 'Expand all'"
           @click="anyExpanded ? files.collapseAll() : files.expandAll()"
         >
-          <ChevronsDownUp v-if="anyExpanded" :size="14" />
-          <ChevronsUpDown v-else :size="14" />
+          <ChevronsDownUp v-if="anyExpanded" :size="16" />
+          <ChevronsUpDown v-else :size="16" />
         </button>
         <button
           class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
           :title="files.selectedFolderId ? 'New file in selected folder' : 'New file'"
           @click="startNewFile"
         >
-          <FilePlus :size="14" />
+          <FilePlus :size="16" />
         </button>
         <button
           class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
           :title="files.selectedFolderId ? 'New folder in selected folder' : 'New folder'"
           @click="startNewFolder"
         >
-          <FolderPlus :size="14" />
+          <FolderPlus :size="16" />
         </button>
       </div>
     </div>

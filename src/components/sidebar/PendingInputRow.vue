@@ -28,11 +28,11 @@ const emit = defineEmits<{
     <span
       class="w-3 flex items-center justify-center text-text-muted shrink-0 cursor-grab active:cursor-grabbing"
     >
-      <GripVertical :size="12" />
+      <GripVertical :size="13" />
     </span>
     <span class="flex items-center shrink-0">
-      <FileText v-if="type === 'file'" :size="15" class="text-text-secondary" />
-      <Folder v-else :size="15" class="text-amber" />
+      <FileText v-if="type === 'file'" :size="16" class="text-text-secondary" />
+      <Folder v-else :size="16" class="text-amber" />
     </span>
     <input
       :value="modelValue"
@@ -48,7 +48,7 @@ const emit = defineEmits<{
       @mousedown.prevent
       @click="emit('submit')"
     >
-      <Check :size="12" />
+      <Check :size="13" />
     </button>
   </div>
 </template>
