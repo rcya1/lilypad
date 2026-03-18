@@ -91,12 +91,9 @@ function emptyAreaNewFolder() {
 }
 
 onMounted(async () => {
+  if (files.entries.length > 0) return
   await files.fetchEntries()
   await files.seedWelcomeFile()
-  // Background-prefetch all visible md documents (all folders start expanded)
-  files.entries
-    .filter((e) => e.kind === 'document' && e.document_type === 'md')
-    .forEach((e) => files.prefetchContent(e.id))
 })
 
 const showRootInput = computed(() => files.pendingCreate?.parentId === null)

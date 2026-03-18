@@ -10,6 +10,7 @@ export interface Database {
           document_type: 'pdf' | 'md' | null
           parent_id: string | null
           storage_path: string | null
+          content: string | null
           sort_order: number
           created_at: string
           updated_at: string
@@ -22,6 +23,7 @@ export interface Database {
           document_type?: 'pdf' | 'md' | null
           parent_id?: string | null
           storage_path?: string | null
+          content?: string | null
           sort_order?: number
           created_at?: string
           updated_at?: string
@@ -34,6 +36,7 @@ export interface Database {
           document_type?: 'pdf' | 'md' | null
           parent_id?: string | null
           storage_path?: string | null
+          content?: string | null
           sort_order?: number
           created_at?: string
           updated_at?: string

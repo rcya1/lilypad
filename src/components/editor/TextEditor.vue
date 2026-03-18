@@ -231,17 +231,14 @@ const lilypadTheme = EditorView.theme({
     flexWrap: 'wrap',
   },
   '.cm-search label': {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
-    gap: '5px',
-    fontSize: '12px',
-    color: 'var(--text-secondary)',
-    fontFamily: 'var(--font-family-ui)',
-    textTransform: 'capitalize',
-  },
-  '.cm-search input[type="checkbox"]': {
-    accentColor: 'var(--accent)',
     cursor: 'pointer',
+    color: 'var(--text-muted)',
+    transition: 'color 100ms',
+  },
+  '.cm-search label:hover': {
+    color: 'var(--text-primary)',
   },
   // Close button — make it larger with a visible hover area
   '.cm-search button[name="close"]': {
@@ -559,6 +556,53 @@ onBeforeUnmount(() => {
   position: absolute !important;
   top: 11px !important;
   right: 8px !important;
+}
+
+/* --- Case / Regexp toggle buttons ------------------------------------ */
+.cm-search label {
+  font-size: 0 !important; /* hide native text */
+  gap: 0 !important;
+  position: relative;
+}
+
+.cm-search label::after {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 11px !important;
+  font-weight: 600;
+  font-family: var(--font-family-ui);
+  line-height: 1;
+  border-radius: 4px;
+}
+
+/* "case" label → Aa */
+.cm-search label:first-of-type::after {
+  content: 'Aa';
+}
+
+/* "regexp" label → .* */
+.cm-search label:nth-of-type(2)::after {
+  content: '.*';
+}
+
+/* Checked state → accent pill */
+.cm-search label:has(input:checked)::after {
+  background-color: var(--accent);
+  color: white;
+}
+
+/* Hide the actual checkbox */
+.cm-search label input[type='checkbox'] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: absolute !important;
 }
 
 .cm-yank-flash {

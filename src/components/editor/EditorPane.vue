@@ -203,49 +203,32 @@ onBeforeUnmount(() => {
             ref="splitPane"
             class="relative h-full bg-surface overflow-hidden"
           >
-            <!-- Loading skeleton -->
             <div
-              v-if="store.loadingIds.has(id)"
-              class="absolute inset-0 bg-bg flex flex-col gap-3 p-10 animate-pulse"
+              class="absolute overflow-hidden split-panel"
+              :class="{ 'no-transition': isDragging }"
+              :style="editorPanelStyle"
             >
-              <div class="h-5 bg-surface-elevated rounded w-2/5" />
-              <div class="h-3 bg-surface-elevated rounded w-full mt-2" />
-              <div class="h-3 bg-surface-elevated rounded w-11/12" />
-              <div class="h-3 bg-surface-elevated rounded w-4/5" />
-              <div class="h-3 bg-surface-elevated rounded w-full" />
-              <div class="h-3 bg-surface-elevated rounded w-3/4 mt-4" />
-              <div class="h-3 bg-surface-elevated rounded w-full" />
-              <div class="h-3 bg-surface-elevated rounded w-5/6" />
+              <TextEditor :document-id="id" :is-active="id === activeId" class="h-full" />
             </div>
 
-            <template v-else>
-              <div
-                class="absolute overflow-hidden split-panel"
-                :class="{ 'no-transition': isDragging }"
-                :style="editorPanelStyle"
-              >
-                <TextEditor :document-id="id" :is-active="id === activeId" class="h-full" />
-              </div>
+            <div
+              class="absolute overflow-hidden split-panel"
+              :class="{ 'no-transition': isDragging }"
+              :style="previewPanelStyle"
+            >
+              <MarkdownPreview :document-id="id" />
+            </div>
 
-              <div
-                class="absolute overflow-hidden split-panel"
-                :class="{ 'no-transition': isDragging }"
-                :style="previewPanelStyle"
-              >
-                <MarkdownPreview :document-id="id" />
-              </div>
-
-              <div
-                v-if="uiStore.previewVisible"
-                class="absolute z-10 group"
-                :class="isVertical ? 'cursor-row-resize' : 'cursor-col-resize'"
-                :style="dividerHitZoneStyle"
-                @mousedown="onDividerMouseDown"
-                @dblclick="splitPct = 50"
-              >
-                <div :class="['absolute transition-all duration-150', dividerLineClass]" />
-              </div>
-            </template>
+            <div
+              v-if="uiStore.previewVisible"
+              class="absolute z-10 group"
+              :class="isVertical ? 'cursor-row-resize' : 'cursor-col-resize'"
+              :style="dividerHitZoneStyle"
+              @mousedown="onDividerMouseDown"
+              @dblclick="splitPct = 50"
+            >
+              <div :class="['absolute transition-all duration-150', dividerLineClass]" />
+            </div>
           </div>
         </div>
       </template>

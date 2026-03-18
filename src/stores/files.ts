@@ -6,53 +6,19 @@ import { useToastStore } from './toast'
 import type { EntryRow } from '@/types/database'
 import type { Entry, DocumentType } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
+import {
+  buildTrigramIndex as buildIndex,
+  updateTrigramsForFile,
+  removeFileFromIndex,
+  type TrigramIndex,
+} from '@/lib/trigram'
 
 // ---------------------------------------------------------------------------
-// LRU content cache — keeps up to CACHE_MAX_BYTES of file content in memory.
-// Map insertion order tracks recency: newest entries are at the end.
+// In-memory content store — all .md content loaded on startup.
+// No eviction, no size tracking. Typical usage: 200 files × 5KB = 1MB.
 // ---------------------------------------------------------------------------
-const CACHE_MAX_BYTES = 10 * 1024 * 1024 // 10 MB
-interface CacheEntry {
-  content: string
-  byteSize: number
-}
-const contentCache = new Map<string, CacheEntry>()
-let cacheTotalBytes = 0
-
-function cacheGet(entryId: string): string | undefined {
-  const entry = contentCache.get(entryId)
-  if (!entry) return undefined
-  // Refresh recency: move to end of insertion-order
-  contentCache.delete(entryId)
-  contentCache.set(entryId, entry)
-  return entry.content
-}
-
-function cacheSet(entryId: string, content: string) {
-  const byteSize = new TextEncoder().encode(content).length
-  if (contentCache.has(entryId)) {
-    cacheTotalBytes -= contentCache.get(entryId)!.byteSize
-    contentCache.delete(entryId)
-  }
-  // Evict oldest (LRU) entries until we're under the limit
-  while (cacheTotalBytes + byteSize > CACHE_MAX_BYTES && contentCache.size > 0) {
-    const oldestKey = contentCache.keys().next().value!
-    cacheTotalBytes -= contentCache.get(oldestKey)!.byteSize
-    contentCache.delete(oldestKey)
-  }
-  contentCache.set(entryId, { content, byteSize })
-  cacheTotalBytes += byteSize
-}
-
-function cacheDelete(entryId: string) {
-  if (contentCache.has(entryId)) {
-    cacheTotalBytes -= contentCache.get(entryId)!.byteSize
-    contentCache.delete(entryId)
-  }
-}
-
-// Tracks in-flight prefetch requests so we don't duplicate work
-const prefetching = new Set<string>()
+const contentMap = new Map<string, string>()
+const trigramIndex: TrigramIndex = new Map()
 
 export const useFilesStore = defineStore('files', () => {
   const auth = useAuthStore()
@@ -68,6 +34,8 @@ export const useFilesStore = defineStore('files', () => {
     type: 'file' | 'folder'
     insertBefore: string | null // null = append to end
   } | null>(null)
+  /** True while the trigram index is being built (blocks search). */
+  const indexReady = ref(false)
 
   const tree = computed<Entry[]>(() => buildTree(null))
 
@@ -327,9 +295,36 @@ export const useFilesStore = defineStore('files', () => {
     pendingCreate.value = null
   }
 
+  // ---------------------------------------------------------------------------
+  // Content map & trigram index helpers
+  // ---------------------------------------------------------------------------
+
+  function populateContentMap(): void {
+    contentMap.clear()
+    for (const entry of entries.value) {
+      if (entry.document_type === 'md' && entry.content != null) {
+        contentMap.set(entry.id, entry.content)
+      }
+    }
+  }
+
+  function rebuildTrigramIndex(): void {
+    trigramIndex.clear()
+    const built = buildIndex(contentMap)
+    for (const [tri, set] of built) {
+      trigramIndex.set(tri, set)
+    }
+    indexReady.value = true
+  }
+
+  // ---------------------------------------------------------------------------
+  // CRUD operations
+  // ---------------------------------------------------------------------------
+
   async function fetchEntries() {
     if (!auth.user) return
     loading.value = true
+    indexReady.value = false
 
     const { data, error: err } = await supabase
       .from('entries')
@@ -342,6 +337,8 @@ export const useFilesStore = defineStore('files', () => {
       showError('Failed to load files.')
     } else {
       entries.value = data ?? []
+      populateContentMap()
+      rebuildTrigramIndex()
     }
     loading.value = false
   }
@@ -359,6 +356,8 @@ export const useFilesStore = defineStore('files', () => {
       return null
     }
 
+    const isMd = type === 'md'
+
     const { data, error: err } = await supabase
       .from('entries')
       .insert({
@@ -368,6 +367,8 @@ export const useFilesStore = defineStore('files', () => {
         document_type: type,
         parent_id: parentId,
         sort_order: sortOrder ?? getNextSortOrder(parentId),
+        // For .md files, content lives in the DB — start empty
+        ...(isMd ? { content: '' } : {}),
       })
       .select()
       .returns<EntryRow[]>()
@@ -378,17 +379,26 @@ export const useFilesStore = defineStore('files', () => {
       return null
     }
 
-    const ext = type === 'pdf' ? 'pdf' : 'md'
-    const storagePath = `${auth.user.id}/${data.id}.${ext}`
+    if (!isMd) {
+      // Binary files (PDF, images) still use Storage
+      const ext = type === 'pdf' ? 'pdf' : type
+      const storagePath = `${auth.user.id}/${data.id}.${ext}`
 
-    await supabase.storage
-      .from('user-files')
-      .upload(storagePath, new Blob([''], { type: 'text/plain' }))
+      await supabase.storage
+        .from('user-files')
+        .upload(storagePath, new Blob([''], { type: 'text/plain' }))
 
-    await supabase.from('entries').update({ storage_path: storagePath }).eq('id', data.id)
+      await supabase.from('entries').update({ storage_path: storagePath }).eq('id', data.id)
 
-    data.storage_path = storagePath
+      data.storage_path = storagePath
+    } else {
+      // .md: content is in the DB, update in-memory state
+      contentMap.set(data.id, '')
+      // Empty string has no trigrams, nothing to index
+    }
+
     entries.value.push(data)
+    if (sortOrder != null) renumberSiblings(parentId)
     return data
   }
 
@@ -419,6 +429,7 @@ export const useFilesStore = defineStore('files', () => {
     }
 
     entries.value.push(data)
+    if (sortOrder != null) renumberSiblings(parentId)
     return data
   }
 
@@ -443,6 +454,7 @@ export const useFilesStore = defineStore('files', () => {
   async function deleteEntry(id: string) {
     const idsToDelete = collectDescendantIds(id)
 
+    // Only clean up Storage for entries that have a storage_path (binary files)
     const storagePaths = idsToDelete
       .map((did) => entries.value.find((e) => e.id === did))
       .filter((e) => e?.storage_path)
@@ -460,7 +472,14 @@ export const useFilesStore = defineStore('files', () => {
     }
 
     entries.value = entries.value.filter((e) => !idsToDelete.includes(e.id))
-    idsToDelete.forEach(cacheDelete)
+
+    // Clean up contentMap and trigram index
+    for (const did of idsToDelete) {
+      if (contentMap.has(did)) {
+        contentMap.delete(did)
+        removeFileFromIndex(trigramIndex, did)
+      }
+    }
 
     if (selectedFolderId.value && idsToDelete.includes(selectedFolderId.value)) {
       selectedFolderId.value = null
@@ -507,75 +526,112 @@ export const useFilesStore = defineStore('files', () => {
       moving.parent_id = newParentId
       moving.sort_order = newSortOrder
     }
+    // Renumber siblings so sort_orders stay clean integers
+    renumberSiblings(newParentId)
     return true
   }
 
-  /** Returns cached content synchronously, or undefined on a cache miss. */
-  function getCached(entryId: string): string | undefined {
-    return cacheGet(entryId)
+  /**
+   * Reassign sort_order as 1000, 2000, 3000… for all children of a parent.
+   * Keeps values clean after repeated midpoint insertions. Runs in the
+   * background — callers don't need to await it.
+   */
+  async function renumberSiblings(parentId: string | null): Promise<void> {
+    const siblings = entries.value
+      .filter((e) => e.parent_id === parentId)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+
+    const updates: Promise<unknown>[] = []
+    for (let i = 0; i < siblings.length; i++) {
+      const clean = (i + 1) * 1000
+      if (siblings[i]!.sort_order !== clean) {
+        siblings[i]!.sort_order = clean
+        updates.push(
+          supabase.from('entries').update({ sort_order: clean }).eq('id', siblings[i]!.id),
+        )
+      }
+    }
+    if (updates.length > 0) await Promise.all(updates)
   }
 
-  /** Returns all currently cached entry IDs and their content. Used by the search store. */
-  function getCachedEntries(): Map<string, string> {
-    const result = new Map<string, string>()
-    for (const [id, entry] of contentCache) {
-      result.set(id, entry.content)
-    }
-    return result
+  // ---------------------------------------------------------------------------
+  // Content access
+  // ---------------------------------------------------------------------------
+
+  /** Returns in-memory content synchronously, or undefined on miss. */
+  function getCached(entryId: string): string | undefined {
+    return contentMap.get(entryId)
+  }
+
+  /** Returns the full content map (for search). */
+  function getContentMap(): Map<string, string> {
+    return contentMap
+  }
+
+  /** Returns the trigram index (for search). */
+  function getTrigramIndex(): TrigramIndex {
+    return trigramIndex
   }
 
   async function downloadContent(entryId: string): Promise<string | null> {
-    const cached = cacheGet(entryId)
+    // In-memory hit (normal path — startup loaded everything for .md)
+    const cached = contentMap.get(entryId)
     if (cached !== undefined) return cached
 
     const entry = entries.value.find((e) => e.id === entryId)
-    if (!entry?.storage_path) return null
+    if (!entry) return null
 
-    const { data, error: err } = await supabase.storage
-      .from('user-files')
-      .download(entry.storage_path)
-
-    if (err) {
-      showError('Failed to download file.')
-      return null
-    }
-
-    const content = await data.text()
-    cacheSet(entryId, content)
-    return content
-  }
-
-  /** Silently pre-warms the cache for a file without opening it. */
-  async function prefetchContent(entryId: string): Promise<void> {
-    if (contentCache.has(entryId) || prefetching.has(entryId)) return
-    const entry = entries.value.find((e) => e.id === entryId)
-    if (!entry?.storage_path) return
-    prefetching.add(entryId)
-    try {
+    // For binary files (PDF, image), fall back to Storage download
+    if (entry.document_type !== 'md') {
+      if (!entry.storage_path) return null
       const { data, error: err } = await supabase.storage
         .from('user-files')
         .download(entry.storage_path)
-      if (!err) cacheSet(entryId, await data.text())
-    } finally {
-      prefetching.delete(entryId)
+      if (err) {
+        showError('Failed to download file.')
+        return null
+      }
+      return await data.text()
     }
+
+    // For .md files, fetch content from DB (shouldn't happen after startup)
+    const { data, error: err } = await supabase
+      .from('entries')
+      .select('content')
+      .eq('id', entryId)
+      .single()
+
+    if (err || !data?.content) return null
+    contentMap.set(entryId, data.content)
+    return data.content
   }
 
   async function uploadContent(entryId: string, content: string): Promise<boolean> {
     const entry = entries.value.find((e) => e.id === entryId)
-    if (!entry?.storage_path) return false
+    if (!entry) return false
 
+    if (entry.document_type === 'md') {
+      // .md files: content lives in the DB
+      const { error: err } = await supabase
+        .from('entries')
+        .update({ content })
+        .eq('id', entryId)
+
+      if (err) return false
+
+      // Update in-memory state
+      contentMap.set(entryId, content)
+      updateTrigramsForFile(trigramIndex, entryId, content)
+      return true
+    }
+
+    // Binary files: Storage upload (unchanged)
+    if (!entry.storage_path) return false
     const { error: err } = await supabase.storage
       .from('user-files')
       .update(entry.storage_path, new Blob([content], { type: 'text/plain' }), { upsert: true })
 
-    if (err) {
-      return false
-    }
-
-    // Keep cache in sync with the saved version
-    cacheSet(entryId, content)
-    return true
+    return !err
   }
 
   async function seedWelcomeFile() {
@@ -596,29 +652,29 @@ Happy note-taking!
 `
 
     const entry = await createDocument('Welcome.md', 'md')
-    if (entry?.storage_path) {
-      await supabase.storage
-        .from('user-files')
-        .update(entry.storage_path, new Blob([welcomeContent], { type: 'text/plain' }), {
-          upsert: true,
-        })
+    if (entry) {
+      await uploadContent(entry.id, welcomeContent)
     }
   }
 
   function $reset() {
     entries.value = []
     loading.value = false
+    indexReady.value = false
     selectedFolderId.value = null
     collapsedFolderIds.value = new Set()
     selectedIds.value = new Set()
     lastClickedId.value = null
     pendingCreate.value = null
+    contentMap.clear()
+    trigramIndex.clear()
   }
 
   return {
     entries,
     tree,
     loading,
+    indexReady,
     selectedFolderId,
     collapsedFolderIds,
     selectedIds,
@@ -654,9 +710,9 @@ Happy note-taking!
     clearPendingCreate,
     getAncestorPath,
     getCached,
-    getCachedEntries,
+    getContentMap,
+    getTrigramIndex,
     downloadContent,
-    prefetchContent,
     uploadContent,
     seedWelcomeFile,
     $reset,

@@ -81,13 +81,7 @@ watch(showNewInput, (val, _old, onCleanup) => {
 
 function handleChevronClick() {
   if (!isDirectory(props.entry)) return
-  const wasOpen = isOpen.value
   isOpen.value = !isOpen.value
-  if (!wasOpen) {
-    props.entry.children
-      .filter((c) => !isDirectory(c) && c.type === 'md')
-      .forEach((c) => filesStore.prefetchContent(c.id))
-  }
 }
 
 async function handleClick(e: MouseEvent) {
@@ -101,15 +95,9 @@ async function handleClick(e: MouseEvent) {
       return
     }
     // Plain click: expand/collapse + navigate + select
-    const wasOpen = isOpen.value
     isOpen.value = !isOpen.value
     filesStore.selectFolder(props.entry.id)
     filesStore.selectSingle(props.entry.id)
-    if (!wasOpen) {
-      props.entry.children
-        .filter((c) => !isDirectory(c) && c.type === 'md')
-        .forEach((c) => filesStore.prefetchContent(c.id))
-    }
     return
   }
 

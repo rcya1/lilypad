@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import FileExplorer from './FileExplorer.vue'
-// import SearchPanel from './SearchPanel.vue' // full-text search not ready — see docs/features/05-full-text-search.md
+import SearchPanel from './SearchPanel.vue'
 import LilypadIcon from '@/assets/icon.svg'
-import { LogOut, Loader2, Settings } from 'lucide-vue-next'
+import { LogOut, Loader2, Settings, Search } from 'lucide-vue-next'
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
-// import { useSearchStore } from '@/stores/search' // full-text search not ready
+import { useSearchStore } from '@/stores/search'
 import { useRouter } from 'vue-router'
 import SettingsModal from '@/components/settings/SettingsModal.vue'
 
 const auth = useAuthStore()
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
-// const searchStore = useSearchStore() // full-text search not ready
+const searchStore = useSearchStore()
 const router = useRouter()
 
 const isSyncing = computed(() => editorStore.savingIds.size > 0)
@@ -78,12 +78,11 @@ function onKeyDown(e: KeyboardEvent) {
     e.preventDefault()
     isMinimized.value = !isMinimized.value
   }
-  // Ctrl+Shift+F: full-text search (not ready — see docs/features/05-full-text-search.md)
-  // if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'F') {
-  //   e.preventDefault()
-  //   searchStore.toggle()
-  //   if (searchStore.isOpen && isMinimized.value) isMinimized.value = false
-  // }
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'F') {
+    e.preventDefault()
+    searchStore.toggle()
+    if (searchStore.isOpen && isMinimized.value) isMinimized.value = false
+  }
 }
 
 onMounted(() => {
@@ -111,6 +110,14 @@ onBeforeUnmount(() => {
       >
         Lilypad
       </h1>
+      <button
+        v-if="!isMinimized"
+        class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0"
+        title="Search (Ctrl+Shift+F)"
+        @click="searchStore.toggle()"
+      >
+        <Search :size="15" />
+      </button>
       <Loader2
         v-if="!isMinimized && isSyncing"
         :size="15"
@@ -120,9 +127,9 @@ onBeforeUnmount(() => {
     </div>
     <div class="border-t border-border-subtle" />
 
-    <!-- SearchPanel disabled — full-text search not ready, see docs/features/05-full-text-search.md -->
     <div v-if="!isMinimized" class="relative flex-1 flex flex-col overflow-hidden">
-      <FileExplorer />
+      <SearchPanel v-if="searchStore.isOpen" />
+      <FileExplorer v-else />
     </div>
 
     <div

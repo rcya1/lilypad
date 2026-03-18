@@ -2,9 +2,11 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { Search, X, Loader2 } from 'lucide-vue-next'
 import { useSearchStore } from '@/stores/search'
+import { useFilesStore } from '@/stores/files'
 import type { SearchResult } from '@/stores/search'
 
 const searchStore = useSearchStore()
+const filesStore = useFilesStore()
 const inputRef = ref<HTMLInputElement | null>(null)
 
 watch(
@@ -25,6 +27,16 @@ function onInput(e: Event) {
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     searchStore.close()
+  }
+  // Alt+R: toggle regex
+  if (e.altKey && e.key.toLowerCase() === 'r') {
+    e.preventDefault()
+    searchStore.toggleRegex()
+  }
+  // Alt+C: toggle case sensitivity
+  if (e.altKey && e.key.toLowerCase() === 'c') {
+    e.preventDefault()
+    searchStore.toggleCaseSensitive()
   }
 }
 
@@ -59,6 +71,8 @@ function snippetMatch(result: SearchResult): string {
 function snippetAfter(result: SearchResult): string {
   return result.snippet.slice(result.matchStart + result.matchLength)
 }
+
+const isLoading = computed(() => filesStore.loading && !filesStore.indexReady)
 </script>
 
 <template>
@@ -86,32 +100,70 @@ function snippetAfter(result: SearchResult): string {
           ref="inputRef"
           :value="searchStore.query"
           type="text"
-          placeholder="Search notes…"
-          class="w-full pl-7 pr-7 py-1.5 text-xs font-ui bg-bg border border-border rounded text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors duration-100"
+          :placeholder="isLoading ? 'Loading search index…' : 'Search notes…'"
+          :disabled="isLoading"
+          class="w-full pl-7 pr-20 py-1.5 text-xs font-ui bg-bg border rounded text-text-primary placeholder:text-text-muted focus:outline-none transition-colors duration-100"
+          :class="
+            searchStore.regexError
+              ? 'border-red-500 focus:border-red-500'
+              : 'border-border focus:border-accent'
+          "
           @input="onInput"
           @keydown="onKeydown"
         />
-        <button
-          v-if="searchStore.query"
-          class="absolute right-2 text-text-muted hover:text-text-primary cursor-pointer"
-          @click="clearSearch"
-        >
-          <X :size="12" />
-        </button>
+        <!-- Toggle buttons + clear inside the input -->
+        <div class="absolute right-1.5 flex items-center gap-0.5">
+          <button
+            class="w-5 h-5 flex items-center justify-center rounded text-[11px] font-ui font-semibold leading-none transition-colors duration-100 cursor-pointer"
+            :class="
+              searchStore.isCaseSensitive
+                ? 'bg-accent text-white'
+                : 'text-text-muted hover:text-text-primary hover:bg-surface-elevated'
+            "
+            title="Case sensitive (Alt+C)"
+            @click="searchStore.toggleCaseSensitive()"
+          >
+            Aa
+          </button>
+          <button
+            class="w-5 h-5 flex items-center justify-center rounded text-[11px] font-ui font-semibold leading-none transition-colors duration-100 cursor-pointer"
+            :class="
+              searchStore.isRegex
+                ? 'bg-accent text-white'
+                : 'text-text-muted hover:text-text-primary hover:bg-surface-elevated'
+            "
+            title="Regex (Alt+R)"
+            @click="searchStore.toggleRegex()"
+          >
+            .*
+          </button>
+          <button
+            v-if="searchStore.query"
+            class="text-text-muted hover:text-text-primary cursor-pointer ml-0.5"
+            @click="clearSearch"
+          >
+            <X :size="12" />
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Uncached notice -->
-    <div
-      v-if="searchStore.hasUncachedFiles && searchStore.query.length >= 2"
-      class="mx-2 mb-2 px-2 py-1.5 rounded bg-surface-overlay text-xs text-text-muted leading-snug"
-    >
-      Some files may not be indexed yet — open them to include in search.
+    <!-- Loading spinner (index building) -->
+    <div v-if="isLoading" class="flex items-center justify-center py-6">
+      <Loader2 class="text-text-muted animate-spin" :size="16" />
     </div>
 
-    <!-- Searching spinner -->
-    <div v-if="searchStore.isSearching" class="flex items-center justify-center py-6">
+    <!-- Searching spinner (debounce) -->
+    <div v-else-if="searchStore.isSearching" class="flex items-center justify-center py-6">
       <Loader2 class="text-text-muted animate-spin" :size="16" />
+    </div>
+
+    <!-- Regex error -->
+    <div
+      v-else-if="searchStore.regexError"
+      class="px-3 py-6 text-center"
+    >
+      <p class="text-xs text-red-500">Invalid regex</p>
     </div>
 
     <!-- Results -->
@@ -145,7 +197,7 @@ function snippetAfter(result: SearchResult): string {
 
     <!-- No results -->
     <div
-      v-else-if="searchStore.query.length >= 2 && !searchStore.isSearching"
+      v-else-if="searchStore.query && !searchStore.isSearching"
       class="px-3 py-6 text-center"
     >
       <p class="text-xs text-text-muted">No results for "{{ searchStore.query }}"</p>
