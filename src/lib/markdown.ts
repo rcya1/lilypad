@@ -228,7 +228,67 @@ const sourceLineRenderer: RendererObject = {
   },
 }
 
-export function parseMarkdown(content: string): string {
+function parseSizeToCSS(attr: string | null): string {
+  if (!attr) return 'width: 100%;'
+
+  if (attr === 'w-auto') return 'width: auto;'
+  if (attr === 'w-full') return 'width: 100%;'
+  if (attr === 'w-1/2') return 'width: 50%;'
+  if (attr === 'w-1/3') return 'width: 33.333%;'
+  if (attr === 'w-2/3') return 'width: 66.667%;'
+
+  const wMatch = attr.match(/^w-(\d+)$/)
+  if (wMatch) return `width: ${wMatch[1]}px;`
+
+  const hMatch = attr.match(/^h-(\d+)$/)
+  if (hMatch) return `height: ${hMatch[1]}px; width: auto;`
+
+  return 'width: 100%;'
+}
+
+function createImageSizeExtension(imageResolver?: (imageId: string) => string | null) {
+  return {
+    name: 'image',
+    level: 'inline' as const,
+    start(src: string) {
+      return src.indexOf('![') !== -1 ? src.indexOf('![') : undefined
+    },
+    tokenizer(src: string): Tokens.Generic | undefined {
+      const match = src.match(/^!\[([^\]]*)\]\(([^)]+)\)(?:\{(w-[^}]+|h-[^}]+)\})?/)
+      if (match) {
+        return {
+          type: 'image',
+          raw: match[0],
+          alt: match[1],
+          href: match[2],
+          sizeAttr: match[3] ?? null,
+        } as unknown as Tokens.Generic
+      }
+      return undefined
+    },
+    renderer(token: Tokens.Generic): string {
+      const style = parseSizeToCSS(token.sizeAttr as string | null)
+
+      let src = token.href as string
+      const imgMatch = (token.href as string).match(/^img:([a-f0-9-]+)$/)
+      if (imgMatch && imageResolver) {
+        const resolved = imageResolver(imgMatch[1]!)
+        if (resolved) src = resolved
+      }
+
+      const caption = ((token.alt as string) ?? '').trim()
+      const imgTag = `<img src="${escapeHtml(src)}" alt="${escapeHtml(caption)}" style="${style}" />`
+      const captionTag = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ''
+
+      return `<figure class="image-container">${imgTag}${captionTag}</figure>`
+    },
+  }
+}
+
+export function parseMarkdown(
+  content: string,
+  imageResolver?: (imageId: string) => string | null,
+): string {
   const marked = new Marked()
   marked.use(markedKatex({ throwOnError: false, macros }))
   marked.use({ extensions: [admonition] })
@@ -248,6 +308,7 @@ export function parseMarkdown(content: string): string {
       },
     ],
   })
+  marked.use({ extensions: [createImageSizeExtension(imageResolver)] })
 
   const tokens = marked.lexer(content)
   annotateSourceLines(tokens, 0)

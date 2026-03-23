@@ -8,7 +8,7 @@ export interface Directory {
   children: (Directory | Document)[]
 }
 
-export type DocumentType = 'pdf' | 'md'
+export type DocumentType = 'pdf' | 'md' | 'image'
 
 export interface Document {
   kind: 'document'

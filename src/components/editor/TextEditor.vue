@@ -2,17 +2,39 @@
 let vimExRegistered = false
 // Module-level tracking of applied mappings so any instance can unmap before re-mapping
 let appliedMappings: Array<{ lhs: string; mode: string }> = []
+
+// ---------------------------------------------------------------------------
+// Image upload — module-level state (shared across all editor instances)
+// ---------------------------------------------------------------------------
+interface UploadedImageResult {
+  entryId: string
+  storagePath: string
+  publicUrl: string
+}
+
+/** In-flight uploads keyed by sentinel UUID. */
+const detachedUploads = new Map<string, { promise: Promise<UploadedImageResult> }>()
+
+/** Completed uploads stashed while the view was on a different tab. */
+const completedUploads = new Map<string, UploadedImageResult>()
+
+/** Failed uploads stashed while the view was on a different tab. */
+const failedUploads = new Set<string>()
+
+const sentinelPattern = /<!--uploading:[a-f0-9-]+-->/g
 </script>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState, StateEffect, StateField, Compartment } from '@codemirror/state'
-import { Decoration, type DecorationSet, keymap } from '@codemirror/view'
+import { EditorState, StateEffect, StateField, Compartment, type Range } from '@codemirror/state'
+import { Decoration, type DecorationSet, keymap, WidgetType } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
 import { search, searchKeymap } from '@codemirror/search'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
 import { useEditorStore } from '@/stores/editor'
+import { useFilesStore } from '@/stores/files'
+import { useToastStore } from '@/stores/toast'
 import { useUiStore } from '@/stores/ui'
 
 const highlightLineEffect = StateEffect.define<number | null>()
@@ -51,10 +73,158 @@ const yankFlashField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 })
 
+// ---------------------------------------------------------------------------
+// Upload spinner widget — shown in place of sentinel text
+// ---------------------------------------------------------------------------
+class UploadSpinnerWidget extends WidgetType {
+  toDOM() {
+    const wrap = document.createElement('span')
+    wrap.className = 'cm-upload-spinner'
+    wrap.setAttribute('contenteditable', 'false')
+    const spinner = document.createElement('span')
+    spinner.className = 'cm-upload-spinner-icon'
+    wrap.appendChild(spinner)
+    const label = document.createElement('span')
+    label.className = 'cm-upload-spinner-label'
+    label.textContent = 'Uploading image…'
+    wrap.appendChild(label)
+    return wrap
+  }
+
+  ignoreEvent() {
+    return true
+  }
+}
+
+function buildUploadDecorations(state: EditorState): DecorationSet {
+  const builder: Range<Decoration>[] = []
+  const doc = state.doc.toString()
+  sentinelPattern.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = sentinelPattern.exec(doc)) !== null) {
+    builder.push(
+      Decoration.replace({ widget: new UploadSpinnerWidget() }).range(
+        match.index,
+        match.index + match[0].length,
+      ),
+    )
+  }
+  return Decoration.set(builder, true)
+}
+
+const uploadWidgetField = StateField.define<DecorationSet>({
+  create(state) {
+    return buildUploadDecorations(state)
+  },
+  update(decos, tr) {
+    if (tr.docChanged) return buildUploadDecorations(tr.state)
+    return decos
+  },
+  provide: (f) => EditorView.decorations.from(f),
+})
+
+// Transaction filter: any edit that partially overlaps a sentinel expands to delete the whole thing
+const sentinelGuard = EditorState.transactionFilter.of((tr) => {
+  if (!tr.docChanged) return tr
+
+  const doc = tr.startState.doc.toString()
+  const sentinels: { from: number; to: number }[] = []
+  sentinelPattern.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = sentinelPattern.exec(doc)) !== null) {
+    const end = m.index + m[0].length
+    const hasTrailingNewline = end < doc.length && doc[end] === '\n'
+    sentinels.push({ from: m.index, to: hasTrailingNewline ? end + 1 : end })
+  }
+
+  if (sentinels.length === 0) return tr
+
+  let needsExpansion = false
+  const expandedChanges: { from: number; to: number; insert: string }[] = []
+
+  tr.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
+    let from = fromA
+    let to = toA
+    for (const s of sentinels) {
+      const overlaps = from < s.to && to > s.from
+      if (overlaps) {
+        from = Math.min(from, s.from)
+        to = Math.max(to, s.to)
+        needsExpansion = true
+      }
+    }
+    expandedChanges.push({ from, to, insert: inserted.toString() })
+  })
+
+  if (!needsExpansion) return tr
+
+  return [{ changes: expandedChanges }]
+})
+
+// ---------------------------------------------------------------------------
+// Ghost text widget — shows image entry name after img: references
+// ---------------------------------------------------------------------------
+class GhostNameWidget extends WidgetType {
+  constructor(private name: string) {
+    super()
+  }
+
+  toDOM() {
+    const span = document.createElement('span')
+    span.className = 'cm-image-ghost-name'
+    span.textContent = ` ${this.name}`
+    return span
+  }
+
+  eq(other: GhostNameWidget) {
+    return this.name === other.name
+  }
+
+  ignoreEvent() {
+    return true
+  }
+}
+
+const imgRefPattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
+
 const props = defineProps<{ documentId: string; isActive: boolean }>()
 
 const store = useEditorStore()
+const filesStore = useFilesStore()
+const toastStore = useToastStore()
 const uiStore = useUiStore()
+
+function buildGhostDecorations(state: EditorState): DecorationSet {
+  const builder: Range<Decoration>[] = []
+  const doc = state.doc.toString()
+  imgRefPattern.lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = imgRefPattern.exec(doc)) !== null) {
+    const entryId = match[1]!
+    const entry = filesStore.getEntry(entryId)
+    if (entry) {
+      const pos = match.index + match[0].length
+      builder.push(
+        Decoration.widget({
+          widget: new GhostNameWidget(entry.name),
+          side: 1,
+        }).range(pos),
+      )
+    }
+  }
+  return Decoration.set(builder, true)
+}
+
+const imgGhostNameField = StateField.define<DecorationSet>({
+  create(state) {
+    return buildGhostDecorations(state)
+  },
+  update(decos, tr) {
+    if (tr.docChanged) return buildGhostDecorations(tr.state)
+    return decos
+  },
+  provide: (f) => EditorView.decorations.from(f),
+})
 const container = ref<HTMLDivElement>()
 let view: EditorView | null = null
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
@@ -153,6 +323,161 @@ function syncClipboardToVimRegister() {
     })
     .catch(() => {})
 }
+
+// ---------------------------------------------------------------------------
+// Image paste / drop handlers
+// ---------------------------------------------------------------------------
+
+function startImageUpload(editorView: EditorView, file: File) {
+  const uuid = crypto.randomUUID()
+  const sentinel = `<!--uploading:${uuid}-->`
+  const cursor = editorView.state.selection.main.head
+
+  editorView.dispatch({
+    changes: { from: cursor, insert: sentinel + '\n' },
+  })
+
+  const activeDoc = store.activeDocument
+  const parentId = activeDoc ? filesStore.getParentFolderId(activeDoc.id) : null
+  const promise = filesStore.uploadImage(file, parentId)
+  detachedUploads.set(uuid, { promise })
+
+  promise
+    .then((result) => onUploadSuccess(editorView, uuid, result))
+    .catch(() => onUploadFailure(editorView, uuid))
+}
+
+function onUploadSuccess(editorView: EditorView, uuid: string, result: UploadedImageResult) {
+  detachedUploads.delete(uuid)
+
+  if (!editorView.dom.parentNode) {
+    completedUploads.set(uuid, result)
+    return
+  }
+
+  const sentinel = `<!--uploading:${uuid}-->`
+  const doc = editorView.state.doc.toString()
+  const idx = doc.indexOf(sentinel)
+
+  if (idx === -1) return
+
+  const markdown = `![](img:${result.entryId})`
+  const sentinelEnd = idx + sentinel.length
+  const hasTrailingNewline = sentinelEnd < doc.length && doc[sentinelEnd] === '\n'
+  editorView.dispatch({
+    changes: {
+      from: idx,
+      to: hasTrailingNewline ? sentinelEnd + 1 : sentinelEnd,
+      insert: markdown + '\n',
+    },
+  })
+}
+
+function onUploadFailure(editorView: EditorView, uuid: string) {
+  detachedUploads.delete(uuid)
+
+  if (!editorView.dom.parentNode) {
+    failedUploads.add(uuid)
+    return
+  }
+
+  const sentinel = `<!--uploading:${uuid}-->`
+  const doc = editorView.state.doc.toString()
+  const idx = doc.indexOf(sentinel)
+
+  if (idx !== -1) {
+    const sentinelEnd = idx + sentinel.length
+    const hasTrailingNewline = sentinelEnd < doc.length && doc[sentinelEnd] === '\n'
+    editorView.dispatch({
+      changes: { from: idx, to: hasTrailingNewline ? sentinelEnd + 1 : sentinelEnd, insert: '' },
+    })
+  }
+
+  toastStore.addToast('Image upload failed.', 'error')
+}
+
+function reinsertSentinel(editorView: EditorView, uuid: string) {
+  if (!detachedUploads.has(uuid)) return
+  const sentinel = `<!--uploading:${uuid}-->`
+  const cursor = editorView.state.selection.main.head
+  editorView.dispatch({
+    changes: { from: cursor, insert: sentinel + '\n' },
+  })
+}
+
+function resolveStashedUploads(editorView: EditorView) {
+  const doc = editorView.state.doc.toString()
+  sentinelPattern.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = sentinelPattern.exec(doc)) !== null) {
+    const uuid = m[0].match(/[a-f0-9-]+/)?.[0]
+    if (!uuid) continue
+
+    if (completedUploads.has(uuid)) {
+      const result = completedUploads.get(uuid)!
+      completedUploads.delete(uuid)
+      onUploadSuccess(editorView, uuid, result)
+      return // doc changed — re-scan would need new toString()
+    }
+
+    if (failedUploads.has(uuid)) {
+      failedUploads.delete(uuid)
+      onUploadFailure(editorView, uuid)
+      return
+    }
+  }
+}
+
+const imagePasteHandler = EditorView.domEventHandlers({
+  paste(event: ClipboardEvent, editorView: EditorView) {
+    const items = event.clipboardData?.items
+    if (!items) return false
+
+    // Check if pasted text is a sentinel being re-pasted
+    const text = event.clipboardData?.getData('text/plain') ?? ''
+    const sentinelMatch = text.match(/^<!--uploading:([a-f0-9-]+)-->$/)
+    if (sentinelMatch) {
+      event.preventDefault()
+      reinsertSentinel(editorView, sentinelMatch[1]!)
+      return true
+    }
+
+    // Look for image items
+    const imageFiles: File[] = []
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) imageFiles.push(file)
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      event.preventDefault()
+      for (const file of imageFiles) startImageUpload(editorView, file)
+      return true
+    }
+
+    return false
+  },
+
+  drop(event: DragEvent, editorView: EditorView) {
+    const files = event.dataTransfer?.files
+    if (!files) return false
+
+    const imageFiles: File[] = []
+    for (const file of files) {
+      if (file.type.startsWith('image/')) imageFiles.push(file)
+    }
+
+    if (imageFiles.length > 0) {
+      event.preventDefault()
+      for (const file of imageFiles) startImageUpload(editorView, file)
+      return true
+    }
+
+    return false
+  },
+})
 
 const lilypadTheme = EditorView.theme({
   '&': {
@@ -399,6 +724,10 @@ onMounted(() => {
         EditorView.lineWrapping,
         highlightLineField,
         yankFlashField,
+        uploadWidgetField,
+        sentinelGuard,
+        imgGhostNameField,
+        imagePasteHandler,
       ],
     }),
     parent: container.value,
@@ -474,6 +803,7 @@ onMounted(() => {
   })
 
   view.focus()
+  resolveStashedUploads(view)
 })
 
 watch(
@@ -613,5 +943,44 @@ onBeforeUnmount(() => {
 .cm-cursor,
 .cm-dropCursor {
   border-left-color: var(--text-primary) !important;
+}
+
+/* --- Upload spinner widget ------------------------------------------- */
+.cm-upload-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-family-ui);
+  font-size: 12px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.cm-upload-spinner-icon {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: cm-spinner-spin 0.8s linear infinite;
+}
+
+@keyframes cm-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Ghost image name ------------------------------------------------ */
+.cm-image-ghost-name {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.85em;
+  pointer-events: none;
+  user-select: none;
 }
 </style>

@@ -55,24 +55,26 @@ export const useFilesStore = defineStore('files', () => {
       .filter((e) => e.parent_id === parentId)
       .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
 
-    return children.map((row) => {
-      if (row.kind === 'directory') {
+    return children
+      .filter((row) => row.document_type !== 'image')
+      .map((row) => {
+        if (row.kind === 'directory') {
+          return {
+            kind: 'directory' as const,
+            id: row.id,
+            name: row.name,
+            parentId: row.parent_id,
+            children: buildTree(row.id),
+          }
+        }
         return {
-          kind: 'directory' as const,
+          kind: 'document' as const,
           id: row.id,
           name: row.name,
           parentId: row.parent_id,
-          children: buildTree(row.id),
+          type: row.document_type as DocumentType,
         }
-      }
-      return {
-        kind: 'document' as const,
-        id: row.id,
-        name: row.name,
-        parentId: row.parent_id,
-        type: row.document_type as DocumentType,
-      }
-    })
+      })
   }
 
   function getNextSortOrder(parentId: string | null): number {
@@ -271,10 +273,7 @@ export const useFilesStore = defineStore('files', () => {
    * global Ctrl+N shortcut. Mirrors the priority logic in FileExplorer's
    * startNewFile: selectedFolderId → parent of active tab → root.
    */
-  function beginCreate(
-    kind: 'document' | 'folder',
-    parentId: string | null,
-  ) {
+  function beginCreate(kind: 'document' | 'folder', parentId: string | null) {
     triggerCreate(parentId, kind === 'document' ? 'file' : 'folder')
   }
 
@@ -541,13 +540,13 @@ export const useFilesStore = defineStore('files', () => {
       .filter((e) => e.parent_id === parentId)
       .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
 
-    const updates: Promise<unknown>[] = []
+    const updates: PromiseLike<unknown>[] = []
     for (let i = 0; i < siblings.length; i++) {
       const clean = (i + 1) * 1000
       if (siblings[i]!.sort_order !== clean) {
         siblings[i]!.sort_order = clean
         updates.push(
-          supabase.from('entries').update({ sort_order: clean }).eq('id', siblings[i]!.id),
+          supabase.from('entries').update({ sort_order: clean }).eq('id', siblings[i]!.id).then(),
         )
       }
     }
@@ -612,10 +611,7 @@ export const useFilesStore = defineStore('files', () => {
 
     if (entry.document_type === 'md') {
       // .md files: content lives in the DB
-      const { error: err } = await supabase
-        .from('entries')
-        .update({ content })
-        .eq('id', entryId)
+      const { error: err } = await supabase.from('entries').update({ content }).eq('id', entryId)
 
       if (err) return false
 
@@ -632,6 +628,92 @@ export const useFilesStore = defineStore('files', () => {
       .update(entry.storage_path, new Blob([content], { type: 'text/plain' }), { upsert: true })
 
     return !err
+  }
+
+  // ---------------------------------------------------------------------------
+  // Image support
+  // ---------------------------------------------------------------------------
+
+  const imageUrlCache = new Map<string, string>()
+
+  const MIME_EXT_MAP: Record<string, string> = {
+    'svg+xml': 'svg',
+    jpeg: 'jpg',
+  }
+
+  interface UploadedImage {
+    entryId: string
+    storagePath: string
+    publicUrl: string
+  }
+
+  async function uploadImage(file: File, parentId: string | null): Promise<UploadedImage> {
+    if (!auth.user) throw new Error('Not authenticated')
+
+    const mimeSub = file.type.split('/')[1] ?? 'png'
+    const ext = MIME_EXT_MAP[mimeSub] ?? mimeSub
+    const entryId = crypto.randomUUID()
+    const filename = `${entryId}.${ext}`
+    const storagePath = `${auth.user.id}/${filename}`
+
+    const { error } = await supabase.storage
+      .from('user-files')
+      .upload(storagePath, file, { contentType: file.type })
+
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(storagePath)
+
+    const defaultName = file.name || `image.${ext}`
+    const { error: insertErr } = await supabase.from('entries').insert({
+      id: entryId,
+      user_id: auth.user.id,
+      kind: 'document' as const,
+      document_type: 'image' as const,
+      name: defaultName,
+      parent_id: parentId,
+      storage_path: storagePath,
+      sort_order: getNextSortOrder(parentId),
+    })
+
+    if (insertErr) throw insertErr
+
+    // Add to local state
+    const newEntry: EntryRow = {
+      id: entryId,
+      user_id: auth.user.id,
+      kind: 'document',
+      document_type: 'image',
+      name: defaultName,
+      parent_id: parentId,
+      storage_path: storagePath,
+      content: null,
+      sort_order: getNextSortOrder(parentId),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    entries.value.push(newEntry)
+
+    // Cache the URL
+    imageUrlCache.set(entryId, urlData.publicUrl)
+
+    return { entryId, storagePath, publicUrl: urlData.publicUrl }
+  }
+
+  function getImageUrl(entryId: string): string | null {
+    const cached = imageUrlCache.get(entryId)
+    if (cached) return cached
+
+    const entry = entries.value.find((e) => e.id === entryId)
+    if (!entry?.storage_path) return null
+
+    const { data } = supabase.storage.from('user-files').getPublicUrl(entry.storage_path)
+    imageUrlCache.set(entryId, data.publicUrl)
+    return data.publicUrl
+  }
+
+  function getEntry(entryId: string): EntryRow | undefined {
+    return entries.value.find((e) => e.id === entryId)
   }
 
   async function seedWelcomeFile() {
@@ -668,6 +750,7 @@ Happy note-taking!
     pendingCreate.value = null
     contentMap.clear()
     trigramIndex.clear()
+    imageUrlCache.clear()
   }
 
   return {
@@ -714,6 +797,9 @@ Happy note-taking!
     getTrigramIndex,
     downloadContent,
     uploadContent,
+    uploadImage,
+    getImageUrl,
+    getEntry,
     seedWelcomeFile,
     $reset,
   }

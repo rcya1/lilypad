@@ -7,7 +7,7 @@ export interface Database {
           user_id: string
           kind: 'directory' | 'document'
           name: string
-          document_type: 'pdf' | 'md' | null
+          document_type: 'pdf' | 'md' | 'image' | null
           parent_id: string | null
           storage_path: string | null
           content: string | null
@@ -20,7 +20,7 @@ export interface Database {
           user_id: string
           kind: 'directory' | 'document'
           name: string
-          document_type?: 'pdf' | 'md' | null
+          document_type?: 'pdf' | 'md' | 'image' | null
           parent_id?: string | null
           storage_path?: string | null
           content?: string | null
@@ -33,7 +33,7 @@ export interface Database {
           user_id?: string
           kind?: 'directory' | 'document'
           name?: string
-          document_type?: 'pdf' | 'md' | null
+          document_type?: 'pdf' | 'md' | 'image' | null
           parent_id?: string | null
           storage_path?: string | null
           content?: string | null

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useEditorStore } from '@/stores/editor'
+import { useFilesStore } from '@/stores/files'
 import { useUiStore } from '@/stores/ui'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
@@ -8,6 +9,7 @@ import 'katex/dist/katex.min.css'
 const props = defineProps<{ documentId: string }>()
 
 const store = useEditorStore()
+const filesStore = useFilesStore()
 const uiStore = useUiStore()
 const html = ref('')
 const renderKey = ref(0)
@@ -24,7 +26,7 @@ const wordCount = computed(() => {
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
 function render(content: string) {
-  html.value = parseMarkdown(content)
+  html.value = parseMarkdown(content, (entryId) => filesStore.getImageUrl(entryId))
   renderKey.value++
 }
 
@@ -487,6 +489,27 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 .markdown-body :deep(img) {
   max-width: 100%;
   border-radius: 4px;
+}
+
+.markdown-body :deep(.image-container) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.5em auto;
+}
+
+.markdown-body :deep(.image-container img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.markdown-body :deep(.image-container figcaption) {
+  margin-top: 0.5em;
+  font-size: 0.85em;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
 }
 
 /* KaTeX display blocks */
