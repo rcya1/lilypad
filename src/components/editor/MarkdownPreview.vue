@@ -31,10 +31,21 @@ function render(content: string) {
 onMounted(() => {
   const doc = store.openDocuments.get(props.documentId)
   render(doc?.content ?? '')
+  const saved = store.previewScrollTop.get(props.documentId)
+  if (saved) {
+    nextTick(() => {
+      if (scrollContainer.value) {
+        scrollContainer.value.scrollTop = saved
+      }
+    })
+  }
 })
 
 onBeforeUnmount(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
+  if (scrollContainer.value) {
+    store.previewScrollTop.set(props.documentId, scrollContainer.value.scrollTop)
+  }
 })
 
 watch(
@@ -42,13 +53,6 @@ watch(
   (content) => {
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => render(content ?? ''), 5)
-  },
-)
-
-watch(
-  () => props.documentId,
-  () => {
-    if (scrollContainer.value) scrollContainer.value.scrollTop = 0
   },
 )
 

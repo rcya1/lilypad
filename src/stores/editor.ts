@@ -38,6 +38,9 @@ export const useEditorStore = defineStore('editor', () => {
   /** Which pane has focus: 'editor' or 'preview' */
   const focusedPane = ref<'editor' | 'preview'>('editor')
 
+  /** Saved preview scroll positions, per document */
+  const previewScrollTop = new Map<string, number>()
+
   function requestScrollToLine(documentId: string, line: number) {
     scrollToLineRequest.value = { documentId, line }
   }
@@ -301,6 +304,7 @@ export const useEditorStore = defineStore('editor', () => {
     setEditorCursorLine,
     previewCursorLine,
     focusedPane,
+    previewScrollTop,
     setPreviewCursor,
     setFocusedPane,
     $reset,
