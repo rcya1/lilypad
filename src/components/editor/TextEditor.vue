@@ -25,7 +25,7 @@ const sentinelPattern = /<!--uploading:[a-f0-9-]+-->/g
 </script>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, StateEffect, StateField, Compartment, type Range } from '@codemirror/state'
 import { Decoration, type DecorationSet, keymap, WidgetType } from '@codemirror/view'
@@ -185,6 +185,27 @@ class GhostNameWidget extends WidgetType {
   }
 }
 
+class RenameAnchorWidget extends WidgetType {
+  constructor(private id: string) {
+    super()
+  }
+
+  toDOM() {
+    const span = document.createElement('span')
+    span.className = 'cm-image-rename-anchor'
+    span.dataset.renameAnchor = this.id
+    return span
+  }
+
+  eq(other: RenameAnchorWidget) {
+    return this.id === other.id
+  }
+
+  ignoreEvent() {
+    return true
+  }
+}
+
 const imgRefPattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
 
 const props = defineProps<{ documentId: string; isActive: boolean }>()
@@ -193,6 +214,9 @@ const store = useEditorStore()
 const filesStore = useFilesStore()
 const toastStore = useToastStore()
 const uiStore = useUiStore()
+
+const renamingImageId = ref<string | null>(null)
+const renamingImageExt = ref<string>('')
 
 function buildGhostDecorations(state: EditorState): DecorationSet {
   const builder: Range<Decoration>[] = []
@@ -204,27 +228,44 @@ function buildGhostDecorations(state: EditorState): DecorationSet {
     const entry = filesStore.getEntry(entryId)
     if (entry) {
       const pos = match.index + match[0].length
-      builder.push(
-        Decoration.widget({
-          widget: new GhostNameWidget(entry.name),
-          side: 1,
-        }).range(pos),
-      )
+      if (renamingImageId.value === entryId) {
+        builder.push(
+          Decoration.widget({
+            widget: new RenameAnchorWidget(entryId),
+            side: 1,
+          }).range(pos),
+        )
+      } else {
+        builder.push(
+          Decoration.widget({
+            widget: new GhostNameWidget(entry.name),
+            side: 1,
+          }).range(pos),
+        )
+      }
     }
   }
   return Decoration.set(builder, true)
 }
+
+const rebuildGhostEffect = StateEffect.define<null>()
 
 const imgGhostNameField = StateField.define<DecorationSet>({
   create(state) {
     return buildGhostDecorations(state)
   },
   update(decos, tr) {
-    if (tr.docChanged) return buildGhostDecorations(tr.state)
+    if (tr.docChanged || tr.effects.some((e) => e.is(rebuildGhostEffect))) {
+      return buildGhostDecorations(tr.state)
+    }
     return decos
   },
   provide: (f) => EditorView.decorations.from(f),
 })
+
+function rebuildGhosts() {
+  view?.dispatch({ effects: rebuildGhostEffect.of(null) })
+}
 const container = ref<HTMLDivElement>()
 let view: EditorView | null = null
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
@@ -430,7 +471,108 @@ function resolveStashedUploads(editorView: EditorView) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Right-click rename for images
+// ---------------------------------------------------------------------------
+const imageContextMenu = ref<{ x: number; y: number; entryId: string } | null>(null)
+const contextMenuEl = ref<HTMLDivElement | null>(null)
+const imageRenamePos = ref<{ x: number; y: number } | null>(null)
+const imageRenameInput = ref('')
+const renameInputEl = ref<HTMLInputElement | null>(null)
+
+function closeImageContextMenu() {
+  imageContextMenu.value = null
+}
+
+function startImageRename() {
+  if (!imageContextMenu.value) return
+  const { entryId } = imageContextMenu.value
+  const entry = filesStore.getEntry(entryId)
+  if (!entry) return
+  const dotIdx = entry.name.lastIndexOf('.')
+  renamingImageExt.value = dotIdx > 0 ? entry.name.slice(dotIdx) : ''
+  const baseName = dotIdx > 0 ? entry.name.slice(0, dotIdx) : entry.name
+  imageRenameInput.value = baseName
+  renamingImageId.value = entryId
+  closeImageContextMenu()
+  rebuildGhosts()
+  // Wait for anchor widget to render, then position the input over it
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const anchor = container.value?.querySelector(
+        `[data-rename-anchor="${entryId}"]`,
+      )
+      if (anchor) {
+        const rect = anchor.getBoundingClientRect()
+        imageRenamePos.value = { x: rect.left, y: rect.top }
+      }
+      nextTick(() => {
+        renameInputEl.value?.focus()
+        renameInputEl.value?.select()
+        // Close on any click outside the input
+        setTimeout(() => {
+          document.addEventListener('mousedown', onRenameClickOutside)
+        }, 0)
+      })
+    })
+  })
+}
+
+function onRenameClickOutside(e: MouseEvent) {
+  if (renameInputEl.value && !renameInputEl.value.contains(e.target as Node)) {
+    document.removeEventListener('mousedown', onRenameClickOutside)
+    finishImageRename()
+  }
+}
+
+async function finishImageRename() {
+  document.removeEventListener('mousedown', onRenameClickOutside)
+  const entryId = renamingImageId.value
+  if (!entryId) return
+  const trimmed = imageRenameInput.value.trim()
+  if (trimmed) {
+    await filesStore.renameEntry(entryId, trimmed + renamingImageExt.value)
+  }
+  renamingImageId.value = null
+  renamingImageExt.value = ''
+  imageRenamePos.value = null
+  rebuildGhosts()
+}
+
+function cancelImageRename() {
+  document.removeEventListener('mousedown', onRenameClickOutside)
+  renamingImageId.value = null
+  renamingImageExt.value = ''
+  imageRenamePos.value = null
+  rebuildGhosts()
+}
+
 const imagePasteHandler = EditorView.domEventHandlers({
+  contextmenu(event: MouseEvent, editorView: EditorView) {
+    const pos = editorView.posAtCoords({ x: event.clientX, y: event.clientY })
+    if (pos === null) return false
+
+    const line = editorView.state.doc.lineAt(pos)
+    const imagePattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
+    let match: RegExpExecArray | null
+    while ((match = imagePattern.exec(line.text)) !== null) {
+      const absFrom = line.from + match.index
+      const absTo = absFrom + match[0].length
+      if (pos >= absFrom && pos <= absTo) {
+        event.preventDefault()
+        imageContextMenu.value = { x: event.clientX, y: event.clientY, entryId: match[1]! }
+        const close = (e: MouseEvent) => {
+          if (contextMenuEl.value?.contains(e.target as Node)) return
+          closeImageContextMenu()
+          document.removeEventListener('mousedown', close)
+        }
+        setTimeout(() => document.addEventListener('mousedown', close), 0)
+        return true
+      }
+    }
+    return false
+  },
+
   paste(event: ClipboardEvent, editorView: EditorView) {
     const items = event.clipboardData?.items
     if (!items) return false
@@ -861,6 +1003,38 @@ onBeforeUnmount(() => {
         {{ modeLabel }}
       </span>
     </div>
+
+    <!-- Image right-click context menu -->
+    <Teleport to="body">
+      <div
+        v-if="imageContextMenu"
+        ref="contextMenuEl"
+        class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36 font-ui text-sm"
+        :style="{ left: imageContextMenu.x + 'px', top: imageContextMenu.y + 'px' }"
+      >
+        <button
+          class="w-full text-left px-3 py-1.5 hover:bg-surface-elevated text-text-primary cursor-pointer"
+          @click="startImageRename"
+        >
+          Rename image
+        </button>
+      </div>
+    </Teleport>
+
+    <!-- Inline image rename input (outside CM DOM so native selection works) -->
+    <Teleport to="body">
+      <input
+        v-if="imageRenamePos"
+        ref="renameInputEl"
+        v-model="imageRenameInput"
+        class="fixed z-50 cm-image-rename-input"
+        :style="{ left: imageRenamePos.x + 'px', top: imageRenamePos.y + 'px' }"
+        @keydown.enter="finishImageRename"
+        @keydown.escape="cancelImageRename"
+        @blur="finishImageRename"
+      />
+    </Teleport>
+
   </div>
 </template>
 
@@ -985,4 +1159,25 @@ onBeforeUnmount(() => {
   pointer-events: none;
   user-select: none;
 }
+
+.cm-image-rename-anchor {
+  display: inline;
+}
+
+.cm-image-rename-input {
+  padding: 1px 5px;
+  font-size: 0.85em;
+  font-style: italic;
+  font-family: var(--font-family-mono);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  outline: none;
+}
+
+.cm-image-rename-input::selection {
+  background: var(--surface-overlay);
+}
+
 </style>

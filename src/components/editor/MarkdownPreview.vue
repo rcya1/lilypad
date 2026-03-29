@@ -504,12 +504,7 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
   text-align: center;
 }
 
-/* Image containers — subtle outline glow instead of background */
-.markdown-body :deep(figure.image-container.preview-hover),
-.markdown-body :deep(figure.image-container.preview-selected) {
-  background-color: transparent;
-}
-
+/* Image containers — ring on the image, background covers the whole figure */
 .markdown-body :deep(figure.image-container.preview-hover img),
 .markdown-body :deep(figure.image-container.preview-selected img) {
   box-shadow: 0 0 0 5px var(--surface-elevated);
