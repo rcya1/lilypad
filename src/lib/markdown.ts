@@ -179,6 +179,14 @@ const sourceLineRenderer: RendererObject = {
     return `<h${token.depth}${attr(token)}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`
   },
   paragraph(token: Tokens.Paragraph) {
+    // If the paragraph contains only an image, render the <figure> as a
+    // block element directly (a <figure> inside a <p> is invalid HTML and
+    // browsers break them apart, losing the data-source-line attribute).
+    const inlineTokens = token.tokens.filter((t) => t.type !== 'text' || t.raw.trim() !== '')
+    if (inlineTokens.length === 1 && inlineTokens[0]!.type === 'image') {
+      const html = this.parser.parseInline(token.tokens)
+      return html.replace('<figure', `<figure${attr(token)}`) + '\n'
+    }
     return `<p${attr(token)}>${this.parser.parseInline(token.tokens)}</p>\n`
   },
   code(token: Tokens.Code) {

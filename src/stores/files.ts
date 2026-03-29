@@ -647,6 +647,23 @@ export const useFilesStore = defineStore('files', () => {
     publicUrl: string
   }
 
+  /** Return a name unique among siblings in the given parent folder. */
+  function deduplicateName(name: string, parentId: string | null): string {
+    const siblings = new Set(
+      entries.value
+        .filter((e) => e.parent_id === parentId)
+        .map((e) => e.name),
+    )
+    if (!siblings.has(name)) return name
+
+    const dotIdx = name.lastIndexOf('.')
+    const base = dotIdx > 0 ? name.slice(0, dotIdx) : name
+    const ext = dotIdx > 0 ? name.slice(dotIdx) : ''
+    let i = 2
+    while (siblings.has(`${base} (${i})${ext}`)) i++
+    return `${base} (${i})${ext}`
+  }
+
   async function uploadImage(file: File, parentId: string | null): Promise<UploadedImage> {
     if (!auth.user) throw new Error('Not authenticated')
 
@@ -664,7 +681,8 @@ export const useFilesStore = defineStore('files', () => {
 
     const { data: urlData } = supabase.storage.from('user-files').getPublicUrl(storagePath)
 
-    const defaultName = file.name || `image.${ext}`
+    const baseName = file.name || `image.${ext}`
+    const defaultName = deduplicateName(baseName, parentId)
     const { error: insertErr } = await supabase.from('entries').insert({
       id: entryId,
       user_id: auth.user.id,

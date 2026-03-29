@@ -114,6 +114,7 @@ function onClick(event: MouseEvent) {
   selectedLine.value = line
   store.setPreviewCursor(props.documentId, line)
   store.setFocusedPane('preview')
+  target.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   // Ensure the container has focus for keyboard nav
   scrollContainer.value?.focus()
 }
@@ -289,13 +290,16 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 .markdown-body :deep([data-source-line].preview-hover),
 .markdown-body :deep([data-source-line].preview-selected) {
   background-color: var(--surface-elevated);
-  border-radius: 3px;
-  transition: background-color 100ms ease;
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--surface-elevated);
+  outline: none;
+  transition: background-color 100ms ease, box-shadow 100ms ease;
 }
 
 /* Hover over the selected element — darker accent */
 .markdown-body :deep([data-source-line].preview-hover.preview-selected) {
   background-color: var(--surface-overlay);
+  box-shadow: 0 0 0 5px var(--surface-overlay);
 }
 
 /* Prevent highlighted li from painting over nested lists */
@@ -494,6 +498,22 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
   color: var(--text-muted);
   font-style: italic;
   text-align: center;
+}
+
+/* Image containers — subtle outline glow instead of background */
+.markdown-body :deep(figure.image-container.preview-hover),
+.markdown-body :deep(figure.image-container.preview-selected) {
+  background-color: transparent;
+}
+
+.markdown-body :deep(figure.image-container.preview-hover img),
+.markdown-body :deep(figure.image-container.preview-selected img) {
+  box-shadow: 0 0 0 5px var(--surface-elevated);
+  transition: box-shadow 100ms ease;
+}
+
+.markdown-body :deep(figure.image-container.preview-hover.preview-selected img) {
+  box-shadow: 0 0 0 6px var(--surface-overlay);
 }
 
 /* KaTeX display blocks */

@@ -344,7 +344,7 @@ function startImageUpload(editorView: EditorView, file: File) {
 
   promise
     .then((result) => onUploadSuccess(editorView, uuid, result))
-    .catch(() => onUploadFailure(editorView, uuid))
+    .catch((err) => onUploadFailure(editorView, uuid, err))
 }
 
 function onUploadSuccess(editorView: EditorView, uuid: string, result: UploadedImageResult) {
@@ -373,7 +373,7 @@ function onUploadSuccess(editorView: EditorView, uuid: string, result: UploadedI
   })
 }
 
-function onUploadFailure(editorView: EditorView, uuid: string) {
+function onUploadFailure(editorView: EditorView, uuid: string, err?: unknown) {
   detachedUploads.delete(uuid)
 
   if (!editorView.dom.parentNode) {
@@ -393,7 +393,9 @@ function onUploadFailure(editorView: EditorView, uuid: string) {
     })
   }
 
-  toastStore.addToast('Image upload failed.', 'error')
+  const detail = err instanceof Error ? err.message : typeof err === 'object' && err && 'message' in err ? String((err as { message: unknown }).message) : ''
+  const msg = detail ? `Image upload failed: ${detail}` : 'Image upload failed.'
+  toastStore.addToast(msg, 'error')
 }
 
 function reinsertSentinel(editorView: EditorView, uuid: string) {
