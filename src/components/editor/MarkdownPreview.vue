@@ -12,7 +12,6 @@ const store = useEditorStore()
 const filesStore = useFilesStore()
 const uiStore = useUiStore()
 const html = ref('')
-const renderKey = ref(0)
 const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
 
 const selectedLine = ref<number | null>(null)
@@ -27,7 +26,6 @@ let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
 function render(content: string) {
   html.value = parseMarkdown(content, (entryId) => filesStore.getImageUrl(entryId))
-  renderKey.value++
 }
 
 onMounted(() => {
@@ -217,7 +215,7 @@ function updateHighlights() {
 }
 
 watch([hoveredLine, selectedLine], updateHighlights, { flush: 'sync' })
-watch(renderKey, () =>
+watch(html, () =>
   nextTick(() => {
     updateHighlights()
     syncFromEditorCursor()
@@ -270,8 +268,7 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
     @blur="onBlur"
   >
     <div
-      :key="renderKey"
-      class="markdown-body preview-fade m-2 rounded-md bg-bg px-5 py-5 font-preview leading-[1.6] text-text-primary border border-border-subtle"
+      class="markdown-body m-2 rounded-md bg-bg px-5 py-5 font-preview leading-[1.6] text-text-primary border border-border-subtle"
       :style="{ fontSize: uiStore.previewFontSize + 'px' }"
       v-html="html"
     />
@@ -282,19 +279,6 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 </template>
 
 <style scoped>
-@keyframes preview-fade-in {
-  0% {
-    opacity: 0.95;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-.preview-fade {
-  animation: preview-fade-in 200ms ease;
-}
-
 .markdown-body {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.07),
