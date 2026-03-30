@@ -14,4 +14,17 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 650,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          codemirror: ['codemirror', '@codemirror/lang-markdown'],
+          'codemirror-vim': ['@replit/codemirror-vim'],
+          katex: ['katex', 'marked', 'marked-katex-extension'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
 })
