@@ -283,7 +283,7 @@ function onPendingDragEnd() {
 <template>
   <div>
     <!-- Rename input -->
-    <div v-if="isRenaming" class="py-0.5 px-2" :style="{ paddingLeft: depth * 14 + 8 + 'px' }">
+    <div v-if="isRenaming" class="py-0.5 px-2" :style="{ paddingLeft: depth * 20 + 12 + 'px' }">
       <input
         v-model="renameValue"
         class="w-full px-2 py-0.5 text-sm bg-bg border border-accent rounded outline-none text-text-primary font-ui"
@@ -314,7 +314,7 @@ function onPendingDragEnd() {
             : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
         !isDirectory(entry) && dropRegion === 'into' && !isInvalidTarget ? 'ring-1 ring-inset ring-accent' : '',
       ]"
-      :style="{ paddingLeft: depth * 14 + 8 + 'px' }"
+      :style="{ paddingLeft: depth * 20 + 12 + 'px' }"
       draggable="true"
       @dragstart="onDragStart"
       @dragend="onDragEnd"
@@ -325,22 +325,20 @@ function onPendingDragEnd() {
       @dblclick="handleDblClick"
       @contextmenu="onContextMenu"
     >
+      <!-- Indent guides -->
+      <div
+        v-for="i in depth"
+        :key="'guide-' + i"
+        class="absolute top-0 bottom-0 w-px bg-border pointer-events-none"
+        :style="{ left: (i - 1) * 20 + 22 + 'px' }"
+      />
+
       <!-- Before drop indicator -->
       <div
         v-if="dropRegion === 'before' && !isInvalidTarget"
         class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
       />
 
-      <!-- Chevron (expand/collapse only — stops click propagation) -->
-      <span
-        class="w-3 flex items-center justify-center text-text-muted shrink-0"
-        @click.stop="handleChevronClick"
-      >
-        <template v-if="isDirectory(entry)">
-          <ChevronDown v-if="isOpen" :size="14" />
-          <ChevronRight v-else :size="14" />
-        </template>
-      </span>
 
       <!-- Icon -->
       <span class="flex items-center shrink-0">

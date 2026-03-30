@@ -5,6 +5,7 @@ import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
+import ImageDetailPane from './ImageDetailPane.vue'
 import EditorTabs from './EditorTabs.vue'
 import BreadcrumbBar from './BreadcrumbBar.vue'
 import LilypadIcon from '@/assets/icon.svg'
@@ -13,6 +14,7 @@ const store = useEditorStore()
 const uiStore = useUiStore()
 const hasTabs = computed(() => store.tabOrder.length > 0)
 const activeId = computed(() => store.activeDocumentId)
+const activeDocType = computed(() => store.activeDocument?.type)
 
 const splitPane = useTemplateRef<HTMLDivElement[]>('splitPane')
 const splitPct = ref(50)
@@ -151,6 +153,7 @@ onBeforeUnmount(() => {
 
         <!-- Editor font size controls — anchored to right edge of editor panel -->
         <div
+          v-if="activeDocType !== 'image'"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
           :style="editorFontControlsStyle"
         >
@@ -174,7 +177,7 @@ onBeforeUnmount(() => {
 
         <!-- Preview font size controls — anchored to far right of preview panel -->
         <div
-          v-if="showPreviewFontControls"
+          v-if="showPreviewFontControls && activeDocType !== 'image'"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-l border-border-subtle"
           :style="previewFontControlsStyle"
         >
@@ -199,7 +202,12 @@ onBeforeUnmount(() => {
 
       <template v-for="id in store.tabOrder" :key="id">
         <div v-if="id === activeId" class="flex-1 min-h-0 overflow-hidden">
+          <!-- Image detail pane -->
+          <ImageDetailPane v-if="activeDocType === 'image'" :document-id="id" class="h-full" />
+
+          <!-- Markdown split pane -->
           <div
+            v-else
             ref="splitPane"
             class="relative h-full bg-surface overflow-hidden"
           >

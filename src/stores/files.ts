@@ -39,6 +39,9 @@ export const useFilesStore = defineStore('files', () => {
 
   const tree = computed<Entry[]>(() => buildTree(null))
 
+  // Tree filtered to only show image entries and their parent folders
+  const imageTree = computed<Entry[]>(() => buildImageTree(null))
+
   // Check if a name is already taken among siblings (excludeId = skip self when renaming)
   function isDuplicateName(name: string, parentId: string | null, excludeId?: string): boolean {
     return entries.value.some(
@@ -65,6 +68,33 @@ export const useFilesStore = defineStore('files', () => {
             name: row.name,
             parentId: row.parent_id,
             children: buildTree(row.id),
+          }
+        }
+        return {
+          kind: 'document' as const,
+          id: row.id,
+          name: row.name,
+          parentId: row.parent_id,
+          type: row.document_type as DocumentType,
+        }
+      })
+  }
+
+  function buildImageTree(parentId: string | null): Entry[] {
+    const children = entries.value
+      .filter((e) => e.parent_id === parentId)
+      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+
+    return children
+      .filter((row) => row.document_type === 'image' || row.kind === 'directory')
+      .map((row) => {
+        if (row.kind === 'directory') {
+          return {
+            kind: 'directory' as const,
+            id: row.id,
+            name: row.name,
+            parentId: row.parent_id,
+            children: buildImageTree(row.id),
           }
         }
         return {
@@ -774,6 +804,7 @@ Happy note-taking!
   return {
     entries,
     tree,
+    imageTree,
     loading,
     indexReady,
     selectedFolderId,

@@ -547,7 +547,65 @@ function cancelImageRename() {
   rebuildGhosts()
 }
 
+function isOverImageRef(editorView: EditorView, x: number, y: number): boolean {
+  const pos = editorView.posAtCoords({ x, y })
+  if (pos === null) return false
+  const line = editorView.state.doc.lineAt(pos)
+  const imagePattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
+  let match: RegExpExecArray | null
+  while ((match = imagePattern.exec(line.text)) !== null) {
+    const absFrom = line.from + match.index
+    const absTo = absFrom + match[0].length
+    if (pos >= absFrom && pos <= absTo) return true
+  }
+  return false
+}
+
+function updateImageCursor(editorView: EditorView, event: MouseEvent) {
+  const show = (event.ctrlKey || event.metaKey) && isOverImageRef(editorView, event.clientX, event.clientY)
+  editorView.contentDOM.style.cursor = show ? 'pointer' : ''
+}
+
 const imagePasteHandler = EditorView.domEventHandlers({
+  click(event: MouseEvent, editorView: EditorView) {
+    if (!(event.ctrlKey || event.metaKey)) return false
+    const pos = editorView.posAtCoords({ x: event.clientX, y: event.clientY })
+    if (pos === null) return false
+
+    const line = editorView.state.doc.lineAt(pos)
+    const imagePattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
+    let match: RegExpExecArray | null
+    while ((match = imagePattern.exec(line.text)) !== null) {
+      const absFrom = line.from + match.index
+      const absTo = absFrom + match[0].length
+      if (pos >= absFrom && pos <= absTo) {
+        event.preventDefault()
+        uiStore.navigateToImage(match[1]!)
+        return true
+      }
+    }
+    return false
+  },
+
+  mousemove(event: MouseEvent, editorView: EditorView) {
+    updateImageCursor(editorView, event)
+    return false
+  },
+
+  keydown(event: KeyboardEvent, editorView: EditorView) {
+    if (event.key === 'Control' || event.key === 'Meta') {
+      editorView.contentDOM.style.cursor = ''
+    }
+    return false
+  },
+
+  keyup(event: KeyboardEvent, editorView: EditorView) {
+    if (event.key === 'Control' || event.key === 'Meta') {
+      editorView.contentDOM.style.cursor = ''
+    }
+    return false
+  },
+
   contextmenu(event: MouseEvent, editorView: EditorView) {
     const pos = editorView.posAtCoords({ x: event.clientX, y: event.clientY })
     if (pos === null) return false

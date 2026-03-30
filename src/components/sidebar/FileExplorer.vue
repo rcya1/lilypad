@@ -192,7 +192,7 @@ function onPendingDragEnd() {
     @click.self="files.selectFolder(null); files.clearSelection()"
     @contextmenu="onEmptyAreaContextMenu"
   >
-    <div class="flex items-center justify-between px-3 pt-1 pb-2">
+    <div class="flex items-center justify-between px-3 py-2">
       <span class="text-xs font-medium text-text-muted uppercase tracking-widest">Files</span>
       <div class="flex items-center gap-0.5">
         <button
@@ -262,6 +262,7 @@ function onPendingDragEnd() {
     <!-- Empty-space drop zone — fills remaining height, shows line at top when active -->
     <div
       class="flex-1 min-h-4 relative"
+      @click="files.selectFolder(null); files.clearSelection()"
       @dragover.prevent="isRootDropTarget = true"
       @dragleave="isRootDropTarget = false"
       @drop="onRootDrop"

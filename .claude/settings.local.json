@@ -12,7 +12,8 @@
       "Bash(npx vitest:*)",
       "Bash(yarn format:*)",
       "Bash(cd:*)",
-      "Bash(npx vue-tsc:*)"
+      "Bash(npx vue-tsc:*)",
+      "Bash(npx vite:*)"
     ]
   }
 }

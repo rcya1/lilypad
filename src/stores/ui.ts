@@ -41,7 +41,21 @@ function readVimMappings(): VimMapping[] {
   }
 }
 
+export type SidebarTab = 'files' | 'images'
+
 export const useUiStore = defineStore('ui', () => {
+  const sidebarTab = ref<SidebarTab>('files')
+  const highlightedImageId = ref<string | null>(null)
+
+  function navigateToImage(entryId: string) {
+    sidebarTab.value = 'images'
+    highlightedImageId.value = entryId
+    // Clear highlight after animation
+    setTimeout(() => {
+      highlightedImageId.value = null
+    }, 1500)
+  }
+
   const previewVisible = ref(localStorage.getItem('preview-visible') !== 'false')
   const previewFontSize = ref(readFontSize('preview-font-size', 15))
   const editorFontSize = ref(readFontSize('editor-font-size', 13))
@@ -206,6 +220,9 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   return {
+    sidebarTab,
+    highlightedImageId,
+    navigateToImage,
     previewVisible,
     previewFontSize,
     editorFontSize,

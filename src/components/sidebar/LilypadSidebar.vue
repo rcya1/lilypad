@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import FileExplorer from './FileExplorer.vue'
+import ImagesTab from './ImagesTab.vue'
 import SearchPanel from './SearchPanel.vue'
 import LilypadIcon from '@/assets/icon.svg'
 import { LogOut, Loader2, Settings, Search } from 'lucide-vue-next'
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useSearchStore } from '@/stores/search'
+import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import SettingsModal from '@/components/settings/SettingsModal.vue'
 
@@ -15,6 +17,7 @@ const auth = useAuthStore()
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
 const searchStore = useSearchStore()
+const uiStore = useUiStore()
 const router = useRouter()
 
 const isSyncing = computed(() => editorStore.savingIds.size > 0)
@@ -40,8 +43,9 @@ const isResizing = ref(false)
 watch(
   () => filesStore.pendingCreate,
   (val) => {
-    if (val && isMinimized.value) {
-      isMinimized.value = false
+    if (val) {
+      if (isMinimized.value) isMinimized.value = false
+      uiStore.sidebarTab = 'files'
     }
   },
 )
@@ -129,7 +133,29 @@ onBeforeUnmount(() => {
 
     <div v-if="!isMinimized" class="relative flex-1 flex flex-col overflow-hidden">
       <SearchPanel v-if="searchStore.isOpen" />
-      <FileExplorer v-else />
+      <template v-else>
+        <div class="flex border-b border-border-subtle shrink-0">
+          <button
+            v-for="tab in (['files', 'images'] as const)"
+            :key="tab"
+            class="flex-1 text-xs font-medium py-1.5 text-center capitalize transition-colors duration-100 cursor-pointer relative"
+            :class="
+              uiStore.sidebarTab === tab
+                ? 'text-text-primary'
+                : 'text-text-muted hover:text-text-secondary'
+            "
+            @click="uiStore.sidebarTab = tab"
+          >
+            {{ tab }}
+            <div
+              v-if="uiStore.sidebarTab === tab"
+              class="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full"
+            />
+          </button>
+        </div>
+        <FileExplorer v-if="uiStore.sidebarTab === 'files'" />
+        <ImagesTab v-else />
+      </template>
     </div>
 
     <div
