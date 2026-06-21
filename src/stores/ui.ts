@@ -56,6 +56,16 @@ export const useUiStore = defineStore('ui', () => {
     }, 1500)
   }
 
+  const quickSwitcherOpen = ref(false)
+
+  function openQuickSwitcher() {
+    quickSwitcherOpen.value = true
+  }
+
+  function closeQuickSwitcher() {
+    quickSwitcherOpen.value = false
+  }
+
   const previewVisible = ref(localStorage.getItem('preview-visible') !== 'false')
   const previewFontSize = ref(readFontSize('preview-font-size', 15))
   const editorFontSize = ref(readFontSize('editor-font-size', 13))
@@ -223,6 +233,9 @@ export const useUiStore = defineStore('ui', () => {
     sidebarTab,
     highlightedImageId,
     navigateToImage,
+    quickSwitcherOpen,
+    openQuickSwitcher,
+    closeQuickSwitcher,
     previewVisible,
     previewFontSize,
     editorFontSize,

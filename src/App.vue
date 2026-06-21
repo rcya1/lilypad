@@ -3,14 +3,25 @@ import { onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
+import { useUiStore } from '@/stores/ui'
 import ToastContainer from '@/components/ToastContainer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import QuickSwitcher from '@/components/QuickSwitcher.vue'
 
 const auth = useAuthStore()
 const filesStore = useFilesStore()
 const editorStore = useEditorStore()
+const uiStore = useUiStore()
 
 function onKeyDown(e: KeyboardEvent) {
+  // Ctrl/Cmd+P: toggle the quick switcher (works regardless of focus)
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+    e.preventDefault()
+    if (uiStore.quickSwitcherOpen) uiStore.closeQuickSwitcher()
+    else uiStore.openQuickSwitcher()
+    return
+  }
+
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
     // If a rename/input is already active, do nothing
     const active = document.activeElement
@@ -52,6 +63,7 @@ onBeforeUnmount(() => {
     <div class="text-text-muted text-sm font-ui">Loading...</div>
   </div>
   <router-view v-else />
+  <QuickSwitcher />
   <ToastContainer />
   <ConfirmDialog />
 </template>
