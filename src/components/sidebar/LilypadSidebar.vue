@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
       <template v-else>
         <div class="flex border-b border-border-subtle shrink-0">
           <button
-            v-for="tab in (['files', 'images'] as const)"
+            v-for="tab in ['files', 'images'] as const"
             :key="tab"
             class="flex-1 text-xs font-medium py-1.5 text-center capitalize transition-colors duration-100 cursor-pointer relative"
             :class="

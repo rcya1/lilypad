@@ -18,6 +18,12 @@ const newName = ref('')
 
 const isRootDropTarget = ref(false)
 
+/** Clicking empty explorer space clears both the active folder and any selection. */
+function deselectAll() {
+  files.selectFolder(null)
+  files.clearSelection()
+}
+
 function getRootAppendOrder(): number {
   const roots = files.entries
     .filter((e) => e.parent_id === null)
@@ -189,7 +195,7 @@ function onPendingDragEnd() {
 <template>
   <div
     class="flex-1 flex flex-col overflow-y-auto"
-    @click.self="files.selectFolder(null); files.clearSelection()"
+    @click.self="deselectAll"
     @contextmenu="onEmptyAreaContextMenu"
   >
     <div class="flex items-center justify-between px-3 py-2">
@@ -226,7 +232,7 @@ function onPendingDragEnd() {
       <div v-for="i in 3" :key="i" class="h-6 bg-surface-elevated rounded animate-pulse" />
     </div>
 
-    <div v-else class="text-sm select-none" @click.self="files.selectFolder(null); files.clearSelection()">
+    <div v-else class="text-sm select-none" @click.self="deselectAll">
       <template v-for="entry in files.tree" :key="entry.id">
         <PendingInputRow
           v-if="showRootInput && files.pendingCreate?.insertBefore === entry.id"
@@ -262,7 +268,7 @@ function onPendingDragEnd() {
     <!-- Empty-space drop zone — fills remaining height, shows line at top when active -->
     <div
       class="flex-1 min-h-4 relative"
-      @click="files.selectFolder(null); files.clearSelection()"
+      @click="deselectAll"
       @dragover.prevent="isRootDropTarget = true"
       @dragleave="isRootDropTarget = false"
       @drop="onRootDrop"

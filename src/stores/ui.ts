@@ -1,9 +1,20 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from './auth'
+import {
+  STORAGE_KEYS,
+  persisted,
+  boolCodec,
+  themeCodec,
+  intCodec,
+  clampedIntCodec,
+  jsonCodec,
+} from '@/lib/storage'
 
 const FONT_SIZE_MIN = 12
 const FONT_SIZE_MAX = 24
+const REMOTE_SAVE_DEBOUNCE_MS = 1000
 
 export interface VimMapping {
   id: string
@@ -17,35 +28,13 @@ function clampFontSize(n: number): number {
   return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, n))
 }
 
-function readFontSize(key: string, defaultVal: number): number {
-  const raw = localStorage.getItem(key)
-  if (raw === null) return defaultVal
-  const n = parseInt(raw, 10)
-  if (isNaN(n)) return defaultVal
-  return clampFontSize(n)
-}
-
-function readVimEscTimeout(): number {
-  const raw = localStorage.getItem('vim-esc-timeout')
-  if (!raw) return 200
-  const n = parseInt(raw, 10)
-  return isNaN(n) ? 200 : n
-}
-
-function readVimMappings(): VimMapping[] {
-  try {
-    const raw = localStorage.getItem('vim-mappings')
-    return raw ? (JSON.parse(raw) as VimMapping[]) : []
-  } catch {
-    return []
-  }
-}
-
 export type SidebarTab = 'files' | 'images'
 
 export const useUiStore = defineStore('ui', () => {
+  // ── Ephemeral UI state (not persisted) ──────────────────────────────────────
   const sidebarTab = ref<SidebarTab>('files')
   const highlightedImageId = ref<string | null>(null)
+  const quickSwitcherOpen = ref(false)
 
   function navigateToImage(entryId: string) {
     sidebarTab.value = 'images'
@@ -56,8 +45,6 @@ export const useUiStore = defineStore('ui', () => {
     }, 1500)
   }
 
-  const quickSwitcherOpen = ref(false)
-
   function openQuickSwitcher() {
     quickSwitcherOpen.value = true
   }
@@ -66,43 +53,131 @@ export const useUiStore = defineStore('ui', () => {
     quickSwitcherOpen.value = false
   }
 
-  const previewVisible = ref(localStorage.getItem('preview-visible') !== 'false')
-  const previewFontSize = ref(readFontSize('preview-font-size', 15))
-  const editorFontSize = ref(readFontSize('editor-font-size', 13))
-  const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
-  const vimEnabled = ref(localStorage.getItem('vim-enabled') !== 'false')
-  const vimEscTimeout = ref(readVimEscTimeout())
-  const vimMappings = ref<VimMapping[]>(readVimMappings())
-  const highlightOnYank = ref(localStorage.getItem('vim-highlight-yank') !== 'false')
-  const vimClipboardSync = ref(localStorage.getItem('vim-clipboard-sync') !== 'false')
+  // ── Persisted settings ──────────────────────────────────────────────────────
+  // Each setting is declared once: `persisted` hydrates it from localStorage and
+  // writes it back on every change. Cloud sync is wired up separately below.
+  const isDarkMode = persisted(STORAGE_KEYS.theme, false, themeCodec)
+  const previewVisible = persisted(STORAGE_KEYS.previewVisible, true, boolCodec)
+  const previewFontSize = persisted(
+    STORAGE_KEYS.previewFontSize,
+    15,
+    clampedIntCodec(FONT_SIZE_MIN, FONT_SIZE_MAX),
+  )
+  const editorFontSize = persisted(
+    STORAGE_KEYS.editorFontSize,
+    13,
+    clampedIntCodec(FONT_SIZE_MIN, FONT_SIZE_MAX),
+  )
+  const vimEnabled = persisted(STORAGE_KEYS.vimEnabled, true, boolCodec)
+  const vimEscTimeout = persisted(STORAGE_KEYS.vimEscTimeout, 200, intCodec)
+  const vimMappings = persisted<VimMapping[]>(
+    STORAGE_KEYS.vimMappings,
+    [],
+    jsonCodec<VimMapping[]>(),
+  )
+  const highlightOnYank = persisted(STORAGE_KEYS.highlightOnYank, true, boolCodec)
+  const vimClipboardSync = persisted(STORAGE_KEYS.vimClipboardSync, true, boolCodec)
 
-  // ── Supabase sync ─────────────────────────────────────────────────────────
+  // Reflect dark mode onto <html> — covers initial load, toggle, and cloud hydrate.
+  watch(isDarkMode, (v) => document.documentElement.classList.toggle('dark', v), {
+    immediate: true,
+  })
 
-  let saveTimer: ReturnType<typeof setTimeout> | undefined
-
-  function serializeSettings(): Record<string, unknown> {
-    return {
-      theme: isDarkMode.value ? 'dark' : 'light',
-      previewVisible: previewVisible.value,
-      previewFontSize: previewFontSize.value,
-      editorFontSize: editorFontSize.value,
-      vimEnabled: vimEnabled.value,
-      vimEscTimeout: vimEscTimeout.value,
-      vimMappings: vimMappings.value,
-      highlightOnYank: highlightOnYank.value,
-      vimClipboardSync: vimClipboardSync.value,
-    }
+  // ── Supabase sync ───────────────────────────────────────────────────────────
+  // A registry mapping each setting ref to its Supabase field. `decode` returns
+  // `undefined` for missing/invalid remote values so they're skipped on hydrate.
+  interface RemoteSetting {
+    key: string
+    encode: () => unknown
+    decode: (raw: unknown) => void
   }
 
-  function saveSettings(userId: string) {
+  const remoteSettings: RemoteSetting[] = []
+
+  function syncRemote<T>(
+    state: Ref<T>,
+    key: string,
+    decode: (raw: unknown) => T | undefined,
+    encode: (value: T) => unknown = (value) => value,
+  ) {
+    remoteSettings.push({
+      key,
+      encode: () => encode(state.value),
+      decode: (raw) => {
+        const value = decode(raw)
+        if (value !== undefined) state.value = value
+      },
+    })
+  }
+
+  syncRemote(
+    isDarkMode,
+    'theme',
+    (raw) => (raw === 'dark' || raw === 'light' ? raw === 'dark' : undefined),
+    (value) => (value ? 'dark' : 'light'),
+  )
+  syncRemote(previewVisible, 'previewVisible', (raw) =>
+    typeof raw === 'boolean' ? raw : undefined,
+  )
+  syncRemote(previewFontSize, 'previewFontSize', (raw) =>
+    typeof raw === 'number' ? clampFontSize(raw) : undefined,
+  )
+  syncRemote(editorFontSize, 'editorFontSize', (raw) =>
+    typeof raw === 'number' ? clampFontSize(raw) : undefined,
+  )
+  syncRemote(vimEnabled, 'vimEnabled', (raw) => (typeof raw === 'boolean' ? raw : undefined))
+  syncRemote(vimEscTimeout, 'vimEscTimeout', (raw) => (typeof raw === 'number' ? raw : undefined))
+  syncRemote(vimMappings, 'vimMappings', (raw) =>
+    Array.isArray(raw) ? (raw as VimMapping[]) : undefined,
+  )
+  syncRemote(highlightOnYank, 'highlightOnYank', (raw) =>
+    typeof raw === 'boolean' ? raw : undefined,
+  )
+  syncRemote(vimClipboardSync, 'vimClipboardSync', (raw) =>
+    typeof raw === 'boolean' ? raw : undefined,
+  )
+
+  function serializeSettings(): Record<string, unknown> {
+    return Object.fromEntries(remoteSettings.map((s) => [s.key, s.encode()]))
+  }
+
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+  let hydrating = false
+
+  function scheduleSave() {
+    // Skip echo-saves while applying values fetched from the cloud.
+    if (hydrating) return
+    const userId = useAuthStore().user?.id
+    if (!userId) return
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       supabase
         .from('user_settings')
-        .upsert({ user_id: userId, settings: serializeSettings(), updated_at: new Date().toISOString() })
+        .upsert({
+          user_id: userId,
+          settings: serializeSettings(),
+          updated_at: new Date().toISOString(),
+        })
         .then()
-    }, 1000)
+    }, REMOTE_SAVE_DEBOUNCE_MS)
   }
+
+  // Sync flush so the `hydrating` guard reliably wraps cloud-applied changes.
+  watch(
+    [
+      isDarkMode,
+      previewVisible,
+      previewFontSize,
+      editorFontSize,
+      vimEnabled,
+      vimEscTimeout,
+      vimMappings,
+      highlightOnYank,
+      vimClipboardSync,
+    ],
+    scheduleSave,
+    { flush: 'sync' },
+  )
 
   async function loadSettings(userId: string) {
     const { data } = await supabase
@@ -112,121 +187,65 @@ export const useUiStore = defineStore('ui', () => {
       .single()
 
     if (!data) {
-      // First login — persist current localStorage values to Supabase
+      // First login — persist current local values to Supabase.
       await supabase
         .from('user_settings')
         .upsert({ user_id: userId, settings: serializeSettings() })
       return
     }
 
-    const s = data.settings
-
-    if (s.theme === 'dark' || s.theme === 'light') {
-      isDarkMode.value = s.theme === 'dark'
-      document.documentElement.classList.toggle('dark', isDarkMode.value)
-      localStorage.setItem('theme', s.theme as string)
-    }
-    if (typeof s.previewVisible === 'boolean') {
-      previewVisible.value = s.previewVisible
-      localStorage.setItem('preview-visible', String(s.previewVisible))
-    }
-    if (typeof s.previewFontSize === 'number') {
-      previewFontSize.value = clampFontSize(s.previewFontSize)
-      localStorage.setItem('preview-font-size', String(previewFontSize.value))
-    }
-    if (typeof s.editorFontSize === 'number') {
-      editorFontSize.value = clampFontSize(s.editorFontSize)
-      localStorage.setItem('editor-font-size', String(editorFontSize.value))
-    }
-    if (typeof s.vimEnabled === 'boolean') {
-      vimEnabled.value = s.vimEnabled
-      localStorage.setItem('vim-enabled', String(s.vimEnabled))
-    }
-    if (typeof s.vimEscTimeout === 'number') {
-      vimEscTimeout.value = s.vimEscTimeout
-      localStorage.setItem('vim-esc-timeout', String(s.vimEscTimeout))
-    }
-    if (Array.isArray(s.vimMappings)) {
-      vimMappings.value = s.vimMappings as VimMapping[]
-      localStorage.setItem('vim-mappings', JSON.stringify(s.vimMappings))
-    }
-    if (typeof s.highlightOnYank === 'boolean') {
-      highlightOnYank.value = s.highlightOnYank
-      localStorage.setItem('vim-highlight-yank', String(s.highlightOnYank))
-    }
-    if (typeof s.vimClipboardSync === 'boolean') {
-      vimClipboardSync.value = s.vimClipboardSync
-      localStorage.setItem('vim-clipboard-sync', String(s.vimClipboardSync))
-    }
+    const remote = data.settings as Record<string, unknown>
+    hydrating = true
+    for (const setting of remoteSettings) setting.decode(remote[setting.key])
+    hydrating = false
   }
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+  // ── Setters ─────────────────────────────────────────────────────────────────
+  // Persistence (localStorage + Supabase) is handled by the watchers above, so
+  // these only need to mutate the ref.
 
-  function toggleDarkMode(userId?: string) {
+  function toggleDarkMode() {
     isDarkMode.value = !isDarkMode.value
-    document.documentElement.classList.toggle('dark', isDarkMode.value)
-    localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light')
-    if (userId) saveSettings(userId)
   }
 
   function togglePreview() {
     previewVisible.value = !previewVisible.value
-    localStorage.setItem('preview-visible', String(previewVisible.value))
   }
 
-  function setPreviewFontSize(size: number, userId?: string) {
+  function setPreviewFontSize(size: number) {
     previewFontSize.value = clampFontSize(size)
-    localStorage.setItem('preview-font-size', String(previewFontSize.value))
-    if (userId) saveSettings(userId)
   }
 
-  function setEditorFontSize(size: number, userId?: string) {
+  function setEditorFontSize(size: number) {
     editorFontSize.value = clampFontSize(size)
-    localStorage.setItem('editor-font-size', String(editorFontSize.value))
-    if (userId) saveSettings(userId)
   }
 
-  function setVimEnabled(val: boolean, userId?: string) {
+  function setVimEnabled(val: boolean) {
     vimEnabled.value = val
-    localStorage.setItem('vim-enabled', String(val))
-    if (userId) saveSettings(userId)
   }
 
-  function setVimEscTimeout(val: number, userId?: string) {
+  function setVimEscTimeout(val: number) {
     vimEscTimeout.value = val
-    localStorage.setItem('vim-esc-timeout', String(val))
-    if (userId) saveSettings(userId)
   }
 
-  function setHighlightOnYank(val: boolean, userId?: string) {
+  function setHighlightOnYank(val: boolean) {
     highlightOnYank.value = val
-    localStorage.setItem('vim-highlight-yank', String(val))
-    if (userId) saveSettings(userId)
   }
 
-  function setVimClipboardSync(val: boolean, userId?: string) {
+  function setVimClipboardSync(val: boolean) {
     vimClipboardSync.value = val
-    localStorage.setItem('vim-clipboard-sync', String(val))
-    if (userId) saveSettings(userId)
   }
 
-  function addVimMapping(m: Omit<VimMapping, 'id'>, userId?: string) {
-    const mapping: VimMapping = { ...m, id: crypto.randomUUID() }
-    vimMappings.value = [...vimMappings.value, mapping]
-    localStorage.setItem('vim-mappings', JSON.stringify(vimMappings.value))
-    if (userId) saveSettings(userId)
+  function addVimMapping(m: Omit<VimMapping, 'id'>) {
+    vimMappings.value = [...vimMappings.value, { ...m, id: crypto.randomUUID() }]
   }
 
-  function removeVimMapping(id: string, userId?: string) {
+  function removeVimMapping(id: string) {
     vimMappings.value = vimMappings.value.filter((m) => m.id !== id)
-    localStorage.setItem('vim-mappings', JSON.stringify(vimMappings.value))
-    if (userId) saveSettings(userId)
   }
 
-  function updateVimMapping(id: string, patch: Partial<Omit<VimMapping, 'id'>>, userId?: string) {
+  function updateVimMapping(id: string, patch: Partial<Omit<VimMapping, 'id'>>) {
     vimMappings.value = vimMappings.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
-    localStorage.setItem('vim-mappings', JSON.stringify(vimMappings.value))
-    if (userId) saveSettings(userId)
   }
 
   return {

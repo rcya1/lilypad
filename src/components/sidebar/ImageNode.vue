@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, type WritableComputedRef } from 'vue'
-import {
-  Folder,
-  FolderOpen,
-  Image,
-} from 'lucide-vue-next'
+import { Folder, FolderOpen, Image } from 'lucide-vue-next'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
 import { useConfirm } from '@/composables/useConfirm'
+import { useContextMenu } from '@/composables/useContextMenu'
 import { useDragDrop, draggingEntry } from '@/composables/useDragDrop'
 
 const props = defineProps<{
@@ -30,8 +27,12 @@ const { confirm } = useConfirm()
 
 const isRenaming = ref(false)
 const renameValue = ref('')
-const showContextMenu = ref(false)
-const contextMenuPos = ref({ x: 0, y: 0 })
+const {
+  visible: contextMenuVisible,
+  position: contextMenuPos,
+  open: openContextMenu,
+  close: closeContextMenu,
+} = useContextMenu()
 
 const paddingLeft = computed(() => `${12 + props.depth * 20}px`)
 const isDir = computed(() => isDirectory(props.entry))
@@ -127,21 +128,8 @@ function onDragEnd() {
   dndDragEnd()
 }
 
-// Context menu
-function onContextMenu(e: MouseEvent) {
-  e.preventDefault()
-  contextMenuPos.value = { x: e.clientX, y: e.clientY }
-  showContextMenu.value = true
-
-  const close = () => {
-    showContextMenu.value = false
-    window.removeEventListener('click', close)
-  }
-  setTimeout(() => window.addEventListener('click', close), 0)
-}
-
 function startRename() {
-  showContextMenu.value = false
+  closeContextMenu()
   renameValue.value = props.entry.name
   isRenaming.value = true
 }
@@ -155,7 +143,7 @@ async function submitRename() {
 }
 
 async function handleDelete() {
-  showContextMenu.value = false
+  closeContextMenu()
 
   const isInSelection = isSelected.value || isCoveredBySelection.value
   if (filesStore.selectedIds.size >= 2 && isInSelection) {
@@ -228,7 +216,7 @@ async function handleDelete() {
           @dragleave="onDragLeave"
           @drop="onDrop"
           @click="handleClick"
-          @contextmenu="onContextMenu"
+          @contextmenu="openContextMenu"
         >
           <!-- Indent guides -->
           <div
@@ -300,7 +288,7 @@ async function handleDelete() {
         @dragleave="onDragLeave"
         @drop="onDrop"
         @click="handleClick"
-        @contextmenu="onContextMenu"
+        @contextmenu="openContextMenu"
       >
         <!-- Indent guides -->
         <div
@@ -336,7 +324,7 @@ async function handleDelete() {
     <!-- Context menu -->
     <Teleport to="body">
       <div
-        v-if="showContextMenu"
+        v-if="contextMenuVisible"
         class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36"
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
       >

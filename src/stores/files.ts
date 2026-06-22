@@ -37,6 +37,13 @@ export const useFilesStore = defineStore('files', () => {
   /** True while the trigram index is being built (blocks search). */
   const indexReady = ref(false)
 
+  /** O(1) id → row lookup, kept in sync with `entries`. */
+  const entryById = computed(() => {
+    const map = new Map<string, EntryRow>()
+    for (const e of entries.value) map.set(e.id, e)
+    return map
+  })
+
   const tree = computed<Entry[]>(() => buildTree(null))
 
   // Tree filtered to only show image entries and their parent folders
@@ -216,10 +223,10 @@ export const useFilesStore = defineStore('files', () => {
 
   /** Walk up the tree to find the closest ancestor whose ID is in selectedIds. */
   function findSelectedAncestor(id: string): string | null {
-    let parentId = entries.value.find((e) => e.id === id)?.parent_id ?? null
+    let parentId = entryById.value.get(id)?.parent_id ?? null
     while (parentId) {
       if (selectedIds.value.has(parentId)) return parentId
-      parentId = entries.value.find((e) => e.id === parentId)?.parent_id ?? null
+      parentId = entryById.value.get(parentId)?.parent_id ?? null
     }
     return null
   }
@@ -250,10 +257,10 @@ export const useFilesStore = defineStore('files', () => {
     // Only delete top-level entries (skip if an ancestor is also in the set)
     const idSet = new Set(ids)
     const topLevel = ids.filter((id) => {
-      let parentId = entries.value.find((e) => e.id === id)?.parent_id ?? null
+      let parentId = entryById.value.get(id)?.parent_id ?? null
       while (parentId) {
         if (idSet.has(parentId)) return false
-        parentId = entries.value.find((e) => e.id === parentId)?.parent_id ?? null
+        parentId = entryById.value.get(parentId)?.parent_id ?? null
       }
       return true
     })
@@ -276,7 +283,7 @@ export const useFilesStore = defineStore('files', () => {
    * the entry lives at the root (or is not found).
    */
   function getParentFolderId(fileId: string): string | null {
-    const entry = entries.value.find((e) => e.id === fileId)
+    const entry = entryById.value.get(fileId)
     return entry?.parent_id ?? null
   }
 
@@ -285,17 +292,26 @@ export const useFilesStore = defineStore('files', () => {
    * parent for the given file id.
    */
   function getAncestorPath(fileId: string): { id: string; name: string }[] {
-    const entry = entries.value.find((e) => e.id === fileId)
+    const entry = entryById.value.get(fileId)
     if (!entry?.parent_id) return []
     const segments: { id: string; name: string }[] = []
     let currentId: string | null = entry.parent_id
     while (currentId) {
-      const parent = entries.value.find((e) => e.id === currentId)
+      const parent = entryById.value.get(currentId)
       if (!parent) break
       segments.unshift({ id: parent.id, name: parent.name })
       currentId = parent.parent_id
     }
     return segments
+  }
+
+  /**
+   * Human-readable folder path for a file, e.g. "Notes / Math". Empty at root.
+   */
+  function getFolderPath(fileId: string): string {
+    return getAncestorPath(fileId)
+      .map((segment) => segment.name)
+      .join(' / ')
   }
 
   /**
@@ -463,7 +479,7 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   async function renameEntry(id: string, newName: string) {
-    const entry = entries.value.find((e) => e.id === id)
+    const entry = entryById.value.get(id)
     if (entry && isDuplicateName(newName, entry.parent_id, id)) {
       showError('A file or folder with that name already exists in this location.')
       return false
@@ -485,7 +501,7 @@ export const useFilesStore = defineStore('files', () => {
 
     // Only clean up Storage for entries that have a storage_path (binary files)
     const storagePaths = idsToDelete
-      .map((did) => entries.value.find((e) => e.id === did))
+      .map((did) => entryById.value.get(did))
       .filter((e) => e?.storage_path)
       .map((e) => e!.storage_path!)
 
@@ -535,7 +551,7 @@ export const useFilesStore = defineStore('files', () => {
     const descendants = collectDescendantIds(id)
     if (newParentId !== null && descendants.includes(newParentId)) return false
 
-    const moving = entries.value.find((e) => e.id === id)
+    const moving = entryById.value.get(id)
     if (moving && isDuplicateName(moving.name, newParentId, id)) {
       if (!silent) showError('A file or folder with that name already exists in that location.')
       return false
@@ -607,7 +623,7 @@ export const useFilesStore = defineStore('files', () => {
     const cached = contentMap.get(entryId)
     if (cached !== undefined) return cached
 
-    const entry = entries.value.find((e) => e.id === entryId)
+    const entry = entryById.value.get(entryId)
     if (!entry) return null
 
     // For binary files (PDF, image), fall back to Storage download
@@ -636,7 +652,7 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   async function uploadContent(entryId: string, content: string): Promise<boolean> {
-    const entry = entries.value.find((e) => e.id === entryId)
+    const entry = entryById.value.get(entryId)
     if (!entry) return false
 
     if (entry.document_type === 'md') {
@@ -680,9 +696,7 @@ export const useFilesStore = defineStore('files', () => {
   /** Return a name unique among siblings in the given parent folder. */
   function deduplicateName(name: string, parentId: string | null): string {
     const siblings = new Set(
-      entries.value
-        .filter((e) => e.parent_id === parentId)
-        .map((e) => e.name),
+      entries.value.filter((e) => e.parent_id === parentId).map((e) => e.name),
     )
     if (!siblings.has(name)) return name
 
@@ -752,7 +766,7 @@ export const useFilesStore = defineStore('files', () => {
     const cached = imageUrlCache.get(entryId)
     if (cached) return cached
 
-    const entry = entries.value.find((e) => e.id === entryId)
+    const entry = entryById.value.get(entryId)
     if (!entry?.storage_path) return null
 
     const { data } = supabase.storage.from('user-files').getPublicUrl(entry.storage_path)
@@ -761,7 +775,7 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   function getEntry(entryId: string): EntryRow | undefined {
-    return entries.value.find((e) => e.id === entryId)
+    return entryById.value.get(entryId)
   }
 
   async function seedWelcomeFile() {
@@ -841,6 +855,7 @@ Happy note-taking!
     getPendingSortOrder,
     clearPendingCreate,
     getAncestorPath,
+    getFolderPath,
     getCached,
     getContentMap,
     getTrigramIndex,

@@ -41,11 +41,7 @@ export function removeFileFromIndex(index: TrigramIndex, fileId: string): void {
 }
 
 /** Re-index a single file (remove old trigrams, add new ones). */
-export function updateTrigramsForFile(
-  index: TrigramIndex,
-  fileId: string,
-  content: string,
-): void {
+export function updateTrigramsForFile(index: TrigramIndex, fileId: string, content: string): void {
   removeFileFromIndex(index, fileId)
   for (const tri of extractTrigrams(content)) {
     let set = index.get(tri)
@@ -65,10 +61,7 @@ export function updateTrigramsForFile(
  * Find candidate file IDs for a literal (non-regex) query using the trigram
  * index.  Returns null if the query is too short for trigram filtering.
  */
-export function findLiteralCandidates(
-  index: TrigramIndex,
-  query: string,
-): Set<string> | null {
+export function findLiteralCandidates(index: TrigramIndex, query: string): Set<string> | null {
   const trigrams = extractTrigrams(query)
   if (trigrams.size === 0) return null // query < 3 chars
 
@@ -169,10 +162,7 @@ export function splitOnTopLevelPipe(pattern: string): string[] {
  * Find candidate file IDs for a regex pattern using trigram filtering.
  * Returns null when filtering can't help (full scan required).
  */
-export function findRegexCandidates(
-  index: TrigramIndex,
-  pattern: string,
-): Set<string> | null {
+export function findRegexCandidates(index: TrigramIndex, pattern: string): Set<string> | null {
   const branches = splitOnTopLevelPipe(pattern)
   const branchCandidates: Set<string>[] = []
 

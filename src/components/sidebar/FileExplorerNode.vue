@@ -2,11 +2,12 @@
 import { ref, computed, watch, type WritableComputedRef } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
-import { Folder, FolderOpen, ChevronRight, ChevronDown, FileText, File } from 'lucide-vue-next'
+import { Folder, FolderOpen, FileText, File } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 import { useConfirm } from '@/composables/useConfirm'
+import { useContextMenu } from '@/composables/useContextMenu'
 import PendingInputRow from './PendingInputRow.vue'
 
 const props = defineProps<{
@@ -27,8 +28,12 @@ const isOpen: WritableComputedRef<boolean> = computed({
   },
 })
 
-const showContextMenu = ref(false)
-const contextMenuPos = ref({ x: 0, y: 0 })
+const {
+  visible: contextMenuVisible,
+  position: contextMenuPos,
+  open: openContextMenu,
+  close: closeContextMenu,
+} = useContextMenu()
 const contextMenuInsertBefore = ref<string | null>(null)
 const isRenaming = ref(false)
 const renameValue = ref('')
@@ -78,11 +83,6 @@ watch(showNewInput, (val, _old, onCleanup) => {
     onCleanup(() => document.removeEventListener('mousedown', handler))
   }
 })
-
-function handleChevronClick() {
-  if (!isDirectory(props.entry)) return
-  isOpen.value = !isOpen.value
-}
 
 async function handleClick(e: MouseEvent) {
   if (isDirectory(props.entry)) {
@@ -151,26 +151,16 @@ function getNextSiblingId(): string | null {
 }
 
 function onContextMenu(e: MouseEvent) {
-  e.preventDefault()
-  contextMenuPos.value = { x: e.clientX, y: e.clientY }
-  showContextMenu.value = true
-
   // Determine insert position: top half → before this entry, bottom half → after
-  const rowEl = e.currentTarget as HTMLElement
-  const rect = rowEl.getBoundingClientRect()
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   const relY = e.clientY - rect.top
-  contextMenuInsertBefore.value =
-    relY < rect.height / 2 ? props.entry.id : getNextSiblingId()
+  contextMenuInsertBefore.value = relY < rect.height / 2 ? props.entry.id : getNextSiblingId()
 
-  const close = () => {
-    showContextMenu.value = false
-    window.removeEventListener('click', close)
-  }
-  setTimeout(() => window.addEventListener('click', close), 0)
+  openContextMenu(e)
 }
 
 function startRename() {
-  showContextMenu.value = false
+  closeContextMenu()
   renameValue.value = props.entry.name
   isRenaming.value = true
 }
@@ -184,7 +174,7 @@ async function submitRename() {
 }
 
 async function handleDelete() {
-  showContextMenu.value = false
+  closeContextMenu()
 
   const isInSelection = isSelected.value || isCoveredBySelection.value
   if (filesStore.selectedIds.size >= 2 && isInSelection) {
@@ -218,22 +208,22 @@ async function handleDelete() {
 }
 
 function startNewChildFile() {
-  showContextMenu.value = false
+  closeContextMenu()
   filesStore.triggerCreate(props.entry.id, 'file')
 }
 
 function startNewChildFolder() {
-  showContextMenu.value = false
+  closeContextMenu()
   filesStore.triggerCreate(props.entry.id, 'folder')
 }
 
 function startNewSiblingFile() {
-  showContextMenu.value = false
+  closeContextMenu()
   filesStore.triggerCreate(props.entry.parentId, 'file', contextMenuInsertBefore.value)
 }
 
 function startNewSiblingFolder() {
-  showContextMenu.value = false
+  closeContextMenu()
   filesStore.triggerCreate(props.entry.parentId, 'folder', contextMenuInsertBefore.value)
 }
 
@@ -304,78 +294,93 @@ function onPendingDragEnd() {
         v-if="isDirectory(entry) && dropRegion === 'into' && !isInvalidTarget"
         class="absolute inset-1 ring-1 ring-accent rounded-sm pointer-events-none z-10"
       />
-    <div
-      class="relative flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
-      :class="[
-        isSelected || isCoveredBySelection
-          ? 'bg-surface-overlay text-text-primary'
-          : isSelectedFolder
-            ? 'bg-surface-elevated text-text-primary'
-            : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
-        !isDirectory(entry) && dropRegion === 'into' && !isInvalidTarget ? 'ring-1 ring-inset ring-accent' : '',
-      ]"
-      :style="{ paddingLeft: depth * 20 + 12 + 'px' }"
-      draggable="true"
-      @dragstart="onDragStart"
-      @dragend="onDragEnd"
-      @dragover="onDragOver"
-      @dragleave="onDragLeave"
-      @drop="onDrop"
-      @click="handleClick"
-      @dblclick="handleDblClick"
-      @contextmenu="onContextMenu"
-    >
-      <!-- Indent guides -->
       <div
-        v-for="i in depth"
-        :key="'guide-' + i"
-        class="absolute top-0 bottom-0 w-px bg-border pointer-events-none"
-        :style="{ left: (i - 1) * 20 + 22 + 'px' }"
-      />
+        class="relative flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
+        :class="[
+          isSelected || isCoveredBySelection
+            ? 'bg-surface-overlay text-text-primary'
+            : isSelectedFolder
+              ? 'bg-surface-elevated text-text-primary'
+              : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary',
+          !isDirectory(entry) && dropRegion === 'into' && !isInvalidTarget
+            ? 'ring-1 ring-inset ring-accent'
+            : '',
+        ]"
+        :style="{ paddingLeft: depth * 20 + 12 + 'px' }"
+        draggable="true"
+        @dragstart="onDragStart"
+        @dragend="onDragEnd"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+        @click="handleClick"
+        @dblclick="handleDblClick"
+        @contextmenu="onContextMenu"
+      >
+        <!-- Indent guides -->
+        <div
+          v-for="i in depth"
+          :key="'guide-' + i"
+          class="absolute top-0 bottom-0 w-px bg-border pointer-events-none"
+          :style="{ left: (i - 1) * 20 + 22 + 'px' }"
+        />
 
-      <!-- Before drop indicator -->
+        <!-- Before drop indicator -->
+        <div
+          v-if="dropRegion === 'before' && !isInvalidTarget"
+          class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
+        />
+
+        <!-- Icon -->
+        <span class="flex items-center shrink-0">
+          <template v-if="isDirectory(entry)">
+            <FolderOpen v-if="isOpen" :size="17" class="text-amber" />
+            <Folder v-else :size="17" class="text-amber" />
+          </template>
+          <template v-else-if="!isDirectory(entry) && entry.type === 'pdf'">
+            <File :size="17" class="text-amber" />
+          </template>
+          <template v-else>
+            <FileText :size="17" :class="isActive ? 'text-accent' : 'text-text-secondary'" />
+          </template>
+        </span>
+
+        <!-- Name -->
+        <span class="truncate">
+          {{ isDirectory(entry) ? entry.name : stripExtension(entry.name) }}
+        </span>
+
+        <!-- After drop indicator -->
+        <div
+          v-if="dropRegion === 'after' && !isInvalidTarget"
+          class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
+        />
+      </div>
+
+      <!-- Children (inside wrapper so the drop ring encompasses them) -->
       <div
-        v-if="dropRegion === 'before' && !isInvalidTarget"
-        class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
-      />
+        v-if="isDirectory(entry)"
+        class="grid transition-[grid-template-rows] duration-150 ease-in-out"
+        :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
+      >
+        <div class="overflow-hidden min-h-0">
+          <template v-for="child in entry.children" :key="child.id">
+            <PendingInputRow
+              v-if="showNewInput && filesStore.pendingCreate?.insertBefore === child.id"
+              v-model="newChildName"
+              :type="filesStore.pendingCreate?.type ?? 'file'"
+              :depth="depth + 1"
+              @submit="submitNew"
+              @cancel="cancelNew"
+              @dragstart="onPendingDragStart"
+              @dragend="onPendingDragEnd"
+            />
 
+            <FileExplorerNode :entry="child" :depth="depth + 1" />
+          </template>
 
-      <!-- Icon -->
-      <span class="flex items-center shrink-0">
-        <template v-if="isDirectory(entry)">
-          <FolderOpen v-if="isOpen" :size="17" class="text-amber" />
-          <Folder v-else :size="17" class="text-amber" />
-        </template>
-        <template v-else-if="!isDirectory(entry) && entry.type === 'pdf'">
-          <File :size="17" class="text-amber" />
-        </template>
-        <template v-else>
-          <FileText :size="17" :class="isActive ? 'text-accent' : 'text-text-secondary'" />
-        </template>
-      </span>
-
-      <!-- Name -->
-      <span class="truncate">
-        {{ isDirectory(entry) ? entry.name : stripExtension(entry.name) }}
-      </span>
-
-      <!-- After drop indicator -->
-      <div
-        v-if="dropRegion === 'after' && !isInvalidTarget"
-        class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
-      />
-    </div>
-
-    <!-- Children (inside wrapper so the drop ring encompasses them) -->
-    <div
-      v-if="isDirectory(entry)"
-      class="grid transition-[grid-template-rows] duration-150 ease-in-out"
-      :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
-    >
-      <div class="overflow-hidden min-h-0">
-        <template v-for="child in entry.children" :key="child.id">
           <PendingInputRow
-            v-if="showNewInput && filesStore.pendingCreate?.insertBefore === child.id"
+            v-if="showNewInput && filesStore.pendingCreate?.insertBefore === null"
             v-model="newChildName"
             :type="filesStore.pendingCreate?.type ?? 'file'"
             :depth="depth + 1"
@@ -384,28 +389,14 @@ function onPendingDragEnd() {
             @dragstart="onPendingDragStart"
             @dragend="onPendingDragEnd"
           />
-
-          <FileExplorerNode :entry="child" :depth="depth + 1" />
-        </template>
-
-        <PendingInputRow
-          v-if="showNewInput && filesStore.pendingCreate?.insertBefore === null"
-          v-model="newChildName"
-          :type="filesStore.pendingCreate?.type ?? 'file'"
-          :depth="depth + 1"
-          @submit="submitNew"
-          @cancel="cancelNew"
-          @dragstart="onPendingDragStart"
-          @dragend="onPendingDragEnd"
-        />
+        </div>
       </div>
-    </div>
     </div>
 
     <!-- Context menu -->
     <Teleport to="body">
       <div
-        v-if="showContextMenu"
+        v-if="contextMenuVisible"
         class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36"
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
       >

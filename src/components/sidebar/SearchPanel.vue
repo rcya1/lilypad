@@ -46,7 +46,10 @@ function clearSearch() {
 
 // Group results by file
 const groupedResults = computed(() => {
-  const groups = new Map<string, { fileName: string; folderPath: string; results: SearchResult[] }>()
+  const groups = new Map<
+    string,
+    { fileName: string; folderPath: string; results: SearchResult[] }
+  >()
   for (const result of searchStore.results) {
     if (!groups.has(result.fileId)) {
       groups.set(result.fileId, {
@@ -92,10 +95,7 @@ const isLoading = computed(() => filesStore.loading && !filesStore.indexReady)
     <!-- Search input -->
     <div class="px-2 pb-2">
       <div class="relative flex items-center">
-        <Search
-          class="absolute left-2 text-text-muted pointer-events-none shrink-0"
-          :size="13"
-        />
+        <Search class="absolute left-2 text-text-muted pointer-events-none shrink-0" :size="13" />
         <input
           ref="inputRef"
           :value="searchStore.query"
@@ -159,10 +159,7 @@ const isLoading = computed(() => filesStore.loading && !filesStore.indexReady)
     </div>
 
     <!-- Regex error -->
-    <div
-      v-else-if="searchStore.regexError"
-      class="px-3 py-6 text-center"
-    >
+    <div v-else-if="searchStore.regexError" class="px-3 py-6 text-center">
       <p class="text-xs text-red-500">Invalid regex</p>
     </div>
 
@@ -196,10 +193,7 @@ const isLoading = computed(() => filesStore.loading && !filesStore.indexReady)
     </div>
 
     <!-- No results -->
-    <div
-      v-else-if="searchStore.query && !searchStore.isSearching"
-      class="px-3 py-6 text-center"
-    >
+    <div v-else-if="searchStore.query && !searchStore.isSearching" class="px-3 py-6 text-center">
       <p class="text-xs text-text-muted">No results for "{{ searchStore.query }}"</p>
     </div>
 

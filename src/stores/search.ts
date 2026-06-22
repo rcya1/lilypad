@@ -2,10 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useFilesStore } from './files'
 import { useEditorStore } from './editor'
-import {
-  findLiteralCandidates,
-  findRegexCandidates,
-} from '@/lib/trigram'
+import { findLiteralCandidates, findRegexCandidates } from '@/lib/trigram'
 
 export interface SearchResult {
   fileId: string
@@ -21,21 +18,6 @@ const DEBOUNCE_MS = 200
 const MAX_RESULTS = 50
 const MAX_PER_FILE = 3
 const SNIPPET_RADIUS = 40
-
-function buildFolderPath(fileId: string, filesStore: ReturnType<typeof useFilesStore>): string {
-  const entry = filesStore.entries.find((e) => e.id === fileId)
-  if (!entry?.parent_id) return ''
-
-  const segments: string[] = []
-  let currentId: string | null = entry.parent_id
-  while (currentId) {
-    const parent = filesStore.entries.find((e) => e.id === currentId)
-    if (!parent) break
-    segments.unshift(parent.name)
-    currentId = parent.parent_id
-  }
-  return segments.join(' / ')
-}
 
 function makeSnippet(
   line: string,
@@ -201,9 +183,7 @@ export const useSearchStore = defineStore('search', () => {
 
       // Trigram filtering for regex
       const candidates = findRegexCandidates(trigramIdx, q)
-      const candidateIds = candidates
-        ? candidates
-        : new Set(contentMap.keys()) // full scan fallback
+      const candidateIds = candidates ? candidates : new Set(contentMap.keys()) // full scan fallback
 
       // Also scan open editor docs (unsaved edits)
       const openDocIds = new Set(editorStore.openDocuments.keys())
@@ -227,7 +207,7 @@ export const useSearchStore = defineStore('search', () => {
           regex,
           fileId,
           entryRow.name,
-          buildFolderPath(fileId, filesStore),
+          filesStore.getFolderPath(fileId),
         )
         const remaining = MAX_RESULTS - found.length
         found.push(...fileResults.slice(0, remaining))
@@ -240,9 +220,7 @@ export const useSearchStore = defineStore('search', () => {
         trigramIdx,
         isCaseSensitive.value ? q : q.toLowerCase(),
       )
-      const candidateIds = candidates
-        ? candidates
-        : new Set(contentMap.keys()) // query < 3 chars → full scan
+      const candidateIds = candidates ? candidates : new Set(contentMap.keys()) // query < 3 chars → full scan
 
       // Also scan open editor docs (unsaved edits)
       const openDocIds = new Set(editorStore.openDocuments.keys())
@@ -264,7 +242,7 @@ export const useSearchStore = defineStore('search', () => {
           isCaseSensitive.value,
           fileId,
           entryRow.name,
-          buildFolderPath(fileId, filesStore),
+          filesStore.getFolderPath(fileId),
         )
         const remaining = MAX_RESULTS - found.length
         found.push(...fileResults.slice(0, remaining))

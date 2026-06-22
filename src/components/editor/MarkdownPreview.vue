@@ -297,7 +297,9 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
   border-radius: 4px;
   box-shadow: 0 0 0 4px var(--surface-elevated);
   outline: none;
-  transition: background-color 100ms ease, box-shadow 100ms ease;
+  transition:
+    background-color 100ms ease,
+    box-shadow 100ms ease;
 }
 
 /* Hover over the selected element — darker accent */

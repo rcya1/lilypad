@@ -29,13 +29,6 @@ function stripExtension(name: string): string {
   return name.replace(/\.[^.]+$/, '')
 }
 
-function folderPathFor(id: string): string {
-  return filesStore
-    .getAncestorPath(id)
-    .map((s) => s.name)
-    .join(' / ')
-}
-
 /**
  * Fuzzy match: every char of `q` must appear in order in `name`.
  * Returns a score that rewards contiguous runs and matches near the start.
@@ -63,7 +56,7 @@ const allFiles = computed<FileItem[]>(() =>
       name: e.name,
       displayName: stripExtension(e.name),
       type: e.document_type as DocumentType,
-      folderPath: folderPathFor(e.id),
+      folderPath: filesStore.getFolderPath(e.id),
     })),
 )
 
@@ -178,7 +171,9 @@ function onKeydown(e: KeyboardEvent) {
     class="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/30"
     @mousedown.self="uiStore.closeQuickSwitcher()"
   >
-    <div class="max-w-lg w-full mx-4 bg-surface border border-border rounded-lg shadow-2xl overflow-hidden">
+    <div
+      class="max-w-lg w-full mx-4 bg-surface border border-border rounded-lg shadow-2xl overflow-hidden"
+    >
       <!-- Input -->
       <div class="p-2 border-b border-border-subtle">
         <input

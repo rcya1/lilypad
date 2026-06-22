@@ -111,10 +111,7 @@ watch(
 </script>
 
 <template>
-  <div
-    class="flex-1 flex flex-col overflow-y-auto"
-    @click.self="filesStore.clearSelection()"
-  >
+  <div class="flex-1 flex flex-col overflow-y-auto" @click.self="filesStore.clearSelection()">
     <div class="flex items-center justify-between px-3 py-2">
       <span class="text-xs font-medium text-text-muted uppercase tracking-widest">Images</span>
       <div class="flex items-center gap-0.5">
@@ -136,9 +133,7 @@ watch(
 
     <div v-else-if="filesStore.imageTree.length === 0" class="px-3 py-4">
       <p class="text-xs text-text-muted text-center">No images yet</p>
-      <p class="text-xs text-text-muted text-center mt-1">
-        Paste or drop images into the editor
-      </p>
+      <p class="text-xs text-text-muted text-center mt-1">Paste or drop images into the editor</p>
     </div>
 
     <div v-else class="text-sm select-none">

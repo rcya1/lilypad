@@ -76,9 +76,7 @@ const dividerLineClass = computed(() => {
 
 // Font size control positioning: editor controls anchor to the right edge of the
 // editor panel; preview controls anchor to the far right of the bar.
-const showPreviewFontControls = computed(
-  () => uiStore.previewVisible && !isVertical.value,
-)
+const showPreviewFontControls = computed(() => uiStore.previewVisible && !isVertical.value)
 
 const editorFontControlsStyle = computed(() => {
   if (!uiStore.previewVisible || isVertical.value || isSwapped.value) return { right: '0' }
@@ -206,11 +204,7 @@ onBeforeUnmount(() => {
           <ImageDetailPane v-if="activeDocType === 'image'" :document-id="id" class="h-full" />
 
           <!-- Markdown split pane -->
-          <div
-            v-else
-            ref="splitPane"
-            class="relative h-full bg-surface overflow-hidden"
-          >
+          <div v-else ref="splitPane" class="relative h-full bg-surface overflow-hidden">
             <div
               class="absolute overflow-hidden split-panel"
               :class="{ 'no-transition': isDragging }"

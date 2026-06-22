@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { Pencil, FileText } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
@@ -117,7 +117,9 @@ function openReferencingDoc(docId: string) {
 
         <!-- Dimensions -->
         <div v-if="naturalWidth !== null && naturalHeight !== null">
-          <span class="text-xs font-medium text-text-muted uppercase tracking-widest">Dimensions</span>
+          <span class="text-xs font-medium text-text-muted uppercase tracking-widest"
+            >Dimensions</span
+          >
           <p class="text-sm text-text-secondary mt-1">
             {{ naturalWidth }} &times; {{ naturalHeight }}px
           </p>
@@ -125,7 +127,9 @@ function openReferencingDoc(docId: string) {
 
         <!-- Referenced in -->
         <div>
-          <span class="text-xs font-medium text-text-muted uppercase tracking-widest">Referenced in</span>
+          <span class="text-xs font-medium text-text-muted uppercase tracking-widest"
+            >Referenced in</span
+          >
           <div v-if="referencingDocs.length === 0" class="mt-1">
             <p class="text-xs text-text-muted">Not referenced in any documents</p>
           </div>
@@ -146,7 +150,9 @@ function openReferencingDoc(docId: string) {
 
     <!-- Right panel: full image preview -->
     <div class="flex-1 overflow-auto bg-surface">
-      <div class="m-2 rounded-md bg-bg border border-border-subtle image-card inline-flex items-center justify-center p-3">
+      <div
+        class="m-2 rounded-md bg-bg border border-border-subtle image-card inline-flex items-center justify-center p-3"
+      >
         <img
           v-if="imageUrl"
           :src="imageUrl"

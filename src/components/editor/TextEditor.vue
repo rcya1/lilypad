@@ -434,7 +434,12 @@ function onUploadFailure(editorView: EditorView, uuid: string, err?: unknown) {
     })
   }
 
-  const detail = err instanceof Error ? err.message : typeof err === 'object' && err && 'message' in err ? String((err as { message: unknown }).message) : ''
+  const detail =
+    err instanceof Error
+      ? err.message
+      : typeof err === 'object' && err && 'message' in err
+        ? String((err as { message: unknown }).message)
+        : ''
   const msg = detail ? `Image upload failed: ${detail}` : 'Image upload failed.'
   toastStore.addToast(msg, 'error')
 }
@@ -499,9 +504,7 @@ function startImageRename() {
   // Wait for anchor widget to render, then position the input over it
   nextTick(() => {
     requestAnimationFrame(() => {
-      const anchor = container.value?.querySelector(
-        `[data-rename-anchor="${entryId}"]`,
-      )
+      const anchor = container.value?.querySelector(`[data-rename-anchor="${entryId}"]`)
       if (anchor) {
         const rect = anchor.getBoundingClientRect()
         imageRenamePos.value = { x: rect.left, y: rect.top }
@@ -562,7 +565,8 @@ function isOverImageRef(editorView: EditorView, x: number, y: number): boolean {
 }
 
 function updateImageCursor(editorView: EditorView, event: MouseEvent) {
-  const show = (event.ctrlKey || event.metaKey) && isOverImageRef(editorView, event.clientX, event.clientY)
+  const show =
+    (event.ctrlKey || event.metaKey) && isOverImageRef(editorView, event.clientX, event.clientY)
   editorView.contentDOM.style.cursor = show ? 'pointer' : ''
 }
 
@@ -908,7 +912,9 @@ onMounted(() => {
         search(),
         basicSetup,
         lilypadTheme,
-        fontSizeCompartment.of(EditorView.theme({ '&': { fontSize: `${uiStore.editorFontSize}px` } })),
+        fontSizeCompartment.of(
+          EditorView.theme({ '&': { fontSize: `${uiStore.editorFontSize}px` } }),
+        ),
         markdown(),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -1013,7 +1019,10 @@ watch(
   (docId) => {
     if (docId !== props.documentId || !view) return
     store.clearHighlightRequest = null
-    if (highlightTimer) { clearTimeout(highlightTimer); highlightTimer = undefined }
+    if (highlightTimer) {
+      clearTimeout(highlightTimer)
+      highlightTimer = undefined
+    }
     view.dispatch({ effects: highlightLineEffect.of(null) })
   },
 )
@@ -1092,7 +1101,6 @@ onBeforeUnmount(() => {
         @blur="finishImageRename"
       />
     </Teleport>
-
   </div>
 </template>
 
@@ -1237,5 +1245,4 @@ onBeforeUnmount(() => {
 .cm-image-rename-input::selection {
   background: var(--surface-overlay);
 }
-
 </style>

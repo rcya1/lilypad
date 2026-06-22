@@ -68,7 +68,9 @@ function onKeydown(e: KeyboardEvent) {
 }
 .dialog-enter-active > div,
 .dialog-leave-active > div {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 .dialog-enter-from,
 .dialog-leave-to {
