@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { FilePlus, FolderPlus, ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
+import { FilePlus, FolderPlus, Globe, ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
 import FileExplorerNode from './FileExplorerNode.vue'
 import PendingInputRow from './PendingInputRow.vue'
+import NewWebPageModal from './NewWebPageModal.vue'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import { draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 import { useToastStore } from '@/stores/toast'
+import type { EntryRow } from '@/types/database'
 
 const files = useFilesStore()
 const editorStore = useEditorStore()
@@ -153,6 +155,19 @@ function startNewFolder() {
   }
 }
 
+const showWebModal = ref(false)
+const webModalParentId = ref<string | null>(null)
+
+function startNewWebPage() {
+  webModalParentId.value = files.selectedFolderId ?? getInsertBelowActive()?.parentId ?? null
+  showWebModal.value = true
+}
+
+function onWebPageCreated(entry: EntryRow) {
+  showWebModal.value = false
+  editorStore.openDocument(entry.id, entry.name, 'web', entry.content ?? '')
+}
+
 async function submitNew() {
   const name = newName.value.trim()
   if (!name) {
@@ -224,8 +239,22 @@ function onPendingDragEnd() {
         >
           <FolderPlus :size="16" />
         </button>
+        <button
+          class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+          :title="files.selectedFolderId ? 'New web page in selected folder' : 'New web page'"
+          @click="startNewWebPage"
+        >
+          <Globe :size="16" />
+        </button>
       </div>
     </div>
+
+    <NewWebPageModal
+      v-if="showWebModal"
+      :parent-id="webModalParentId"
+      @created="onWebPageCreated"
+      @cancel="showWebModal = false"
+    />
 
     <!-- Loading skeleton -->
     <div v-if="files.loading" class="px-3 space-y-2">

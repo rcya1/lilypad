@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { captureWebPage } from '@/lib/webCapture'
 import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
 import type { EntryRow } from '@/types/database'
@@ -347,7 +348,8 @@ export const useFilesStore = defineStore('files', () => {
   function populateContentMap(): void {
     contentMap.clear()
     for (const entry of entries.value) {
-      if (entry.document_type === 'md' && entry.content != null) {
+      // .md and web-doc notes both live in the DB `content` column.
+      if ((entry.document_type === 'md' || entry.document_type === 'web') && entry.content != null) {
         contentMap.set(entry.id, entry.content)
       }
     }
@@ -626,8 +628,9 @@ export const useFilesStore = defineStore('files', () => {
     const entry = entryById.value.get(entryId)
     if (!entry) return null
 
-    // For binary files (PDF, image), fall back to Storage download
-    if (entry.document_type !== 'md') {
+    // For binary files (PDF, image), fall back to Storage download. Web-doc notes live in
+    // the DB `content` column like .md (the snapshot HTML is fetched via downloadSnapshot).
+    if (entry.document_type !== 'md' && entry.document_type !== 'web') {
       if (!entry.storage_path) return null
       const { data, error: err } = await supabase.storage
         .from('user-files')
@@ -639,24 +642,38 @@ export const useFilesStore = defineStore('files', () => {
       return await data.text()
     }
 
-    // For .md files, fetch content from DB (shouldn't happen after startup)
+    // For .md / web notes, fetch content from DB (shouldn't happen after startup)
     const { data, error: err } = await supabase
       .from('entries')
       .select('content')
       .eq('id', entryId)
       .single()
 
-    if (err || !data?.content) return null
+    if (err || data?.content == null) return null
     contentMap.set(entryId, data.content)
     return data.content
+  }
+
+  /** Download the frozen snapshot HTML for a web doc from Storage. */
+  async function downloadSnapshot(entryId: string): Promise<string | null> {
+    const entry = entryById.value.get(entryId)
+    if (!entry?.storage_path) return null
+    const { data, error: err } = await supabase.storage
+      .from('user-files')
+      .download(entry.storage_path)
+    if (err) {
+      showError('Failed to load captured page.')
+      return null
+    }
+    return await data.text()
   }
 
   async function uploadContent(entryId: string, content: string): Promise<boolean> {
     const entry = entryById.value.get(entryId)
     if (!entry) return false
 
-    if (entry.document_type === 'md') {
-      // .md files: content lives in the DB
+    if (entry.document_type === 'md' || entry.document_type === 'web') {
+      // .md files and web-doc notes: content lives in the DB
       const { error: err } = await supabase.from('entries').update({ content }).eq('id', entryId)
 
       if (err) return false
@@ -750,6 +767,7 @@ export const useFilesStore = defineStore('files', () => {
       parent_id: parentId,
       storage_path: storagePath,
       content: null,
+      metadata: null,
       sort_order: getNextSortOrder(parentId),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -776,6 +794,77 @@ export const useFilesStore = defineStore('files', () => {
 
   function getEntry(entryId: string): EntryRow | undefined {
     return entryById.value.get(entryId)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Web document support
+  // ---------------------------------------------------------------------------
+
+  /** Strip a URL down to a short, human-friendly default name. */
+  function nameFromUrl(url: string): string {
+    try {
+      const u = new URL(url)
+      return u.hostname.replace(/^www\./, '') + (u.pathname === '/' ? '' : u.pathname)
+    } catch {
+      return url
+    }
+  }
+
+  /**
+   * Capture a URL into a frozen snapshot, store it, and create a `web` entry.
+   * Snapshot HTML → Storage (`storage_path`); document-level notes → DB `content` column;
+   * `{ url, title, capturedAt }` → `metadata`.
+   */
+  async function createWebDocument(url: string, parentId: string | null = null) {
+    if (!auth.user) return null
+
+    const capture = await captureWebPage(url)
+
+    const entryId = crypto.randomUUID()
+    const storagePath = `${auth.user.id}/${entryId}.html`
+
+    const { error: uploadErr } = await supabase.storage
+      .from('user-files')
+      .upload(storagePath, new Blob([capture.html], { type: 'text/html' }), {
+        contentType: 'text/html',
+      })
+    if (uploadErr) throw uploadErr
+
+    const metadata = {
+      url: capture.finalUrl,
+      title: capture.title,
+      capturedAt: new Date().toISOString(),
+    }
+    const name = deduplicateName(capture.title?.trim() || nameFromUrl(url), parentId)
+
+    const { data, error: insertErr } = await supabase
+      .from('entries')
+      .insert({
+        id: entryId,
+        user_id: auth.user.id,
+        kind: 'document' as const,
+        document_type: 'web' as const,
+        name,
+        parent_id: parentId,
+        storage_path: storagePath,
+        content: '',
+        metadata,
+        sort_order: getNextSortOrder(parentId),
+      })
+      .select()
+      .returns<EntryRow[]>()
+      .single()
+
+    if (insertErr || !data) {
+      // Roll back the orphaned snapshot upload.
+      await supabase.storage.from('user-files').remove([storagePath])
+      console.error('createWebDocument insert failed:', insertErr)
+      throw new Error(insertErr?.message ?? 'Failed to create web document.')
+    }
+
+    entries.value.push(data)
+    contentMap.set(data.id, '')
+    return data
   }
 
   async function seedWelcomeFile() {
@@ -860,9 +949,11 @@ Happy note-taking!
     getContentMap,
     getTrigramIndex,
     downloadContent,
+    downloadSnapshot,
     uploadContent,
     uploadImage,
     getImageUrl,
+    createWebDocument,
     getEntry,
     seedWelcomeFile,
     $reset,

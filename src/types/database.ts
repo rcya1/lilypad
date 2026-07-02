@@ -1,3 +1,13 @@
+/** Stored in `entries.metadata` for `document_type = 'web'` documents. */
+export interface WebDocMeta {
+  /** Original URL the snapshot was captured from. */
+  url: string
+  /** ISO timestamp of capture. */
+  capturedAt: string
+  /** Page <title> at capture time. */
+  title: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -7,10 +17,11 @@ export interface Database {
           user_id: string
           kind: 'directory' | 'document'
           name: string
-          document_type: 'pdf' | 'md' | 'image' | null
+          document_type: 'pdf' | 'md' | 'image' | 'web' | null
           parent_id: string | null
           storage_path: string | null
           content: string | null
+          metadata: WebDocMeta | null
           sort_order: number
           created_at: string
           updated_at: string
@@ -20,10 +31,11 @@ export interface Database {
           user_id: string
           kind: 'directory' | 'document'
           name: string
-          document_type?: 'pdf' | 'md' | 'image' | null
+          document_type?: 'pdf' | 'md' | 'image' | 'web' | null
           parent_id?: string | null
           storage_path?: string | null
           content?: string | null
+          metadata?: WebDocMeta | null
           sort_order?: number
           created_at?: string
           updated_at?: string
@@ -33,10 +45,11 @@ export interface Database {
           user_id?: string
           kind?: 'directory' | 'document'
           name?: string
-          document_type?: 'pdf' | 'md' | 'image' | null
+          document_type?: 'pdf' | 'md' | 'image' | 'web' | null
           parent_id?: string | null
           storage_path?: string | null
           content?: string | null
+          metadata?: WebDocMeta | null
           sort_order?: number
           created_at?: string
           updated_at?: string

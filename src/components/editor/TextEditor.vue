@@ -28,7 +28,7 @@ const sentinelPattern = /<!--uploading:[a-f0-9-]+-->/g
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, StateEffect, StateField, Compartment, type Range } from '@codemirror/state'
-import { Decoration, type DecorationSet, keymap, WidgetType } from '@codemirror/view'
+import { Decoration, type DecorationSet, keymap, WidgetType, type Command } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
 import { search, searchKeymap } from '@codemirror/search'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
@@ -266,6 +266,39 @@ const imgGhostNameField = StateField.define<DecorationSet>({
 function rebuildGhosts() {
   view?.dispatch({ effects: rebuildGhostEffect.of(null) })
 }
+const indentBullet: Command = (editorView) => {
+  const { state } = editorView
+  const seenLines = new Set<number>()
+  const changes: { from: number; insert: string }[] = []
+  for (const range of state.selection.ranges) {
+    const line = state.doc.lineAt(range.from)
+    if (seenLines.has(line.number)) continue
+    if (!/^\s*-\s/.test(line.text)) return false
+    seenLines.add(line.number)
+    changes.push({ from: line.from, insert: '  ' })
+  }
+  if (changes.length === 0) return false
+  editorView.dispatch(state.update({ changes, scrollIntoView: true }))
+  return true
+}
+
+const dedentBullet: Command = (editorView) => {
+  const { state } = editorView
+  const seenLines = new Set<number>()
+  const changes: { from: number; to: number; insert: string }[] = []
+  for (const range of state.selection.ranges) {
+    const line = state.doc.lineAt(range.from)
+    if (seenLines.has(line.number)) continue
+    if (!/^\s*-\s/.test(line.text)) return false
+    if (!line.text.startsWith('  ')) return false
+    seenLines.add(line.number)
+    changes.push({ from: line.from, to: line.from + 2, insert: '' })
+  }
+  if (changes.length === 0) return false
+  editorView.dispatch(state.update({ changes, scrollIntoView: true }))
+  return true
+}
+
 const container = ref<HTMLDivElement>()
 let view: EditorView | null = null
 let highlightTimer: ReturnType<typeof setTimeout> | undefined
@@ -900,6 +933,8 @@ onMounted(() => {
       extensions: [
         vimCompartment.of(uiStore.vimEnabled ? vim() : []),
         keymap.of([
+          { key: 'Tab', run: indentBullet },
+          { key: 'Shift-Tab', run: dedentBullet },
           ...searchKeymap,
           {
             key: 'Mod-s',

@@ -60,7 +60,7 @@ export const useUiStore = defineStore('ui', () => {
   const previewVisible = persisted(STORAGE_KEYS.previewVisible, true, boolCodec)
   const previewFontSize = persisted(
     STORAGE_KEYS.previewFontSize,
-    15,
+    13,
     clampedIntCodec(FONT_SIZE_MIN, FONT_SIZE_MAX),
   )
   const editorFontSize = persisted(

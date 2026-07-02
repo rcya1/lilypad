@@ -6,6 +6,7 @@ import { useUiStore } from '@/stores/ui'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
 import ImageDetailPane from './ImageDetailPane.vue'
+import WebView from './WebView.vue'
 import EditorTabs from './EditorTabs.vue'
 import BreadcrumbBar from './BreadcrumbBar.vue'
 import LilypadIcon from '@/assets/icon.svg'
@@ -151,7 +152,7 @@ onBeforeUnmount(() => {
 
         <!-- Editor font size controls — anchored to right edge of editor panel -->
         <div
-          v-if="activeDocType !== 'image'"
+          v-if="activeDocType !== 'image' && activeDocType !== 'web'"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
           :style="editorFontControlsStyle"
         >
@@ -175,7 +176,7 @@ onBeforeUnmount(() => {
 
         <!-- Preview font size controls — anchored to far right of preview panel -->
         <div
-          v-if="showPreviewFontControls && activeDocType !== 'image'"
+          v-if="showPreviewFontControls && activeDocType !== 'image' && activeDocType !== 'web'"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-l border-border-subtle"
           :style="previewFontControlsStyle"
         >
@@ -202,6 +203,9 @@ onBeforeUnmount(() => {
         <div v-if="id === activeId" class="flex-1 min-h-0 overflow-hidden">
           <!-- Image detail pane -->
           <ImageDetailPane v-if="activeDocType === 'image'" :document-id="id" class="h-full" />
+
+          <!-- Captured web page -->
+          <WebView v-else-if="activeDocType === 'web'" :document-id="id" class="h-full" />
 
           <!-- Markdown split pane -->
           <div v-else ref="splitPane" class="relative h-full bg-surface overflow-hidden">

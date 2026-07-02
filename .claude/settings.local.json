@@ -13,7 +13,11 @@
       "Bash(yarn format:*)",
       "Bash(cd:*)",
       "Bash(npx vue-tsc:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(yarn dev *)",
+      "mcp__chrome-devtools__new_page",
+      "mcp__chrome-devtools__list_console_messages",
+      "mcp__chrome-devtools__close_page"
     ]
   }
 }

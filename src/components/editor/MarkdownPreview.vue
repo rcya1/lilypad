@@ -295,8 +295,9 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 .markdown-body :deep([data-source-line].preview-selected) {
   background-color: var(--surface-elevated);
   border-radius: 4px;
-  box-shadow: 0 0 0 4px var(--surface-elevated);
+  box-shadow: -4px 0 0 0 var(--surface-elevated);
   outline: none;
+  width: fit-content;
   transition:
     background-color 100ms ease,
     box-shadow 100ms ease;
@@ -305,10 +306,39 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 /* Hover over the selected element — darker accent */
 .markdown-body :deep([data-source-line].preview-hover.preview-selected) {
   background-color: var(--surface-overlay);
-  box-shadow: 0 0 0 5px var(--surface-overlay);
+  box-shadow: -5px 0 0 0 var(--surface-overlay);
 }
 
-/* Prevent highlighted li from painting over nested lists */
+/* For list items: box-shadow and border-radius apply to the full li bounding box
+   (including nested lists). Use flat background-color only; the nested ul/ol reset
+   below masks the background in the nested list area. */
+.markdown-body :deep(li[data-source-line].preview-hover),
+.markdown-body :deep(li[data-source-line].preview-selected) {
+  box-shadow: -4px 0 0 0 var(--surface-elevated);
+  border-radius: 0;
+}
+.markdown-body :deep(li[data-source-line].preview-hover.preview-selected) {
+  box-shadow: -5px 0 0 0 var(--surface-overlay);
+  border-radius: 0;
+}
+
+/* For headings with border-bottom underlines: the rounded box-shadow corners arc
+   above the straight underline, creating a raised-corner artifact. Also restore
+   full width so the underline spans the container. */
+.markdown-body :deep(h1[data-source-line].preview-hover),
+.markdown-body :deep(h1[data-source-line].preview-selected),
+.markdown-body :deep(h2[data-source-line].preview-hover),
+.markdown-body :deep(h2[data-source-line].preview-selected),
+.markdown-body :deep(h3[data-source-line].preview-hover),
+.markdown-body :deep(h3[data-source-line].preview-selected),
+.markdown-body :deep(h4[data-source-line].preview-hover),
+.markdown-body :deep(h4[data-source-line].preview-selected) {
+  box-shadow: none;
+  border-radius: 0;
+  width: auto;
+}
+
+/* Reset nested list background so it doesn't inherit the li's highlight color */
 .markdown-body :deep(li.preview-hover > ul),
 .markdown-body :deep(li.preview-hover > ol),
 .markdown-body :deep(li.preview-selected > ul),
@@ -371,7 +401,7 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 
 /* Paragraphs & spacing */
 .markdown-body :deep(p) {
-  margin: 0.75em 0;
+  margin: 0.45em 0;
 }
 
 /* Links */

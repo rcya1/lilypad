@@ -2,7 +2,7 @@
 import { ref, computed, watch, type WritableComputedRef } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
-import { Folder, FolderOpen, FileText, File } from 'lucide-vue-next'
+import { Folder, FolderOpen, FileText, File, Globe } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
@@ -117,7 +117,9 @@ async function handleClick(e: MouseEvent) {
 
   filesStore.selectFolder(null)
   filesStore.selectSingle(props.entry.id)
-  if (props.entry.type === 'md') {
+  // .md and web docs both carry their notes in the DB `content` column, so they open
+  // through the same preview flow (web docs load their snapshot separately, in WebView).
+  if (props.entry.type === 'md' || props.entry.type === 'web') {
     const id = props.entry.id
     if (editorStore.openDocuments.has(id) && editorStore.previewDocumentId !== id) {
       editorStore.setActiveDocument(id)
@@ -135,7 +137,7 @@ async function handleClick(e: MouseEvent) {
 }
 
 function handleDblClick() {
-  if (!isDirectory(props.entry) && props.entry.type === 'md') {
+  if (!isDirectory(props.entry) && (props.entry.type === 'md' || props.entry.type === 'web')) {
     editorStore.promotePreview(props.entry.id)
   }
 }
@@ -340,6 +342,9 @@ function onPendingDragEnd() {
           <template v-else-if="!isDirectory(entry) && entry.type === 'pdf'">
             <File :size="17" class="text-amber" />
           </template>
+          <template v-else-if="!isDirectory(entry) && entry.type === 'web'">
+            <Globe :size="17" :class="isActive ? 'text-accent' : 'text-text-secondary'" />
+          </template>
           <template v-else>
             <FileText :size="17" :class="isActive ? 'text-accent' : 'text-text-secondary'" />
           </template>
@@ -347,7 +352,7 @@ function onPendingDragEnd() {
 
         <!-- Name -->
         <span class="truncate">
-          {{ isDirectory(entry) ? entry.name : stripExtension(entry.name) }}
+          {{ isDirectory(entry) || entry.type === 'web' ? entry.name : stripExtension(entry.name) }}
         </span>
 
         <!-- After drop indicator -->
