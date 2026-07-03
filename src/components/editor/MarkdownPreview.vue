@@ -328,7 +328,7 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
     @blur="onBlur"
   >
     <div
-      class="markdown-body m-2 rounded-md bg-bg px-5 py-5 font-preview leading-[1.6] text-text-primary border border-border-subtle"
+      class="markdown-body mt-2 mb-2 ml-2 mr-4 rounded-md bg-bg px-5 py-5 font-preview leading-[1.6] text-text-primary border border-border-subtle"
       :style="{ fontSize: uiStore.previewFontSize + 'px' }"
       v-html="html"
     />
@@ -350,7 +350,7 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 .markdown-body :deep([data-source-line].preview-selected) {
   background-color: var(--surface-elevated);
   border-radius: 4px;
-  box-shadow: -4px 0 0 0 var(--surface-elevated);
+  box-shadow: -4px 0 0 0 var(--surface-elevated), 4px 0 0 0 var(--surface-elevated);
   outline: none;
   width: fit-content;
   transition:
@@ -361,47 +361,71 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 /* Hover over the selected element — darker accent */
 .markdown-body :deep([data-source-line].preview-hover.preview-selected) {
   background-color: var(--surface-overlay);
-  box-shadow: -5px 0 0 0 var(--surface-overlay);
+  box-shadow: -5px 0 0 0 var(--surface-overlay), 5px 0 0 0 var(--surface-overlay);
 }
 
-/* For list items: box-shadow and border-radius apply to the full li bounding box
-   (including nested lists). Use flat background-color only; the nested ul/ol reset
-   below masks the background in the nested list area. */
+/* For list items: don't highlight the full li bounding box (which includes nested lists).
+   Clear the general rule's background/width and delegate to the text span or paragraph.
+   All three state rules are needed: the general combined-state rule (.preview-hover.preview-selected)
+   has specificity (0,4,0) which beats a single-class li rule (0,3,1), so it must be
+   explicitly overridden with the combined-class selector to reach (0,4,1). */
 .markdown-body :deep(li[data-source-line].preview-hover),
-.markdown-body :deep(li[data-source-line].preview-selected) {
-  box-shadow: -4px 0 0 0 var(--surface-elevated);
+.markdown-body :deep(li[data-source-line].preview-selected),
+.markdown-body :deep(li[data-source-line].preview-hover.preview-selected) {
+  background-color: transparent;
+  width: auto;
+  box-shadow: none;
   border-radius: 0;
 }
-.markdown-body :deep(li[data-source-line].preview-hover.preview-selected) {
-  box-shadow: -5px 0 0 0 var(--surface-overlay);
-  border-radius: 0;
+
+/* inline-block shrinks to text width when content fits on one line (single-line items
+   stay tight), but expands to the full available width when text wraps (multi-line items
+   get a rectangular block highlight). Also creates an internal BFC so inline code
+   element heights are accounted for naturally — no padding-block hack needed. */
+.markdown-body :deep(.li-text) {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.markdown-body :deep(li[data-source-line].preview-hover > .li-text),
+.markdown-body :deep(li[data-source-line].preview-hover > p),
+.markdown-body :deep(li[data-source-line].preview-selected > .li-text),
+.markdown-body :deep(li[data-source-line].preview-selected > p) {
+  background-color: var(--surface-elevated);
+  border-radius: 4px;
+  box-shadow: -4px 0 0 0 var(--surface-elevated), 4px 0 0 0 var(--surface-elevated);
+  transition:
+    background-color 100ms ease,
+    box-shadow 100ms ease;
+}
+
+.markdown-body :deep(li[data-source-line].preview-hover.preview-selected > .li-text),
+.markdown-body :deep(li[data-source-line].preview-hover.preview-selected > p) {
+  background-color: var(--surface-overlay);
+  box-shadow: -5px 0 0 0 var(--surface-overlay), 5px 0 0 0 var(--surface-overlay);
 }
 
 /* For headings with border-bottom underlines: the rounded box-shadow corners arc
    above the straight underline, creating a raised-corner artifact. Also restore
-   full width so the underline spans the container. */
+   full width so the underline spans the container.
+   The combined-state selector is required because the general .preview-hover.preview-selected
+   rule has specificity (0,5,0) which beats the single-class heading rule (0,4,1) and
+   re-applies the side box-shadows. Adding the element+combined selector reaches (0,5,1). */
 .markdown-body :deep(h1[data-source-line].preview-hover),
 .markdown-body :deep(h1[data-source-line].preview-selected),
+.markdown-body :deep(h1[data-source-line].preview-hover.preview-selected),
 .markdown-body :deep(h2[data-source-line].preview-hover),
 .markdown-body :deep(h2[data-source-line].preview-selected),
+.markdown-body :deep(h2[data-source-line].preview-hover.preview-selected),
 .markdown-body :deep(h3[data-source-line].preview-hover),
 .markdown-body :deep(h3[data-source-line].preview-selected),
+.markdown-body :deep(h3[data-source-line].preview-hover.preview-selected),
 .markdown-body :deep(h4[data-source-line].preview-hover),
-.markdown-body :deep(h4[data-source-line].preview-selected) {
+.markdown-body :deep(h4[data-source-line].preview-selected),
+.markdown-body :deep(h4[data-source-line].preview-hover.preview-selected) {
   box-shadow: none;
   border-radius: 0;
   width: auto;
-}
-
-/* Reset nested list background so it doesn't inherit the li's highlight color */
-.markdown-body :deep(li.preview-hover > ul),
-.markdown-body :deep(li.preview-hover > ol),
-.markdown-body :deep(li.preview-selected > ul),
-.markdown-body :deep(li.preview-selected > ol),
-.markdown-body :deep(li.preview-hover.preview-selected > ul),
-.markdown-body :deep(li.preview-hover.preview-selected > ol) {
-  background-color: var(--bg);
-  border-radius: 3px;
 }
 
 /* Headings */
@@ -430,7 +454,7 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 
 .markdown-body :deep(h1) {
   font-size: 1.75rem;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--text-primary);
   padding-bottom: 0.3em;
   margin-top: 0;
 }

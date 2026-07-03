@@ -253,7 +253,23 @@ const sourceLineRenderer: RendererObject = {
     const startAttr = token.ordered && token.start !== 1 ? ` start="${token.start}"` : ''
     let body = ''
     for (const item of token.items) {
-      body += `<li${attr(item as unknown as Tokens.Generic)}>${this.parser.parse(item.tokens)}</li>\n`
+      // Separate inline text tokens from nested list tokens so we can wrap only
+      // the text portion in a span. This lets CSS highlight just the hovered text
+      // without the background bleeding into child list items.
+      const textTokens = item.tokens.filter((t) => t.type !== 'list' && t.type !== 'space')
+      const nestedListTokens = item.tokens.filter((t) => t.type === 'list')
+      let content = ''
+      if (textTokens.length > 0) {
+        const textHtml = this.parser.parse(textTokens)
+        // For tight lists the inline text has no <p> wrapper — safe to put in a span.
+        // For loose lists parse() emits <p>…</p> blocks which are invalid inside a span,
+        // so we leave them bare and CSS targets li.preview-hover > p instead.
+        content += item.loose ? textHtml : `<span class="li-text">${textHtml.trim()}</span>`
+      }
+      if (nestedListTokens.length > 0) {
+        content += this.parser.parse(nestedListTokens)
+      }
+      body += `<li${attr(item as unknown as Tokens.Generic)}>${content}</li>\n`
     }
     return `<${tag}${startAttr}${attr(token)}>\n${body}</${tag}>\n`
   },
