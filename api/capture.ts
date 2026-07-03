@@ -5,7 +5,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import chromium from '@sparticuz/chromium'
 import { chromium as playwright } from 'playwright-core'
-import { assertCapturableUrl, serializeSnapshot } from '../tools/capture.mjs'
+import { assertCapturableUrl, navigateForCapture, serializeSnapshot } from '../tools/capture.mjs'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   })
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 })
+    await navigateForCapture(page, url)
     const result = await serializeSnapshot(page)
     res.status(200).json(result)
   } catch (err) {

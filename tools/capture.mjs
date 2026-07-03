@@ -68,6 +68,49 @@ export async function assertCapturableUrl(rawUrl) {
   }
 }
 
+/** Title text used by common anti-bot interstitials (Cloudflare, Akamai, PerimeterX, ...). */
+const CHALLENGE_TITLE_PATTERN =
+  /^(just a moment|attention required|access denied|are you a robot|please verify you are a human|checking your browser)/i
+
+/**
+ * Throws if the just-navigated page looks like an anti-bot interstitial rather than the real
+ * page — e.g. Cloudflare's "Just a moment..." challenge, which a headless browser fails
+ * automatically and can't solve from this capture path.
+ *
+ * @param {import('playwright-core').Page} page
+ * @param {import('playwright-core').Response | null} response
+ */
+async function assertNotChallengePage(page, response) {
+  if (response?.headers()['cf-mitigated'] === 'challenge') {
+    throw new Error('This page is protected by anti-bot verification and could not be captured.')
+  }
+  const title = (await page.title()).trim()
+  if (CHALLENGE_TITLE_PATTERN.test(title)) {
+    throw new Error('This page is protected by anti-bot verification and could not be captured.')
+  }
+}
+
+/**
+ * Navigates `page` to `url` and waits for a stable render. `waitUntil: 'load'` is the
+ * load-bearing wait — it must succeed. The `networkidle` wait afterward is a short, best-effort
+ * grace period for late-loading content: many real sites (ad/analytics/beacon-heavy — e.g. most
+ * Fandom wikis) never go network-idle at all, so it's given a much shorter budget than the
+ * overall navigation and its failure doesn't reject the capture.
+ *
+ * @param {import('playwright-core').Page} page
+ * @param {string} url
+ * @throws {Error} if navigation fails or the page is an anti-bot challenge/interstitial
+ */
+export async function navigateForCapture(page, url) {
+  const response = await page.goto(url, { waitUntil: 'load', timeout: 60_000 })
+  try {
+    await page.waitForLoadState('networkidle', { timeout: 5_000 })
+  } catch {
+    // Network never went idle (ads/analytics/beacons) — capture what's rendered instead.
+  }
+  await assertNotChallengePage(page, response)
+}
+
 /** Rewrite relative url(...) and @import targets in a stylesheet to absolute. */
 function absolutizeCss(css, sheetUrl) {
   const abs = (ref) => {
@@ -150,7 +193,7 @@ export async function captureUrl(url) {
   const browser = await chromium.launch()
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 60_000 })
+    await navigateForCapture(page, url)
     return await serializeSnapshot(page)
   } finally {
     await browser.close()
