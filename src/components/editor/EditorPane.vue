@@ -96,9 +96,7 @@ const dividerLineClass = computed(() => {
     : 'left-1/2 -translate-x-1/2 inset-y-0 w-px bg-border-subtle group-hover:bg-border'
 })
 
-// Font size controls are only shown in side-by-side (horizontal) mode; in vertical
-// mode there's no natural place to anchor them without overlapping content.
-const showPreviewFontControls = computed(() => uiStore.previewVisible && !isVertical.value)
+const showPreviewFontControls = computed(() => uiStore.previewVisible)
 
 // Anchor editor font controls to the right edge of the editor panel.
 // In single-pane or vertical mode they sit flush with the container right edge.
@@ -108,7 +106,10 @@ const editorFontControlsStyle = computed(() => {
 })
 
 // Anchor preview font controls to the right edge of the preview panel.
+// In vertical mode both control groups share the breadcrumb bar: preview controls sit
+// immediately left of the editor controls (62px = px-2 + w-5 + gap-1.5 + w-5 + px-2).
 const previewFontControlsStyle = computed(() => {
+  if (isVertical.value) return { right: '62px' }
   if (isSwapped.value) return { right: `${100 - splitPct.value}%` }
   return { right: '0' }
 })
@@ -209,10 +210,12 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <!-- Preview font size controls — anchored to far right of preview panel -->
+        <!-- Preview font size controls — anchored to far right of preview panel.
+             In vertical mode they sit left of the editor controls; border flips to right. -->
         <div
           v-if="showPreviewFontControls && activeDocType !== 'image' && activeDocType !== 'web'"
-          class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-l border-border-subtle"
+          class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
+          :class="isVertical ? 'border-r' : 'border-l'"
           :style="previewFontControlsStyle"
         >
           <button
