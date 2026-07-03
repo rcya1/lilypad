@@ -1,3 +1,4 @@
+<!-- Top-level layout: sidebar and editor pane side by side, filling the full viewport. -->
 <script setup lang="ts">
 import LilypadSidebar from './sidebar/LilypadSidebar.vue'
 import EditorPane from './editor/EditorPane.vue'

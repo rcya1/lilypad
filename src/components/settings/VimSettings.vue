@@ -1,3 +1,4 @@
+<!-- Vim settings section: enable/disable Vim mode, escape timeout, yank highlight, clipboard sync, and custom key mappings. -->
 <script setup lang="ts">
 import { Plus, X } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
@@ -5,15 +6,21 @@ import type { VimMapping } from '@/stores/ui'
 
 const uiStore = useUiStore()
 
+// Validate on change (not on input) so partial numbers mid-typing don't discard the value.
 function handleEscTimeoutChange(e: Event) {
   const val = parseInt((e.target as HTMLInputElement).value, 10)
   if (!isNaN(val) && val >= 0 && val <= 5000) uiStore.setVimEscTimeout(val)
 }
 
+/**
+ * Update a single field on an existing mapping row.
+ * The generic constraint ensures only valid VimMapping fields can be targeted.
+ */
 function updateField(id: string, field: keyof Omit<VimMapping, 'id'>, value: string | boolean) {
   uiStore.updateVimMapping(id, { [field]: value } as Partial<Omit<VimMapping, 'id'>>)
 }
 
+// noremap: true is the safe default — prevents recursive key expansion.
 function addMapping() {
   uiStore.addVimMapping({ lhs: '', rhs: '', mode: 'normal', noremap: true })
 }

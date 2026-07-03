@@ -1,22 +1,31 @@
+<!-- Modal for choosing a destination folder during a bulk move; emits the selected folder ID (or null for root) on confirm. -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Folder, X } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 
 const emit = defineEmits<{
+  /** Emitted with the selected folder ID, or null to move to the workspace root. */
   confirm: [targetFolderId: string | null]
   cancel: []
 }>()
 
 const filesStore = useFilesStore()
+// null means "Root" (workspace top level).
 const selected = ref<string | null>(null)
 
 interface FolderItem {
   id: string
   name: string
+  /** Visual indent depth used to show folder hierarchy without a tree component. */
   depth: number
 }
 
+/**
+ * Produces a flat, depth-annotated list of all folders via a depth-first walk,
+ * sorted by sort_order then name at each level. This allows rendering the
+ * folder hierarchy as a simple flat list with left-padding for indentation.
+ */
 const folderList = computed<FolderItem[]>(() => {
   const result: FolderItem[] = []
   function walk(parentId: string | null, depth: number) {

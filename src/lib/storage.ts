@@ -1,3 +1,4 @@
+// localStorage persistence layer: typed codecs and persisted() for Vue refs that auto-sync to a storage key.
 import { ref, watch, type Ref } from 'vue'
 
 /**

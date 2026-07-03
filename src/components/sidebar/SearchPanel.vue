@@ -1,3 +1,4 @@
+<!-- Full-text search UI: query input with regex/case-sensitivity toggles, grouped result snippets, and keyboard shortcuts. -->
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
 import { Search, X, Loader2 } from 'lucide-vue-next'
@@ -9,6 +10,8 @@ const searchStore = useSearchStore()
 const filesStore = useFilesStore()
 const inputRef = ref<HTMLInputElement | null>(null)
 
+// Auto-focus the input whenever the panel opens. immediate:true handles the
+// case where the panel is mounted already-open (e.g. after a sidebar tab switch).
 watch(
   () => searchStore.isOpen,
   async (open) => {
@@ -24,16 +27,20 @@ function onInput(e: Event) {
   searchStore.search((e.target as HTMLInputElement).value)
 }
 
+/**
+ * Handles keyboard shortcuts within the search input:
+ *   Escape — close the search panel
+ *   Alt+R  — toggle regex mode
+ *   Alt+C  — toggle case sensitivity
+ */
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     searchStore.close()
   }
-  // Alt+R: toggle regex
   if (e.altKey && e.key.toLowerCase() === 'r') {
     e.preventDefault()
     searchStore.toggleRegex()
   }
-  // Alt+C: toggle case sensitivity
   if (e.altKey && e.key.toLowerCase() === 'c') {
     e.preventDefault()
     searchStore.toggleCaseSensitive()
@@ -44,7 +51,11 @@ function clearSearch() {
   searchStore.search('')
 }
 
-// Group results by file
+/**
+ * Groups flat search results by file ID, preserving insertion order so results
+ * appear in the same order the search store returned them (ranked by relevance).
+ * Each group holds the file metadata once plus all its matching snippets.
+ */
 const groupedResults = computed(() => {
   const groups = new Map<
     string,
@@ -63,6 +74,12 @@ const groupedResults = computed(() => {
   return [...groups.values()]
 })
 
+/**
+ * The following three helpers split a result's snippet string into the
+ * pre-match, match, and post-match segments for highlighted rendering.
+ * The search store stores character offsets rather than pre-split strings
+ * to keep the data structure lean.
+ */
 function snippetBefore(result: SearchResult): string {
   return result.snippet.slice(0, result.matchStart)
 }
@@ -75,6 +92,8 @@ function snippetAfter(result: SearchResult): string {
   return result.snippet.slice(result.matchStart + result.matchLength)
 }
 
+// Show a loading state until the trigram index is fully built from fetched entries.
+// filesStore.loading alone isn't enough: the index can still be building after entries arrive.
 const isLoading = computed(() => filesStore.loading && !filesStore.indexReady)
 </script>
 

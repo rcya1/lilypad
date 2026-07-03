@@ -1,10 +1,21 @@
+<!-- CodeMirror 6 editor with Vim keybindings, image drag-drop/paste upload, search highlighting, yank flash, and auto-save. -->
 <script lang="ts">
+// vimExRegistered is module-level (not per-instance) because Vim.defineEx registers
+// commands on the global Vim object — calling it more than once throws.
 let vimExRegistered = false
-// Module-level tracking of applied mappings so any instance can unmap before re-mapping
+
+// appliedMappings is also module-level: all editor instances share the same Vim
+// mapping table, so any instance must unmap the previous set before applying new ones.
 let appliedMappings: Array<{ lhs: string; mode: string }> = []
 
 // ---------------------------------------------------------------------------
 // Image upload — module-level state (shared across all editor instances)
+//
+// When a user pastes or drops an image, we immediately insert a sentinel comment
+// (<!--uploading:<uuid>-->) as a placeholder, kick off the upload, then replace
+// the sentinel with the final ![](img:<id>) syntax on success. Because the user
+// might switch tabs while the upload is in flight, completed/failed results are
+// stashed in module-level Maps until the correct editor instance is active again.
 // ---------------------------------------------------------------------------
 interface UploadedImageResult {
   entryId: string
@@ -15,10 +26,10 @@ interface UploadedImageResult {
 /** In-flight uploads keyed by sentinel UUID. */
 const detachedUploads = new Map<string, { promise: Promise<UploadedImageResult> }>()
 
-/** Completed uploads stashed while the view was on a different tab. */
+/** Completed uploads stashed while the target editor was on a different tab. */
 const completedUploads = new Map<string, UploadedImageResult>()
 
-/** Failed uploads stashed while the view was on a different tab. */
+/** Failed uploads stashed while the target editor was on a different tab. */
 const failedUploads = new Set<string>()
 
 const sentinelPattern = /<!--uploading:[a-f0-9-]+-->/g
@@ -37,6 +48,8 @@ import { useFilesStore } from '@/stores/files'
 import { useToastStore } from '@/stores/toast'
 import { useUiStore } from '@/stores/ui'
 
+// StateEffect/StateField pair for the line-flash highlight triggered by search result navigation.
+// The effect carries the 1-based line number to highlight, or null to clear.
 const highlightLineEffect = StateEffect.define<number | null>()
 
 const highlightLineField = StateField.define<DecorationSet>({
@@ -54,11 +67,16 @@ const highlightLineField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 })
 
+// StateEffect/StateField pair for the yank flash (brief highlight of the yanked range).
+// value.map(tr.changes) keeps the range valid as the document is edited — without this,
+// a document change could make stored positions point to the wrong characters.
 const yankFlashEffect = StateEffect.define<{ from: number; to: number } | null>()
 
 const yankFlashField = StateField.define<DecorationSet>({
   create: () => Decoration.none,
   update(value, tr) {
+    // Remap positions against document changes so the flash decoration stays accurate
+    // if the user types while the flash is still visible.
     value = value.map(tr.changes)
     for (const effect of tr.effects) {
       if (effect.is(yankFlashEffect)) {
@@ -74,12 +92,19 @@ const yankFlashField = StateField.define<DecorationSet>({
 })
 
 // ---------------------------------------------------------------------------
-// Upload spinner widget — shown in place of sentinel text
+// Upload spinner widget — replaces the sentinel comment in the editor display
 // ---------------------------------------------------------------------------
+
+/**
+ * A CodeMirror WidgetType that replaces an `<!--uploading:<uuid>-->` sentinel
+ * comment with a visible spinner pill. contenteditable=false prevents the user
+ * from placing the cursor inside the widget.
+ */
 class UploadSpinnerWidget extends WidgetType {
   toDOM() {
     const wrap = document.createElement('span')
     wrap.className = 'cm-upload-spinner'
+    // contenteditable=false ensures CM does not allow the cursor inside this widget.
     wrap.setAttribute('contenteditable', 'false')
     const spinner = document.createElement('span')
     spinner.className = 'cm-upload-spinner-icon'
@@ -96,6 +121,10 @@ class UploadSpinnerWidget extends WidgetType {
   }
 }
 
+/**
+ * Scan the document for sentinel comments and build Decoration.replace entries
+ * that hide the raw comment text behind the spinner widget.
+ */
 function buildUploadDecorations(state: EditorState): DecorationSet {
   const builder: Range<Decoration>[] = []
   const doc = state.doc.toString()
@@ -117,13 +146,19 @@ const uploadWidgetField = StateField.define<DecorationSet>({
     return buildUploadDecorations(state)
   },
   update(decos, tr) {
+    // Re-scan on every document change to pick up new/removed sentinels.
     if (tr.docChanged) return buildUploadDecorations(tr.state)
     return decos
   },
   provide: (f) => EditorView.decorations.from(f),
 })
 
-// Transaction filter: any edit that partially overlaps a sentinel expands to delete the whole thing
+/**
+ * Transaction filter that prevents partial edits to sentinel comments.
+ * If an edit overlaps any part of a sentinel, the change is expanded to cover
+ * the entire sentinel (including its trailing newline) so the placeholder is
+ * always either fully present or fully removed — never in a broken state.
+ */
 const sentinelGuard = EditorState.transactionFilter.of((tr) => {
   if (!tr.docChanged) return tr
 
@@ -133,6 +168,8 @@ const sentinelGuard = EditorState.transactionFilter.of((tr) => {
   let m: RegExpExecArray | null
   while ((m = sentinelPattern.exec(doc)) !== null) {
     const end = m.index + m[0].length
+    // Include the trailing newline in the sentinel range so deleting the sentinel
+    // with Backspace/dd doesn't leave a blank line.
     const hasTrailingNewline = end < doc.length && doc[end] === '\n'
     sentinels.push({ from: m.index, to: hasTrailingNewline ? end + 1 : end })
   }
@@ -164,6 +201,13 @@ const sentinelGuard = EditorState.transactionFilter.of((tr) => {
 // ---------------------------------------------------------------------------
 // Ghost text widget — shows image entry name after img: references
 // ---------------------------------------------------------------------------
+
+/**
+ * Renders the human-readable filename of an image reference as ghost (muted italic)
+ * text immediately after `![](img:<id>)` syntax in the editor.
+ * eq() is implemented so CM can diff decorations and skip DOM updates when the name
+ * hasn't changed.
+ */
 class GhostNameWidget extends WidgetType {
   constructor(private name: string) {
     super()
@@ -185,6 +229,11 @@ class GhostNameWidget extends WidgetType {
   }
 }
 
+/**
+ * Zero-width anchor widget injected in place of the ghost name while the user is
+ * renaming an image. The rename input (in the Vue template) is positioned over this
+ * anchor via getBoundingClientRect(), so it appears exactly where the ghost text would be.
+ */
 class RenameAnchorWidget extends WidgetType {
   constructor(private id: string) {
     super()
@@ -266,6 +315,11 @@ const imgGhostNameField = StateField.define<DecorationSet>({
 function rebuildGhosts() {
   view?.dispatch({ effects: rebuildGhostEffect.of(null) })
 }
+/**
+ * Tab key command: indent a markdown bullet line by 2 spaces.
+ * Returns false (deferring to default Tab behaviour) if the current line is not a bullet.
+ * seenLines deduplicates multi-cursor ranges that land on the same line.
+ */
 const indentBullet: Command = (editorView) => {
   const { state } = editorView
   const seenLines = new Set<number>()
@@ -282,6 +336,10 @@ const indentBullet: Command = (editorView) => {
   return true
 }
 
+/**
+ * Shift+Tab command: dedent a markdown bullet line by removing 2 leading spaces.
+ * Returns false if the line is not a bullet, or if there are fewer than 2 leading spaces.
+ */
 const dedentBullet: Command = (editorView) => {
   const { state } = editorView
   const seenLines = new Set<number>()
@@ -334,6 +392,12 @@ const modeLabelClass = computed(() => {
   }
 })
 
+/**
+ * Apply the current Vim settings from the UI store to the global Vim object.
+ * Must unmap all previously applied custom mappings before re-applying to avoid
+ * accumulating stale mappings when the user edits their keybinding list.
+ * Errors are silently swallowed because Vim.unmap() throws if the mapping doesn't exist.
+ */
 function applyVimSettings() {
   for (const m of appliedMappings) {
     try {
@@ -357,6 +421,10 @@ function applyVimSettings() {
   }
 }
 
+/**
+ * Briefly highlight the yanked range using the cm-yank-flash decoration, then clear it
+ * after 350 ms. The timer is reset on each call so rapid yanks don't leave stale flashes.
+ */
 function flashYankRange(from: number, to: number) {
   if (!view) return
   if (yankFlashTimer) clearTimeout(yankFlashTimer)
@@ -367,6 +435,13 @@ function flashYankRange(from: number, to: number) {
   }, 350)
 }
 
+/**
+ * Handle a Vim yank event: optionally flash the range and optionally sync the yanked
+ * text to the system clipboard so it's available outside the browser.
+ *
+ * @param lineType - true for linewise yanks (yy/Y), which append a trailing newline
+ *   to match Vim's register format so paste operations land on the correct line.
+ */
 function handleYank(from: number, to: number, lineType = false) {
   if (!view) return
   if (uiStore.highlightOnYank) flashYankRange(from, to)
@@ -378,6 +453,14 @@ function handleYank(from: number, to: number, lineType = false) {
   }
 }
 
+/**
+ * On editor focus, read the system clipboard and write its content into Vim's unnamed
+ * register ('"'). This allows yanks from outside the browser (e.g. terminal) to be
+ * pasted with 'p' in Vim mode without the user manually triggering Ctrl+V.
+ *
+ * The cast to `any` is unavoidable: codemirror-vim does not expose the internal
+ * register structure in its TypeScript types.
+ */
 function syncClipboardToVimRegister() {
   if (!uiStore.vimClipboardSync || !uiStore.vimEnabled || !view) return
   navigator.clipboard
@@ -402,6 +485,15 @@ function syncClipboardToVimRegister() {
 // Image paste / drop handlers
 // ---------------------------------------------------------------------------
 
+/**
+ * Begin an image upload for a dropped or pasted file.
+ * Inserts a sentinel comment immediately at the cursor so the user has visual
+ * feedback that the upload is in progress; the sentinel is replaced by the final
+ * markdown reference once the upload resolves.
+ *
+ * The image is uploaded to the same folder as the current document so the file
+ * tree stays organised; falls back to the workspace root if no parent is found.
+ */
 function startImageUpload(editorView: EditorView, file: File) {
   const uuid = crypto.randomUUID()
   const sentinel = `<!--uploading:${uuid}-->`
@@ -421,10 +513,17 @@ function startImageUpload(editorView: EditorView, file: File) {
     .catch((err) => onUploadFailure(editorView, uuid, err))
 }
 
+/**
+ * Called when an upload completes successfully.
+ * If the editor is still mounted (dom has a parent), replace the sentinel with the
+ * final image reference. If the user navigated away, stash the result in
+ * completedUploads so resolveStashedUploads() can apply it when they return.
+ */
 function onUploadSuccess(editorView: EditorView, uuid: string, result: UploadedImageResult) {
   detachedUploads.delete(uuid)
 
   if (!editorView.dom.parentNode) {
+    // Editor is currently hidden (user switched tabs). Stash for later.
     completedUploads.set(uuid, result)
     return
   }
@@ -447,6 +546,11 @@ function onUploadSuccess(editorView: EditorView, uuid: string, result: UploadedI
   })
 }
 
+/**
+ * Called when an upload fails. Removes the sentinel from the document (to avoid
+ * leaving broken placeholder text) and shows a toast. Stashes the failure if the
+ * editor is hidden so it can be cleaned up when the user returns.
+ */
 function onUploadFailure(editorView: EditorView, uuid: string, err?: unknown) {
   detachedUploads.delete(uuid)
 
@@ -477,6 +581,11 @@ function onUploadFailure(editorView: EditorView, uuid: string, err?: unknown) {
   toastStore.addToast(msg, 'error')
 }
 
+/**
+ * If the user copies and re-pastes a sentinel comment (e.g. undo followed by paste),
+ * re-insert it at the cursor rather than pasting raw HTML comment text.
+ * This only fires if the upload is still in flight (uuid is in detachedUploads).
+ */
 function reinsertSentinel(editorView: EditorView, uuid: string) {
   if (!detachedUploads.has(uuid)) return
   const sentinel = `<!--uploading:${uuid}-->`
@@ -486,6 +595,13 @@ function reinsertSentinel(editorView: EditorView, uuid: string) {
   })
 }
 
+/**
+ * On editor mount (or tab return), scan for any sentinels whose uploads already
+ * resolved or failed while this editor instance was hidden. Processes one sentinel
+ * per call because each resolution changes the document, invalidating old positions.
+ *
+ * Precondition: editorView is mounted and its dom has a parent node.
+ */
 function resolveStashedUploads(editorView: EditorView) {
   const doc = editorView.state.doc.toString()
   sentinelPattern.lastIndex = 0
@@ -498,7 +614,7 @@ function resolveStashedUploads(editorView: EditorView) {
       const result = completedUploads.get(uuid)!
       completedUploads.delete(uuid)
       onUploadSuccess(editorView, uuid, result)
-      return // doc changed — re-scan would need new toString()
+      return // doc changed — re-scan would need a fresh toString()
     }
 
     if (failedUploads.has(uuid)) {
@@ -522,19 +638,29 @@ function closeImageContextMenu() {
   imageContextMenu.value = null
 }
 
+/**
+ * Begin inline renaming of an image referenced in the editor.
+ * The rename input is a native <input> rendered via Teleport (outside the CM DOM)
+ * and positioned over a zero-width RenameAnchorWidget injected after the image syntax.
+ *
+ * The double nextTick + rAF cascade is necessary because:
+ *   1. Setting renamingImageId triggers a ghost decoration rebuild (nextTick to flush Vue).
+ *   2. CodeMirror renders the new RenameAnchorWidget in the next paint frame (rAF).
+ *   3. The input must be visible before we can focus it and bind the click-outside handler.
+ */
 function startImageRename() {
   if (!imageContextMenu.value) return
   const { entryId } = imageContextMenu.value
   const entry = filesStore.getEntry(entryId)
   if (!entry) return
   const dotIdx = entry.name.lastIndexOf('.')
+  // Preserve the original file extension so the user only edits the base name.
   renamingImageExt.value = dotIdx > 0 ? entry.name.slice(dotIdx) : ''
   const baseName = dotIdx > 0 ? entry.name.slice(0, dotIdx) : entry.name
   imageRenameInput.value = baseName
   renamingImageId.value = entryId
   closeImageContextMenu()
   rebuildGhosts()
-  // Wait for anchor widget to render, then position the input over it
   nextTick(() => {
     requestAnimationFrame(() => {
       const anchor = container.value?.querySelector(`[data-rename-anchor="${entryId}"]`)
@@ -545,7 +671,7 @@ function startImageRename() {
       nextTick(() => {
         renameInputEl.value?.focus()
         renameInputEl.value?.select()
-        // Close on any click outside the input
+        // Delay binding so the current mouseup from the context menu click doesn't immediately close.
         setTimeout(() => {
           document.addEventListener('mousedown', onRenameClickOutside)
         }, 0)
@@ -881,6 +1007,8 @@ const lilypadTheme = EditorView.theme({
   },
 })
 
+// When this tab becomes active, force a CM layout measure and restore focus.
+// rAF defers until the panel's CSS transition finishes so CM gets correct dimensions.
 watch(
   () => props.isActive,
   (active) => {
@@ -893,6 +1021,7 @@ watch(
   },
 )
 
+// Reconfigure the font-size compartment without destroying/recreating the CM instance.
 watch(
   () => uiStore.editorFontSize,
   (size) => {
@@ -905,6 +1034,8 @@ watch(
   },
 )
 
+// Hot-swap Vim mode via a compartment so the editor state (undo history, selections)
+// is preserved when the user toggles it in settings.
 watch(
   () => uiStore.vimEnabled,
   (enabled) => {
@@ -914,6 +1045,8 @@ watch(
   },
 )
 
+// deep: true is required because vimMappings is an array of objects;
+// Vue's default shallow comparison won't detect mutations to individual mapping objects.
 watch(
   () => [uiStore.vimMappings, uiStore.vimEscTimeout] as const,
   () => {
@@ -976,6 +1109,8 @@ onMounted(() => {
     parent: container.value,
   })
 
+  // Vim.defineEx is global — guard with vimExRegistered to avoid re-registering the
+  // :w command every time a new TextEditor instance mounts.
   if (!vimExRegistered) {
     Vim.defineEx('w', 'w', () => {
       const activeId = store.activeDocumentId
@@ -988,9 +1123,21 @@ onMounted(() => {
 
   const cm = getCM(view)
 
-  // Per-instance yank tracking
+  // ---------------------------------------------------------------------------
+  // Yank tracking state machine (per-instance, not module-level)
+  //
+  // codemirror-vim does not expose a dedicated yank event, so we reconstruct the
+  // yanked range from keypress events:
+  //   - 'y' in visual mode  → yank the current visual selection
+  //   - 'y' 'y' in normal   → yank the current line (yy)
+  //   - 'Y' in normal       → yank from cursor to end of line
+  //
+  // visualYankPending captures the selection at keypress time because by the time
+  // vim-mode-change fires (exiting visual), the selection has already collapsed.
+  // yyPending tracks the first 'y' so the second one knows it completes a yy.
+  // ---------------------------------------------------------------------------
+
   let visualYankPending: { from: number; to: number } | null = null
-  // yyPending: set after first 'y' in non-visual mode, used to detect the second 'y' of yy
   let yyPending: { from: number; to: number } | null = null
 
   cm?.on('vim-keypress', (key: string) => {
@@ -1049,6 +1196,8 @@ onMounted(() => {
   resolveStashedUploads(view)
 })
 
+// The preview pane calls requestClearEditorHighlight() when the user deselects a block.
+// This watcher handles the resulting store mutation by clearing the CM line decoration.
 watch(
   () => store.clearHighlightRequest,
   (docId) => {
@@ -1062,20 +1211,26 @@ watch(
   },
 )
 
+// The search panel (and preview click) can request that the editor scrolls to a specific
+// line and optionally highlights it. The highlight auto-clears after 1.5 s.
 watch(
   () => store.scrollToLineRequest,
   (req) => {
     if (!req || req.documentId !== props.documentId || !view) return
     store.scrollToLineRequest = null
 
+    // Clamp to valid line numbers in case the document was edited since the request was made.
     const targetLine = Math.min(Math.max(1, req.line), view.state.doc.lines)
     const lineInfo = view.state.doc.line(targetLine)
 
     view.dispatch({
       effects: [
+        // yMargin: 80 keeps the target line off the very top of the viewport.
         EditorView.scrollIntoView(lineInfo.from, { y: 'nearest', yMargin: 80 }),
         highlightLineEffect.of(targetLine),
       ],
+      // moveCursor: true when navigating from search results, so subsequent j/k
+      // movements start from the highlighted line rather than the last cursor position.
       ...(req.moveCursor ? { selection: { anchor: lineInfo.to } } : {}),
     })
 

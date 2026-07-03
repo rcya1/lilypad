@@ -1,3 +1,4 @@
+<!-- Root component: global keyboard shortcuts (Cmd+P, Cmd+N), beforeunload guard for unsaved docs, and auth-gated route rendering. -->
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -48,6 +49,7 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
 }
 
 onMounted(() => {
+  // capture: true ensures we intercept before the editor (CodeMirror) handles Ctrl+P/Ctrl+N.
   window.addEventListener('keydown', onKeyDown, { capture: true })
   window.addEventListener('beforeunload', onBeforeUnload)
 })

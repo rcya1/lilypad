@@ -1,3 +1,4 @@
+<!-- Individual image or folder node in the images gallery with thumbnail, rename, drag-drop, and context menu. -->
 <script setup lang="ts">
 import { computed, ref, type WritableComputedRef } from 'vue'
 import { Folder, FolderOpen, Image } from 'lucide-vue-next'
@@ -36,15 +37,18 @@ const {
 
 const paddingLeft = computed(() => `${12 + props.depth * 20}px`)
 const isDir = computed(() => isDirectory(props.entry))
+// Resolved public URL from Supabase Storage; null for folders.
 const url = computed(() => (isDir.value ? null : filesStore.getImageUrl(props.entry.id)))
+// Highlighted when the editor just inserted this image (e.g. via paste).
 const isHighlighted = computed(() => uiStore.highlightedImageId === props.entry.id)
 const children = computed(() => (isDirectory(props.entry) ? props.entry.children : []))
 
-// Writable computed so useDragDrop can expand folders on hover
+// Writable computed so useDragDrop can expand folders on hover (auto-expand
+// during a drag) while the actual expanded state lives in the parent ImagesTab.
 const isOpen: WritableComputedRef<boolean> = computed({
   get: () => props.expandedFolders.has(props.entry.id),
   set: (val: boolean) => {
-    // Only emit toggle when state actually changes
+    // Only emit toggle when state actually changes to avoid redundant re-renders.
     if (val !== props.expandedFolders.has(props.entry.id)) {
       emit('toggleFolder', props.entry.id)
     }
@@ -74,6 +78,14 @@ const isCoveredBySelection = computed(() => {
 })
 const inSelectionMode = computed(() => filesStore.selectedIds.size >= 2)
 
+/**
+ * Handles click interactions on an image or folder node.
+ *
+ * Modifier keys:
+ *   Ctrl/Cmd — toggle in multi-select set (or explode folder for images)
+ *   Shift    — range-select from last-clicked to this entry
+ *   Plain    — open image in editor pane / toggle folder
+ */
 function handleClick(e: MouseEvent) {
   if (isDirectory(props.entry)) {
     if (e.ctrlKey || e.metaKey) {
@@ -104,7 +116,6 @@ function handleClick(e: MouseEvent) {
   }
 
   filesStore.selectSingle(props.entry.id)
-  // Open image in editor
   if (!isDirectory(props.entry) && props.entry.type === 'image') {
     const id = props.entry.id
     if (editorStore.openDocuments.has(id)) {
@@ -115,10 +126,13 @@ function handleClick(e: MouseEvent) {
   }
 }
 
+/**
+ * Extends the composable's drag-start to also set text/plain with the markdown
+ * image syntax (`![](img:<id>)`), so dragging from the gallery into the editor
+ * inserts the image reference inline.
+ */
 function onDragStart(e: DragEvent) {
-  // Use the composable's drag start for move support
   dndDragStart(e)
-  // Also set text/plain so images can be dropped into the editor
   if (!isDir.value && e.dataTransfer) {
     e.dataTransfer.setData('text/plain', `![](img:${props.entry.id})`)
   }
@@ -134,6 +148,7 @@ function startRename() {
   isRenaming.value = true
 }
 
+/** Commits a rename if the value changed; exits rename mode regardless. */
 async function submitRename() {
   const newName = renameValue.value.trim()
   if (newName && newName !== props.entry.name) {
@@ -142,6 +157,10 @@ async function submitRename() {
   isRenaming.value = false
 }
 
+/**
+ * Deletes this entry (or the multi-select set if active).
+ * Closes any open editor tabs for the affected entries before calling the store.
+ */
 async function handleDelete() {
   closeContextMenu()
 

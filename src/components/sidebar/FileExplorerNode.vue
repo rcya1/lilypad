@@ -1,3 +1,4 @@
+<!-- Individual file or folder row in the tree: handles click, double-click, drag-drop, rename, delete, and context menu. -->
 <script setup lang="ts">
 import { ref, computed, watch, type WritableComputedRef } from 'vue'
 import type { Entry } from '@/types/file-explorer'
@@ -19,7 +20,8 @@ const editorStore = useEditorStore()
 const filesStore = useFilesStore()
 const { confirm } = useConfirm()
 
-// Writable computed so useDragDrop can set isOpen.value = true while state stays in store
+// Writable computed so useDragDrop can set isOpen.value = true (auto-expand on hover) while
+// the source of truth stays in the files store's collapsedFolderIds set.
 const isOpen: WritableComputedRef<boolean> = computed({
   get: () => !filesStore.isFolderCollapsed(props.entry.id),
   set: (val: boolean) => {
@@ -43,16 +45,23 @@ const entryRef = computed(() => props.entry)
 const { dropRegion, isInvalidTarget, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop } =
   useDragDrop(entryRef, isOpen, filesStore)
 
+// Active document receives accent-coloured icon in the tree.
 const isActive = computed(
   () => !isDirectory(props.entry) && editorStore.activeDocumentId === props.entry.id,
 )
 
+// Folders get a subtler "selected folder" highlight (not part of the multi-select set).
 const isSelectedFolder = computed(
   () => isDirectory(props.entry) && filesStore.selectedFolderId === props.entry.id,
 )
 
 const isSelected = computed(() => filesStore.selectedIds.has(props.entry.id))
 
+/**
+ * True when an ancestor of this entry is in the multi-select set.
+ * Used to apply the same selection highlight without explicitly selecting every descendant,
+ * and to prevent moving a subtree twice during a bulk drag.
+ */
 const isCoveredBySelection = computed(() => {
   if (filesStore.selectedIds.size === 0) return false
   let parentId: string | null = props.entry.parentId
@@ -63,12 +72,17 @@ const isCoveredBySelection = computed(() => {
   return false
 })
 
+// Once ≥2 items are selected, single-clicking an entry adjusts the selection
+// instead of opening the document (to avoid accidentally navigating away).
 const inSelectionMode = computed(() => filesStore.selectedIds.size >= 2)
 
+// True when this folder is the target of a pending child-creation operation.
 const showNewInput = computed(
   () => isDirectory(props.entry) && filesStore.pendingCreate?.parentId === props.entry.id,
 )
 
+// When a child pending input appears, auto-expand this folder so the input is
+// visible, and attach a click-away listener that cancels the creation.
 watch(showNewInput, (val, _old, onCleanup) => {
   if (val) {
     newChildName.value = ''
@@ -84,6 +98,17 @@ watch(showNewInput, (val, _old, onCleanup) => {
   }
 })
 
+/**
+ * Handles all click variants on a file or folder row.
+ *
+ * Modifier keys:
+ *   Ctrl/Cmd — toggle this entry in the multi-select set (or explode folder selection)
+ *   Shift    — range-select from the last-clicked entry to this one
+ *   Plain    — open/navigate (with preview tab for documents); toggle folder
+ *
+ * For documents, single click opens as a preview tab (replaced by the next
+ * single-clicked file). Double-click promotes to a permanent tab.
+ */
 async function handleClick(e: MouseEvent) {
   if (isDirectory(props.entry)) {
     if (e.ctrlKey || e.metaKey) {
@@ -121,6 +146,7 @@ async function handleClick(e: MouseEvent) {
   // through the same preview flow (web docs load their snapshot separately, in WebView).
   if (props.entry.type === 'md' || props.entry.type === 'web') {
     const id = props.entry.id
+    // If it's already open as a permanent tab (not the preview), just activate it.
     if (editorStore.openDocuments.has(id) && editorStore.previewDocumentId !== id) {
       editorStore.setActiveDocument(id)
       return
@@ -130,18 +156,28 @@ async function handleClick(e: MouseEvent) {
       editorStore.openDocumentAsPreview(id, props.entry.name, props.entry.type, cached)
       return
     }
+    // Show the tab immediately with a loading state; content arrives asynchronously.
     editorStore.openDocumentOptimisticAsPreview(id, props.entry.name, props.entry.type)
     const content = await filesStore.downloadContent(id)
     editorStore.finishLoadingDocument(id, content ?? '')
   }
 }
 
+/**
+ * Double-click promotes a preview tab to a permanent tab so it won't be
+ * replaced by the next single-clicked document.
+ */
 function handleDblClick() {
   if (!isDirectory(props.entry) && (props.entry.type === 'md' || props.entry.type === 'web')) {
     editorStore.promotePreview(props.entry.id)
   }
 }
 
+/**
+ * Returns the ID of the next sibling in sort order, used to determine the
+ * "insert after" position when the context menu is triggered in the lower half
+ * of the row.
+ */
 function getNextSiblingId(): string | null {
   const parentId = props.entry.parentId
   const siblings = filesStore.entries
@@ -152,10 +188,14 @@ function getNextSiblingId(): string | null {
   return siblings[idx + 1]!.id
 }
 
+/**
+ * Opens the context menu and resolves insert position based on where within the
+ * row the right-click landed: top half → before this entry, bottom half → after.
+ */
 function onContextMenu(e: MouseEvent) {
-  // Determine insert position: top half → before this entry, bottom half → after
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   const relY = e.clientY - rect.top
+  // Top half of the row → insert before this entry; bottom half → insert after.
   contextMenuInsertBefore.value = relY < rect.height / 2 ? props.entry.id : getNextSiblingId()
 
   openContextMenu(e)
@@ -167,6 +207,10 @@ function startRename() {
   isRenaming.value = true
 }
 
+/**
+ * Commits a rename if the new name is non-empty and different.
+ * Called on Enter, blur, or clicking away from the rename input.
+ */
 async function submitRename() {
   const newName = renameValue.value.trim()
   if (newName && newName !== props.entry.name) {
@@ -175,6 +219,12 @@ async function submitRename() {
   isRenaming.value = false
 }
 
+/**
+ * Deletes this entry (or the full multi-select set if active) after a confirm dialog.
+ *
+ * When operating in multi-select mode, closes all affected tabs before deleting
+ * to avoid dangling references in the editor store.
+ */
 async function handleDelete() {
   closeContextMenu()
 
@@ -219,6 +269,7 @@ function startNewChildFolder() {
   filesStore.triggerCreate(props.entry.id, 'folder')
 }
 
+/** Creates a sibling at the position recorded when the context menu was opened. */
 function startNewSiblingFile() {
   closeContextMenu()
   filesStore.triggerCreate(props.entry.parentId, 'file', contextMenuInsertBefore.value)
@@ -229,6 +280,12 @@ function startNewSiblingFolder() {
   filesStore.triggerCreate(props.entry.parentId, 'folder', contextMenuInsertBefore.value)
 }
 
+/**
+ * Commits the pending child creation under this folder.
+ * Auto-appends ".md" if omitted; clears pendingCreate state when done.
+ *
+ * Precondition: filesStore.pendingCreate is non-null and targets this folder.
+ */
 async function submitNew() {
   const name = newChildName.value.trim()
   if (!name) {
@@ -252,10 +309,15 @@ function cancelNew() {
   newChildName.value = ''
 }
 
+/** Removes the file extension for display purposes (e.g. "notes.md" → "notes"). */
 function stripExtension(name: string) {
   return name.replace(/\.[^.]+$/, '')
 }
 
+/**
+ * Marks the dragging entry as the PENDING_ID sentinel so drop zones know this
+ * is a not-yet-committed entry being repositioned.
+ */
 function onPendingDragStart(e: DragEvent) {
   draggingEntry.value = {
     kind: 'document',

@@ -1,8 +1,13 @@
+// Custom marked renderer: KaTeX math, admonitions (||type Title … ||), image sizing, and source-line annotation for editor-preview sync.
 import { Marked } from 'marked'
 import type { Token, Tokens, RendererObject } from 'marked'
 import markedKatex from 'marked-katex-extension'
 import katex from 'katex'
 
+/**
+ * KaTeX macro shortcuts passed to both the marked-katex-extension and the
+ * blockKatex renderer so inline and display math share the same definitions.
+ */
 const macros = {
   '\\integers': '\\mathbb{Z}',
   '\\naturals': '\\mathbb{N}',
@@ -41,6 +46,7 @@ const macros = {
   '\\t': '\\text{#1}',
 }
 
+/** Inline SVG icons keyed by admonition type — only types listed here get an icon. */
 const admonitionIcons: Record<string, string> = {
   info: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
   definition:
@@ -60,6 +66,18 @@ interface AdmonitionToken {
   tokens: Token[]
 }
 
+/**
+ * Custom marked block extension for admonitions.
+ *
+ * Syntax:
+ * ```
+ * ||type Optional Title
+ * Body text here.
+ * ||
+ * ```
+ * `type` maps to a CSS class (`admonition-${type}`) and optionally to an icon in `admonitionIcons`.
+ * The body is recursively parsed as markdown so nested formatting works.
+ */
 const admonition = {
   name: 'admonition',
   level: 'block' as const,
@@ -116,11 +134,23 @@ const escapeMap: Record<string, string> = {
   "'": '&#39;',
 }
 
+/**
+ * Escape HTML special characters.
+ * @param encode - When true, also escapes `&` unconditionally (for attribute values).
+ *                 When false, skips already-encoded entities (for text content).
+ */
 function escapeHtml(s: string, encode = false): string {
   if (encode) return s.replace(/[&<>"']/g, (ch) => escapeMap[ch] ?? ch)
   return s.replace(/&(?!#?\w+;)|[<>"']/g, (ch) => escapeMap[ch] ?? ch)
 }
 
+/**
+ * Mutates each token in `tokens` to add a `_sourceLine` property indicating which
+ * 1-indexed source line the token starts on. Used by the renderer to emit
+ * `data-source-line` attributes, which the preview uses to sync click-to-line with the editor.
+ *
+ * @param lineOffset - Number of lines already consumed before this token list (0 for top-level).
+ */
 function annotateSourceLines(tokens: Token[], lineOffset: number) {
   let currentLine = 1
   for (const token of tokens) {
@@ -138,6 +168,13 @@ function annotateSourceLines(tokens: Token[], lineOffset: number) {
   }
 }
 
+/**
+ * Recursively annotates list items with source lines.
+ * Lists are special because marked's token model nests items inside the list token rather than
+ * flattening them, so a separate traversal is required.
+ *
+ * @param lineOffset - Line number of the line immediately before the first item.
+ */
 function annotateListItems(items: Tokens.ListItem[], lineOffset: number) {
   let itemLine = 1
   for (const item of items) {
@@ -168,12 +205,22 @@ function annotateListItems(items: Tokens.ListItem[], lineOffset: number) {
   }
 }
 
+/**
+ * Reads `_sourceLine` from a token (set by `annotateSourceLines`) and returns
+ * the `data-source-line` attribute string, or an empty string if absent.
+ * Called inside every renderer method to stamp the HTML with source positions.
+ */
 function attr(token: Tokens.Generic): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const line = (token as any)._sourceLine
   return line != null ? ` data-source-line="${line}"` : ''
 }
 
+/**
+ * Overrides for each block-level marked renderer method to inject `data-source-line`
+ * attributes. Only block elements are annotated — inline elements (strong, em, etc.)
+ * are not, since the preview sync only needs one anchor per block.
+ */
 const sourceLineRenderer: RendererObject = {
   heading(token: Tokens.Heading) {
     return `<h${token.depth}${attr(token)}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`
@@ -236,6 +283,11 @@ const sourceLineRenderer: RendererObject = {
   },
 }
 
+/**
+ * Converts an image size modifier string (e.g. `w-1/2`, `h-200`) to an inline CSS string.
+ * Mirrors a subset of Tailwind class names to avoid importing Tailwind inside the renderer.
+ * Unknown values fall back to `width: 100%`.
+ */
 function parseSizeToCSS(attr: string | null): string {
   if (!attr) return 'width: 100%;'
 
@@ -254,6 +306,15 @@ function parseSizeToCSS(attr: string | null): string {
   return 'width: 100%;'
 }
 
+/**
+ * Creates a marked inline extension that adds optional size modifiers to image syntax.
+ *
+ * Extended syntax: `![alt](src){w-1/2}` where the `{...}` block is a Tailwind-style size hint.
+ * Also handles `img:<uuid>` hrefs by resolving them to real URLs via `imageResolver`.
+ *
+ * @param imageResolver - Optional callback that maps an image UUID to a public URL.
+ *                        If omitted (e.g. in tests), `img:` hrefs are left as-is.
+ */
 function createImageSizeExtension(imageResolver?: (imageId: string) => string | null) {
   return {
     name: 'image',
@@ -293,6 +354,22 @@ function createImageSizeExtension(imageResolver?: (imageId: string) => string | 
   }
 }
 
+/**
+ * Parse markdown content to HTML with all Lilypad extensions applied.
+ *
+ * Extensions (in application order):
+ * 1. `marked-katex-extension` — inline (`$…$`) and display (`$$…$$`) math via KaTeX
+ * 2. `admonition` — custom block callouts (`||type Title … ||`)
+ * 3. `sourceLineRenderer` — stamps every block element with `data-source-line`
+ * 4. `blockKatex` renderer override — wraps block math in a `<div>` with source-line annotation
+ * 5. `createImageSizeExtension` — `{w-*}` / `{h-*}` size modifiers on images
+ *
+ * @param content       - Raw markdown string to parse.
+ * @param imageResolver - Optional callback to resolve `img:<uuid>` hrefs to URLs.
+ *                        Pass the files store's `getImageUrl` when rendering in the app;
+ *                        omit in tests where image resolution isn't needed.
+ * @returns             The rendered HTML string.
+ */
 export function parseMarkdown(
   content: string,
   imageResolver?: (imageId: string) => string | null,

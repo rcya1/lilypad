@@ -1,3 +1,4 @@
+<!-- Renders a captured web snapshot in a sandboxed iframe; intercepts link clicks to prevent navigation away from the frozen page. -->
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { useFilesStore } from '@/stores/files'
@@ -9,8 +10,11 @@ const filesStore = useFilesStore()
 const frame = ref<HTMLIFrameElement | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+// Tracks the current blob: URL so we can revoke it before loading the next snapshot,
+// preventing unbounded memory growth from orphaned Blob objects.
 let blobUrl: string | null = null
 
+/** Revoke the current blob URL, freeing the underlying memory. */
 function revoke() {
   if (blobUrl) {
     URL.revokeObjectURL(blobUrl)
@@ -18,6 +22,13 @@ function revoke() {
   }
 }
 
+/**
+ * Download the captured HTML for the given document and load it into the iframe.
+ * Creating a blob: URL (rather than a data: URL) keeps the iframe same-origin with
+ * this page, which lets our click handler script into the frame's document.
+ * The sandbox="allow-same-origin" attribute is intentionally omitted from allow-scripts,
+ * so the captured page's own JS is never executed.
+ */
 async function load(id: string) {
   loading.value = true
   error.value = null
@@ -28,9 +39,8 @@ async function load(id: string) {
     loading.value = false
     return
   }
-  // A blob: URL created here inherits this document's origin, so the parent can script into
-  // the frame (link handling below; highlights in a later phase). Sandboxed without
-  // allow-scripts, so the captured page itself stays inert.
+  // blob: URL inherits this document's origin → parent can script into the frame.
+  // Sandboxed without allow-scripts, so captured page JS never runs.
   blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
   if (frame.value) frame.value.src = blobUrl
   loading.value = false
@@ -74,7 +84,12 @@ function onAnchorClick(e: MouseEvent) {
   }
 }
 
-watch(() => props.documentId, (id) => load(id), { immediate: true })
+// Reload whenever the displayed document changes. immediate: true covers the initial mount.
+watch(
+  () => props.documentId,
+  (id) => load(id),
+  { immediate: true },
+)
 
 onBeforeUnmount(revoke)
 </script>

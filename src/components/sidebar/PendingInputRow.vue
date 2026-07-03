@@ -1,9 +1,12 @@
+<!-- Inline text input row shown in the file tree when creating a new file or folder; supports v-model, drag reorder, and keyboard confirm/cancel. -->
 <script setup lang="ts">
 import { FileText, Folder, Check, GripVertical } from 'lucide-vue-next'
 
 defineProps<{
   modelValue: string
+  /** Determines the icon shown and the placeholder text. */
   type: 'file' | 'folder'
+  /** Nesting depth, used to compute left padding matching the tree indentation. */
   depth: number
 }>()
 
@@ -43,6 +46,8 @@ const emit = defineEmits<{
       @keydown.escape="emit('cancel')"
       @vue:mounted="($event as any).el.focus()"
     />
+    <!-- @mousedown.prevent stops the input from losing focus before @click fires, so the
+         confirm button reliably commits the name instead of triggering the blur-cancel. -->
     <button
       class="flex items-center justify-center w-4 h-4 rounded text-accent hover:bg-surface-overlay transition-colors cursor-pointer shrink-0"
       @mousedown.prevent

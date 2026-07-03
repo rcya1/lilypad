@@ -1,3 +1,4 @@
+// Unit tests for parseMarkdown — focused on source-line annotation correctness across block types.
 import { describe, it, expect } from 'vitest'
 import { parseMarkdown } from './markdown'
 

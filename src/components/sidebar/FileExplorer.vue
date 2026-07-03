@@ -1,3 +1,4 @@
+<!-- Root of the sidebar file tree: toolbar for creating files/folders/web captures, drag-drop to root, and bulk-expand controls. -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { FilePlus, FolderPlus, Globe, ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
@@ -14,6 +15,7 @@ const files = useFilesStore()
 const editorStore = useEditorStore()
 const toast = useToastStore()
 
+// anyExpanded drives the collapse-all / expand-all toggle button label.
 const totalFolderCount = computed(() => files.entries.filter((e) => e.kind === 'directory').length)
 const anyExpanded = computed(() => files.collapsedFolderIds.size < totalFolderCount.value)
 const newName = ref('')
@@ -26,6 +28,10 @@ function deselectAll() {
   files.clearSelection()
 }
 
+/**
+ * Returns a sort_order value that places a new entry after all current root entries.
+ * Uses +1000 gaps so subsequent reorders have room to insert between existing values.
+ */
 function getRootAppendOrder(): number {
   const roots = files.entries
     .filter((e) => e.parent_id === null)
@@ -33,6 +39,13 @@ function getRootAppendOrder(): number {
   return roots.length === 0 ? 1000 : Math.max(...roots.map((e) => e.sort_order)) + 1000
 }
 
+/**
+ * Handles a drop onto the empty area at the bottom of the explorer (root level).
+ *
+ * When multiple entries are selected and the dragged item is part of the selection,
+ * only "top-level" selected entries are moved — entries whose ancestor is also
+ * selected are skipped to avoid moving the same subtree twice.
+ */
 async function onRootDrop(e: DragEvent) {
   e.preventDefault()
   isRootDropTarget.value = false
@@ -45,6 +58,7 @@ async function onRootDrop(e: DragEvent) {
 
   if (files.selectedIds.size >= 2 && files.selectedIds.has(dragId)) {
     const idSet = files.selectedIds
+    // Filter out entries whose ancestor is also in the selection set.
     const topLevel = [...idSet].filter((id) => {
       let parentId = files.entries.find((e) => e.id === id)?.parent_id ?? null
       while (parentId) {
@@ -59,6 +73,7 @@ async function onRootDrop(e: DragEvent) {
     })
     const failed: typeof snapshot = []
     for (let i = 0; i < topLevel.length; i++) {
+      // Pass checkConflict=true so name collisions at root are caught.
       const ok = await files.moveEntry(topLevel[i]!, null, baseOrder + i, true)
       if (!ok) failed.push(snapshot[i]!)
     }
@@ -75,6 +90,12 @@ async function onRootDrop(e: DragEvent) {
 const showEmptyContextMenu = ref(false)
 const emptyContextMenuPos = ref({ x: 0, y: 0 })
 
+/**
+ * Shows a "New file / New folder" context menu when right-clicking the empty
+ * space of the explorer (not on any entry row).
+ * The setTimeout(0) defers attaching the click-away listener until after the
+ * current event finishes propagating, preventing it from immediately closing.
+ */
 function onEmptyAreaContextMenu(e: MouseEvent) {
   // Only fire when clicking the scrollable container itself, not a child entry
   if (e.target !== e.currentTarget) return
@@ -99,13 +120,18 @@ function emptyAreaNewFolder() {
 }
 
 onMounted(async () => {
+  // Skip fetch if the store was already populated (e.g. sidebar remount).
   if (files.entries.length > 0) return
   await files.fetchEntries()
   await files.seedWelcomeFile()
 })
 
+// True when a root-level (no parent) pending create input should be shown.
 const showRootInput = computed(() => files.pendingCreate?.parentId === null)
 
+// When a root-level pending input appears, attach a click-away handler so
+// clicking elsewhere cancels the creation without requiring an explicit Escape.
+// onCleanup removes the handler when the input disappears.
 watch(showRootInput, (val, _old, onCleanup) => {
   if (val) {
     newName.value = ''
@@ -119,6 +145,13 @@ watch(showRootInput, (val, _old, onCleanup) => {
   }
 })
 
+/**
+ * Returns the insertion position (parentId + insertBefore sibling) directly
+ * below the currently active document, so new files created from the toolbar
+ * appear next to the file being edited rather than at an arbitrary location.
+ *
+ * Returns null if there is no active document.
+ */
 function getInsertBelowActive(): {
   parentId: string | null
   insertBefore: string | null
@@ -135,6 +168,11 @@ function getInsertBelowActive(): {
   return { parentId: activeEntry.parent_id, insertBefore }
 }
 
+/**
+ * Initiates creation of a new markdown file.
+ * If a folder is selected in the sidebar, the file is created inside it.
+ * Otherwise, the file is inserted immediately below the currently open document.
+ */
 function startNewFile() {
   const folderId = files.selectedFolderId
   if (folderId) {
@@ -145,6 +183,10 @@ function startNewFile() {
   }
 }
 
+/**
+ * Initiates creation of a new folder.
+ * Placement priority: selected folder → below the active document → root.
+ */
 function startNewFolder() {
   const folderId = files.selectedFolderId
   if (folderId) {
@@ -158,16 +200,26 @@ function startNewFolder() {
 const showWebModal = ref(false)
 const webModalParentId = ref<string | null>(null)
 
+/** Opens the web-capture modal, resolving the target parent folder the same way as startNewFile. */
 function startNewWebPage() {
   webModalParentId.value = files.selectedFolderId ?? getInsertBelowActive()?.parentId ?? null
   showWebModal.value = true
 }
 
+/**
+ * Called after a web document is captured; immediately opens it in the editor.
+ * @param entry - The newly created entry row returned by the capture flow.
+ */
 function onWebPageCreated(entry: EntryRow) {
   showWebModal.value = false
   editorStore.openDocument(entry.id, entry.name, 'web', entry.content ?? '')
 }
 
+/**
+ * Confirms and creates the entry described by `files.pendingCreate`.
+ * Auto-appends ".md" if the user omitted it for file entries.
+ * Clears the pending state regardless of success or cancellation.
+ */
 async function submitNew() {
   const name = newName.value.trim()
   if (!name) {
@@ -191,6 +243,11 @@ function cancelNew() {
   newName.value = ''
 }
 
+/**
+ * Sets draggingEntry to the PENDING_ID sentinel so drop zones know a
+ * not-yet-created entry is being dragged (used to reorder the pending row
+ * before committing the name).
+ */
 function onPendingDragStart(e: DragEvent) {
   draggingEntry.value = {
     kind: 'document',

@@ -1,3 +1,4 @@
+<!-- Fixed bottom-right toast stack; progress bar animation is in sync with the 5s auto-dismiss in the toast store. -->
 <script setup lang="ts">
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-vue-next'
 import { useToastStore } from '@/stores/toast'

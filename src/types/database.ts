@@ -1,3 +1,4 @@
+// TypeScript types for the Supabase database schema, hand-maintained to match the actual schema.
 /** Stored in `entries.metadata` for `document_type = 'web'` documents. */
 export interface WebDocMeta {
   /** Original URL the snapshot was captured from. */
@@ -17,11 +18,16 @@ export interface Database {
           user_id: string
           kind: 'directory' | 'document'
           name: string
+          /** Null for directories. */
           document_type: 'pdf' | 'md' | 'image' | 'web' | null
           parent_id: string | null
+          /** Supabase Storage object path for image and web documents; null for md/pdf. */
           storage_path: string | null
+          /** Inline text content for md documents; null for all other types. */
           content: string | null
+          /** Structured metadata; currently only used for web snapshots (WebDocMeta). */
           metadata: WebDocMeta | null
+          /** Fractional ordering within a parent folder; siblings are sorted by this value. */
           sort_order: number
           created_at: string
           updated_at: string
@@ -82,5 +88,6 @@ export interface Database {
   }
 }
 
+/** Convenience aliases used throughout the files store instead of the long generic path. */
 export type EntryRow = Database['public']['Tables']['entries']['Row']
 export type EntryInsert = Database['public']['Tables']['entries']['Insert']

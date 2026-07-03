@@ -1,3 +1,4 @@
+<!-- OAuth login page: Google and GitHub sign-in buttons delegating to the auth store. -->
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import LilypadIcon from '@/assets/icon.svg'

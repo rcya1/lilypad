@@ -1,3 +1,4 @@
+<!-- Settings panel (Escape to close): appearance toggles and Vim configuration. -->
 <script setup lang="ts">
 import { watch, onBeforeUnmount } from 'vue'
 import { X } from 'lucide-vue-next'
@@ -12,6 +13,8 @@ function onKeyDown(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close')
 }
 
+// Only register the Escape listener while the modal is open — avoids conflicting with other
+// Escape handlers (e.g. Vim insert mode) when the modal is closed.
 watch(
   () => props.show,
   (val) => {

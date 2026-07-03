@@ -1,3 +1,4 @@
+<!-- Main sidebar: drag-to-resize panel with file/images tabs, search toggle, settings, and sign-out. -->
 <script setup lang="ts">
 import FileExplorer from './FileExplorer.vue'
 import ImagesTab from './ImagesTab.vue'
@@ -20,9 +21,15 @@ const searchStore = useSearchStore()
 const uiStore = useUiStore()
 const router = useRouter()
 
+// True whenever any document is currently being auto-saved to Supabase.
 const isSyncing = computed(() => editorStore.savingIds.size > 0)
 const showSettings = ref(false)
 
+/**
+ * Signs the user out and returns to the login screen.
+ * Resets editor and file stores first so stale state doesn't leak into
+ * the next login session if the app is not fully reloaded.
+ */
 async function signOut() {
   editorStore.$reset()
   filesStore.$reset()
@@ -31,11 +38,14 @@ async function signOut() {
 }
 
 const sidebarWidth = ref(250)
+// Dragging below this pixel offset snaps the sidebar to minimized mode instead of making it tiny.
 const snapThreshold = 160
 const maxWidth = 500
+// Icon-only width shown when minimized.
 const minimizedWidth = 64
 
 const isMinimized = ref(false)
+// True during an active mouse-drag resize; suppresses the CSS width transition so it tracks the cursor exactly.
 const isResizing = ref(false)
 
 // When a pending file creation is triggered (e.g. via Ctrl+N), ensure the
@@ -50,13 +60,25 @@ watch(
   },
 )
 
+/**
+ * Begins a drag-resize session.
+ * Attaches document-level listeners instead of the element's own events so the
+ * cursor can move freely outside the handle without dropping the resize.
+ */
 const startResize = () => {
   isResizing.value = true
+  // Prevent text selection while dragging across the document.
   document.body.classList.add('select-none')
   document.addEventListener('mousemove', resize)
   document.addEventListener('mouseup', stopResize)
 }
 
+/**
+ * Handles mousemove during a resize drag.
+ * clientX maps directly to sidebar width because the sidebar is flush with the
+ * left edge of the viewport. Values below snapThreshold collapse to minimized
+ * rather than producing a tiny visible panel.
+ */
 const resize = (event: MouseEvent) => {
   if (!isResizing.value) return
 
@@ -70,6 +92,10 @@ const resize = (event: MouseEvent) => {
   }
 }
 
+/**
+ * Ends the drag-resize session and cleans up document-level listeners.
+ * Must mirror every listener added in startResize to avoid leaks.
+ */
 const stopResize = () => {
   isResizing.value = false
   document.body.classList.remove('select-none')
@@ -77,6 +103,11 @@ const stopResize = () => {
   document.removeEventListener('mouseup', stopResize)
 }
 
+/**
+ * Global keyboard shortcuts handled at the sidebar level.
+ * Ctrl/Cmd+B toggles sidebar visibility.
+ * Ctrl/Cmd+Shift+F opens/closes the search panel (also un-minimizes the sidebar).
+ */
 function onKeyDown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
     e.preventDefault()

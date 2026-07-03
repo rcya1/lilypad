@@ -1,3 +1,4 @@
+<!-- Cmd+P command palette: fuzzy-searches all files by name and opens them in the editor. -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { FileText, File, Image } from 'lucide-vue-next'
@@ -81,8 +82,10 @@ const results = computed<FileItem[]>(() => {
     const base = file.displayName.toLowerCase()
     const { matched, score } = fuzzyScore(q, base)
     if (!matched) continue
+    // group 0 = prefix match (ranked first), group 1 = fuzzy-only match
     scored.push({ file, group: base.startsWith(q) ? 0 : 1, score })
   }
+  // Sort: prefix matches first, then by fuzzy score descending, then alpha as tiebreaker
   scored.sort(
     (a, b) =>
       a.group - b.group ||

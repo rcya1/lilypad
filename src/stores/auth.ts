@@ -1,3 +1,4 @@
+// Pinia store for authentication state; manages OAuth sign-in/out and the Supabase session lifecycle.
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User, Session } from '@supabase/supabase-js'
@@ -7,8 +8,19 @@ import { useUiStore } from './ui'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const session = ref<Session | null>(null)
+  // True until the initial getSession() resolves; the app shell waits on this before rendering.
   const loading = ref(true)
 
+  /**
+   * Hydrates auth state from any existing Supabase session (e.g. after a page reload) and
+   * registers an onAuthStateChange listener for future sign-in / sign-out events.
+   *
+   * Must be called exactly once at app startup (see main.ts). All subsequent auth transitions
+   * (OAuth callback, sign-out, token refresh) are handled automatically by the listener.
+   *
+   * Side effect: triggers `ui.loadSettings` whenever a logged-in user is detected, so that
+   * cloud-persisted preferences are applied before the UI is displayed.
+   */
   async function initialize() {
     const {
       data: { session: currentSession },
@@ -30,6 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  /**
+   * Initiates Google OAuth flow; redirects to the current origin on completion.
+   * The resulting session is picked up by the onAuthStateChange listener in initialize().
+   */
   async function signInWithGoogle() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -37,6 +53,10 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  /**
+   * Initiates GitHub OAuth flow; redirects to the current origin on completion.
+   * The resulting session is picked up by the onAuthStateChange listener in initialize().
+   */
   async function signInWithGitHub() {
     await supabase.auth.signInWithOAuth({
       provider: 'github',
@@ -44,6 +64,10 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  /**
+   * Signs out the current user from Supabase and clears local auth state.
+   * The app shell reacts to `user` becoming null to redirect to the login page.
+   */
   async function signOut() {
     await supabase.auth.signOut()
     user.value = null

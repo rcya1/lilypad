@@ -1,3 +1,4 @@
+// Composable for right-click context menus: tracks position and visibility, auto-closes on outside click.
 import { ref, onBeforeUnmount } from 'vue'
 
 /**

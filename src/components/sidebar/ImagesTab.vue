@@ -1,3 +1,4 @@
+<!-- Gallery view of all images in the workspace, grouped by folder with independent expand/collapse state. -->
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import { ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
@@ -11,7 +12,8 @@ const filesStore = useFilesStore()
 const uiStore = useUiStore()
 const toast = useToastStore()
 
-// Track which folders are expanded (independent of file explorer)
+// Folder expand state is local to the images tab and independent of the file
+// explorer's collapsedFolderIds, so toggling here doesn't affect the file tree.
 const expandedFolders = ref(new Set<string>())
 
 function toggleFolder(id: string) {
@@ -22,9 +24,12 @@ function toggleFolder(id: string) {
   }
 }
 
-// Root drop zone
 const isRootDropTarget = ref(false)
 
+/**
+ * Returns a sort_order value that appends after all current root entries.
+ * +1000 gaps leave room for future insertions without renumbering.
+ */
 function getRootAppendOrder(): number {
   const roots = filesStore.entries
     .filter((e) => e.parent_id === null)
@@ -32,6 +37,11 @@ function getRootAppendOrder(): number {
   return roots.length === 0 ? 1000 : Math.max(...roots.map((e) => e.sort_order)) + 1000
 }
 
+/**
+ * Handles dropping an image (or multi-selected set) onto the empty root area.
+ * When multi-selecting, only moves "top-level" entries (skips those whose ancestor
+ * is also in the selection) to avoid moving a subtree twice.
+ */
 async function onRootDrop(e: DragEvent) {
   e.preventDefault()
   isRootDropTarget.value = false
@@ -44,6 +54,7 @@ async function onRootDrop(e: DragEvent) {
 
   if (filesStore.selectedIds.size >= 2 && filesStore.selectedIds.has(dragId)) {
     const idSet = filesStore.selectedIds
+    // Filter out entries whose ancestor is also in the selection set.
     const topLevel = [...idSet].filter((id) => {
       let parentId = filesStore.entries.find((e) => e.id === id)?.parent_id ?? null
       while (parentId) {
@@ -58,6 +69,7 @@ async function onRootDrop(e: DragEvent) {
     })
     const failed: typeof snapshot = []
     for (let i = 0; i < topLevel.length; i++) {
+      // Pass checkConflict=true to detect name collisions at the root level.
       const ok = await filesStore.moveEntry(topLevel[i]!, null, baseOrder + i, true)
       if (!ok) failed.push(snapshot[i]!)
     }
@@ -71,10 +83,10 @@ async function onRootDrop(e: DragEvent) {
   filesStore.moveEntry(dragId, null, baseOrder)
 }
 
-// Expand / collapse all
 const totalFolderCount = computed(
   () => filesStore.entries.filter((e) => e.kind === 'directory').length,
 )
+// anyExpanded checks whether any folder (by its ID) appears in the local expandedFolders set.
 const anyExpanded = computed(() => {
   const folderIds = filesStore.entries.filter((e) => e.kind === 'directory').map((e) => e.id)
   return folderIds.some((id) => expandedFolders.value.has(id))
@@ -89,7 +101,10 @@ function collapseAll() {
   expandedFolders.value = new Set()
 }
 
-// Expand folder path to a given entry so it's visible
+/**
+ * Expands every ancestor folder of the given entry so it becomes visible in the tree.
+ * Used before scrolling to a highlighted image.
+ */
 function expandPathTo(entryId: string) {
   const ancestors = filesStore.getAncestorPath(entryId)
   for (const ancestor of ancestors) {
@@ -97,7 +112,9 @@ function expandPathTo(entryId: string) {
   }
 }
 
-// When highlightedImageId changes, expand path + scroll to it
+// When the editor highlights an image (e.g. after inserting via paste), reveal
+// it in the images tab and scroll it into view. nextTick ensures the DOM has
+// re-rendered with the expanded folders before querying the element.
 watch(
   () => uiStore.highlightedImageId,
   async (id) => {

@@ -1,3 +1,4 @@
+<!-- Full-screen viewer for an image entry: shows metadata, inline rename, and a list of markdown documents that reference this image. -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Pencil, FileText } from 'lucide-vue-next'
@@ -34,18 +35,24 @@ function startRename() {
   isRenaming.value = true
 }
 
+/**
+ * Persist the rename and synchronise the open editor tab's displayed name.
+ * The tab name is stored in editorStore separately from the files store entry,
+ * so both must be updated together.
+ */
 async function submitRename() {
   const newName = renameValue.value.trim()
   if (newName && newName !== imageName.value) {
     await filesStore.renameEntry(props.documentId, newName)
-    // Update tab name
+    // Mirror the rename into the editor tab so the tab bar stays in sync.
     const doc = editorStore.openDocuments.get(props.documentId)
     if (doc) doc.name = newName
   }
   isRenaming.value = false
 }
 
-// Find all documents that reference this image
+// Scan every markdown document's cached content for `img:<id>` references to this image.
+// This is a simple substring scan of the in-memory content map — no DB round-trip needed.
 const referencingDocs = computed(() => {
   const pattern = `img:${props.documentId}`
   const contentMap = filesStore.getContentMap()
@@ -63,6 +70,13 @@ const referencingDocs = computed(() => {
   return results
 })
 
+/**
+ * Open a markdown document that references this image, switching to it if already open
+ * or fetching its content from the cache / network if not.
+ *
+ * Uses an optimistic open (shows the document immediately with empty content) when
+ * the content isn't cached, then fills it in once the download completes.
+ */
 function openReferencingDoc(docId: string) {
   const docEntry = filesStore.entries.find((e) => e.id === docId)
   if (!docEntry) return
@@ -76,6 +90,8 @@ function openReferencingDoc(docId: string) {
   if (cached !== undefined) {
     editorStore.openDocument(docId, docEntry.name, 'md', cached)
   } else {
+    // Open the tab immediately with empty content so the user sees a response,
+    // then populate it once the network request resolves.
     editorStore.openDocumentOptimistic(docId, docEntry.name, 'md')
     filesStore.downloadContent(docId).then((content) => {
       editorStore.finishLoadingDocument(docId, content ?? '')

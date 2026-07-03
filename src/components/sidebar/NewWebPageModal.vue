@@ -1,11 +1,16 @@
+<!-- Modal for entering a URL to capture as a frozen web snapshot stored in Supabase. -->
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Globe, X } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import type { EntryRow } from '@/types/database'
 
-const props = defineProps<{ parentId: string | null }>()
+const props = defineProps<{
+  /** Folder to create the snapshot in; null places it at the workspace root. */
+  parentId: string | null
+}>()
 const emit = defineEmits<{
+  /** Emitted with the new entry after a successful capture. */
   created: [entry: EntryRow]
   cancel: []
 }>()
@@ -15,13 +20,25 @@ const url = ref('')
 const capturing = ref(false)
 const error = ref<string | null>(null)
 
+/**
+ * Prepends "https://" if the user omitted the scheme.
+ * Returns an empty string for blank input so the caller can show a validation error.
+ */
 function normalizeUrl(raw: string): string {
   const trimmed = raw.trim()
   if (!trimmed) return ''
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
+/**
+ * Initiates the web capture via the files store.
+ * Sets `capturing` to block re-submissions and disable the backdrop click-away
+ * (so the user can't accidentally close the modal mid-capture).
+ *
+ * @throws Re-surfaces network or server errors to display inline.
+ */
 async function submit() {
+  // Guard against double-submit while the capture is in-flight.
   if (capturing.value) return
   const target = normalizeUrl(url.value)
   if (!target) {

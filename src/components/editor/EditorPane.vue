@@ -1,3 +1,4 @@
+<!-- Split-pane editor area: manages the resizable divider, layout/swap toggles, and per-panel font-size controls. -->
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, onBeforeUnmount } from 'vue'
 import { AArrowDown, AArrowUp } from 'lucide-vue-next'
@@ -18,15 +19,25 @@ const activeId = computed(() => store.activeDocumentId)
 const activeDocType = computed(() => store.activeDocument?.type)
 
 const splitPane = useTemplateRef<HTMLDivElement[]>('splitPane')
+// Percentage of the container occupied by the first panel (editor or preview, depending on swap).
 const splitPct = ref(50)
+// Hard stops: prevent either panel from collapsing so small it becomes unusable.
 const MIN_PCT = 20
 const MAX_PCT = 80
 
 const isVertical = ref(false)
 const isSwapped = ref(false)
+// Tracks rotation icon direction; flips each time the user toggles layout.
 const rotationClockwise = ref(true)
 const isDragging = ref(false)
 
+/**
+ * Compute absolute-positioned style for one of the two split panels.
+ * Both panels are `position: absolute` inside a `position: relative` container so
+ * their dimensions can be transitioned with CSS rather than forcing reflows.
+ *
+ * @param inFirst - true for the "first" slot (left or top), false for the second.
+ */
 function slotStyle(inFirst: boolean) {
   if (!isVertical.value) {
     return inFirst
@@ -39,10 +50,17 @@ function slotStyle(inFirst: boolean) {
   }
 }
 
+// When preview is hidden, expand the editor to fill the full container.
 const editorPanelStyle = computed(() => {
   if (!uiStore.previewVisible) return { left: '0', top: '0', width: '100%', height: '100%' }
   return slotStyle(!isSwapped.value)
 })
+
+/**
+ * When preview is hidden we collapse it to 0 width/height but keep it mounted so
+ * CodeMirror and the preview renderer don't lose state. The position offsets ensure
+ * the collapsed panel stays out of the visible area regardless of the swap state.
+ */
 const previewPanelStyle = computed(() => {
   if (!uiStore.previewVisible) {
     if (isVertical.value) {
@@ -56,6 +74,8 @@ const previewPanelStyle = computed(() => {
   return slotStyle(isSwapped.value)
 })
 
+// The hit zone is 12px wide/tall centred on the split line, giving a comfortable grab area
+// without requiring pixel-perfect cursor placement.
 const dividerHitZoneStyle = computed(() => {
   if (!isVertical.value) {
     return { left: `calc(${splitPct.value}% - 6px)`, top: '0', width: '12px', height: '100%' }
@@ -64,6 +84,7 @@ const dividerHitZoneStyle = computed(() => {
   }
 })
 
+// Thicken and accent the divider line while dragging for visual feedback.
 const dividerLineClass = computed(() => {
   if (isDragging.value) {
     return isVertical.value
@@ -75,20 +96,27 @@ const dividerLineClass = computed(() => {
     : 'left-1/2 -translate-x-1/2 inset-y-0 w-px bg-border-subtle group-hover:bg-border'
 })
 
-// Font size control positioning: editor controls anchor to the right edge of the
-// editor panel; preview controls anchor to the far right of the bar.
+// Font size controls are only shown in side-by-side (horizontal) mode; in vertical
+// mode there's no natural place to anchor them without overlapping content.
 const showPreviewFontControls = computed(() => uiStore.previewVisible && !isVertical.value)
 
+// Anchor editor font controls to the right edge of the editor panel.
+// In single-pane or vertical mode they sit flush with the container right edge.
 const editorFontControlsStyle = computed(() => {
   if (!uiStore.previewVisible || isVertical.value || isSwapped.value) return { right: '0' }
   return { right: `${100 - splitPct.value}%` }
 })
 
+// Anchor preview font controls to the right edge of the preview panel.
 const previewFontControlsStyle = computed(() => {
   if (isSwapped.value) return { right: `${100 - splitPct.value}%` }
   return { right: '0' }
 })
 
+/**
+ * Toggle between side-by-side (horizontal) and stacked (vertical) layouts.
+ * Resets the split to 50/50 so neither panel starts in a cramped state after the transition.
+ */
 function toggleLayout() {
   isVertical.value = !isVertical.value
   rotationClockwise.value = !rotationClockwise.value
@@ -99,10 +127,16 @@ function toggleSwap() {
   isSwapped.value = !isSwapped.value
 }
 
+/**
+ * Begin a drag-resize session.
+ * Attaches window-level listeners so the drag keeps working even if the cursor
+ * leaves the divider hit zone during fast movement.
+ */
 function onDividerMouseDown(e: MouseEvent) {
   e.preventDefault()
   isDragging.value = true
   document.body.style.cursor = isVertical.value ? 'row-resize' : 'col-resize'
+  // Prevent text selection in other elements while dragging.
   document.body.style.userSelect = 'none'
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', onMouseUp)
@@ -129,6 +163,7 @@ function onMouseUp() {
   window.removeEventListener('mouseup', onMouseUp)
 }
 
+// Clean up window listeners if the component unmounts mid-drag (e.g. switching documents).
 onBeforeUnmount(() => {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', onMouseUp)

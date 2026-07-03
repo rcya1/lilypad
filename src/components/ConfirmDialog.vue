@@ -1,9 +1,11 @@
+<!-- Modal for confirming destructive actions; driven by the useConfirm singleton so any caller can await a boolean result. -->
 <script setup lang="ts">
 import { useConfirm } from '@/composables/useConfirm'
 
 const { open, title, message, confirmLabel, cancelLabel, danger, onConfirm, onCancel } =
   useConfirm()
 
+// mousedown (not click) on the overlay so the cancel fires before any drag-release click propagates.
 function onOverlayClick(e: MouseEvent) {
   if (e.target === e.currentTarget) onCancel()
 }
