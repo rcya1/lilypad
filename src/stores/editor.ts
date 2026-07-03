@@ -14,7 +14,6 @@ export interface OpenDocument {
 }
 
 export const useEditorStore = defineStore('editor', () => {
-  // Map rather than array so O(1) lookup by ID is straightforward.
   const openDocuments = ref(new Map<string, OpenDocument>())
   // Separate from Map insertion order so tabs can be dragged into any position.
   const tabOrder = ref<string[]>([])
