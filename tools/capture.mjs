@@ -5,7 +5,68 @@
 // images/fonts still resolve, strips all scripts, and returns a single inert HTML string.
 //
 // Lives outside src/ so the client bundle never imports Playwright. Consumed by the Vite dev
-// middleware (devCapturePlugin in vite.config.ts) and, later, the Vercel serverless function.
+// middleware (devCapturePlugin in vite.config.ts) and the Vercel serverless function
+// (api/capture.ts).
+
+import { isIP } from 'node:net'
+import { lookup } from 'node:dns/promises'
+
+/** True if a resolved address falls in a loopback/private/link-local/metadata range. */
+function isBlockedAddress(address, family) {
+  if (family === 4) {
+    const octets = address.split('.').map(Number)
+    const [a, b] = octets
+    if (a === 127 || a === 10 || a === 0) return true
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 192 && b === 168) return true
+    if (a === 169 && b === 254) return true // link-local, incl. cloud metadata (169.254.169.254)
+    return false
+  }
+  const normalized = address.toLowerCase()
+  if (normalized === '::1') return true
+  if (normalized.startsWith('fe80:')) return true // link-local
+  if (normalized.startsWith('fc') || normalized.startsWith('fd')) return true // unique local
+  if (normalized.startsWith('::ffff:')) {
+    return isBlockedAddress(normalized.slice('::ffff:'.length), 4)
+  }
+  return false
+}
+
+/**
+ * Rejects capture targets that aren't public http(s) URLs, including ones that resolve (via
+ * DNS) to a loopback/private/link-local address — defends the capture endpoint against SSRF,
+ * such as reaching cloud metadata services (169.254.169.254) from inside the capture sandbox.
+ *
+ * @param {string} rawUrl
+ * @throws {Error} with a user-facing message if the URL is disallowed
+ */
+export async function assertCapturableUrl(rawUrl) {
+  let parsed
+  try {
+    parsed = new URL(rawUrl)
+  } catch {
+    throw new Error('A valid http(s) url is required')
+  }
+  if (!/^https?:$/.test(parsed.protocol)) {
+    throw new Error('Only http and https URLs can be captured')
+  }
+  if (parsed.hostname === 'localhost') {
+    throw new Error('Cannot capture local or private network addresses')
+  }
+
+  const literalFamily = isIP(parsed.hostname)
+  if (literalFamily) {
+    if (isBlockedAddress(parsed.hostname, literalFamily)) {
+      throw new Error('Cannot capture local or private network addresses')
+    }
+    return
+  }
+
+  const resolved = await lookup(parsed.hostname, { all: true })
+  if (resolved.some(({ address, family }) => isBlockedAddress(address, family))) {
+    throw new Error('Cannot capture local or private network addresses')
+  }
+}
 
 /** Rewrite relative url(...) and @import targets in a stylesheet to absolute. */
 function absolutizeCss(css, sheetUrl) {

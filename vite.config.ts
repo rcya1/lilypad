@@ -9,7 +9,7 @@ import svgLoader from 'vite-svg-loader'
 /**
  * Dev-only `POST /api/capture` endpoint for the Web Annotations feature. Runs the headless
  * Chromium capture in the Vite dev process so `yarn dev` needs no second server. In production
- * this path is served by a Vercel serverless function instead (see docs/features).
+ * this path is served by the Vercel serverless function in `api/capture.ts` instead.
  */
 function devCapturePlugin(): Plugin {
   return {
@@ -27,12 +27,14 @@ function devCapturePlugin(): Plugin {
         req.on('end', async () => {
           try {
             const { url } = JSON.parse(body || '{}')
-            if (!url || !/^https?:\/\//i.test(url)) {
+            const { assertCapturableUrl, captureUrl } = await import('./tools/capture.mjs')
+            try {
+              await assertCapturableUrl(url)
+            } catch (err) {
               res.statusCode = 400
-              res.end(JSON.stringify({ error: 'A valid http(s) url is required' }))
+              res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }))
               return
             }
-            const { captureUrl } = await import('./tools/capture.mjs')
             const result = await captureUrl(url)
             res.setHeader('content-type', 'application/json')
             res.end(JSON.stringify(result))

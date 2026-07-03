@@ -38,9 +38,3 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
-
-# Spike experiment artifacts
-experiments/**/node_modules
-experiments/**/snapshot.html
-experiments/**/package-lock.json
-experiments/**/*.png
