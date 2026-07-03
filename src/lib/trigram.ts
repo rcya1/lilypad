@@ -1,7 +1,4 @@
-// ---------------------------------------------------------------------------
 // Trigram index for client-side full-text search.
-// Pure functions — no store dependency.
-// ---------------------------------------------------------------------------
 
 /** The inverted index: trigram → set of file IDs that contain it. */
 export type TrigramIndex = Map<string, Set<string>>
@@ -53,10 +50,6 @@ export function updateTrigramsForFile(index: TrigramIndex, fileId: string, conte
   }
 }
 
-// ---------------------------------------------------------------------------
-// Candidate filtering — literal queries
-// ---------------------------------------------------------------------------
-
 /**
  * Find candidate file IDs for a literal (non-regex) query using the trigram
  * index.  Returns null if the query is too short for trigram filtering.
@@ -79,10 +72,6 @@ export function findLiteralCandidates(index: TrigramIndex, query: string): Set<s
   }
   return candidates ?? new Set()
 }
-
-// ---------------------------------------------------------------------------
-// Candidate filtering — regex queries
-// ---------------------------------------------------------------------------
 
 /**
  * Extract maximal runs of literal characters from a regex pattern string.
