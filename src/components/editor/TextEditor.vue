@@ -32,7 +32,16 @@ const completedUploads = new Map<string, UploadedImageResult>()
 /** Failed uploads stashed while the target editor was on a different tab. */
 const failedUploads = new Set<string>()
 
-const sentinelPattern = /<!--uploading:[a-f0-9-]+-->/g
+/** All upload sentinels in `doc`, with a fresh regex per call (no lastIndex state). */
+function findSentinels(doc: string): { uuid: string; from: number; to: number }[] {
+  const pattern = /<!--uploading:([a-f0-9-]+)-->/g
+  const results: { uuid: string; from: number; to: number }[] = []
+  let m: RegExpExecArray | null
+  while ((m = pattern.exec(doc)) !== null) {
+    results.push({ uuid: m[1]!, from: m.index, to: m.index + m[0].length })
+  }
+  return results
+}
 </script>
 
 <script setup lang="ts">
@@ -69,14 +78,9 @@ import { findImageRefs } from '@/lib/image-refs'
 function buildUploadDecorations(state: EditorState): DecorationSet {
   const builder: Range<Decoration>[] = []
   const doc = state.doc.toString()
-  sentinelPattern.lastIndex = 0
-  let match: RegExpExecArray | null
-  while ((match = sentinelPattern.exec(doc)) !== null) {
+  for (const sentinel of findSentinels(doc)) {
     builder.push(
-      Decoration.replace({ widget: new UploadSpinnerWidget() }).range(
-        match.index,
-        match.index + match[0].length,
-      ),
+      Decoration.replace({ widget: new UploadSpinnerWidget() }).range(sentinel.from, sentinel.to),
     )
   }
   return Decoration.set(builder, true)
@@ -104,16 +108,12 @@ const sentinelGuard = EditorState.transactionFilter.of((tr) => {
   if (!tr.docChanged) return tr
 
   const doc = tr.startState.doc.toString()
-  const sentinels: { from: number; to: number }[] = []
-  sentinelPattern.lastIndex = 0
-  let m: RegExpExecArray | null
-  while ((m = sentinelPattern.exec(doc)) !== null) {
-    const end = m.index + m[0].length
+  const sentinels: { from: number; to: number }[] = findSentinels(doc).map((s) => {
     // Include the trailing newline in the sentinel range so deleting the sentinel
     // with Backspace/dd doesn't leave a blank line.
-    const hasTrailingNewline = end < doc.length && doc[end] === '\n'
-    sentinels.push({ from: m.index, to: hasTrailingNewline ? end + 1 : end })
-  }
+    const hasTrailingNewline = s.to < doc.length && doc[s.to] === '\n'
+    return { from: s.from, to: hasTrailingNewline ? s.to + 1 : s.to }
+  })
 
   if (sentinels.length === 0) return tr
 
@@ -446,12 +446,7 @@ function reinsertSentinel(editorView: EditorView, uuid: string) {
  */
 function resolveStashedUploads(editorView: EditorView) {
   const doc = editorView.state.doc.toString()
-  sentinelPattern.lastIndex = 0
-  let m: RegExpExecArray | null
-  while ((m = sentinelPattern.exec(doc)) !== null) {
-    const uuid = m[0].match(/[a-f0-9-]+/)?.[0]
-    if (!uuid) continue
-
+  for (const { uuid } of findSentinels(doc)) {
     if (completedUploads.has(uuid)) {
       const result = completedUploads.get(uuid)!
       completedUploads.delete(uuid)
