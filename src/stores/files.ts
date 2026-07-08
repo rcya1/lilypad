@@ -677,15 +677,11 @@ export const useFilesStore = defineStore('files', () => {
   async function deleteEntry(id: string) {
     const idsToDelete = collectDescendantIds(id)
 
-    // Remove Storage blobs for binary files in the subtree.
+    // Storage blobs for binary files in the subtree, collected before any mutation.
     const storagePaths = idsToDelete
       .map((did) => entryById.value.get(did))
       .filter((e) => e?.storage_path)
       .map((e) => e!.storage_path!)
-
-    if (storagePaths.length > 0) {
-      await supabase.storage.from('user-files').remove(storagePaths)
-    }
 
     // Deleting the root triggers DB cascade for all descendants.
     const { error: err } = await supabase.from('entries').delete().eq('id', id)
@@ -693,6 +689,12 @@ export const useFilesStore = defineStore('files', () => {
     if (err) {
       showError('Failed to delete entry.')
       return false
+    }
+
+    if (storagePaths.length > 0) {
+      const { error: storageErr } = await supabase.storage.from('user-files').remove(storagePaths)
+      // Rows are already deleted; an orphaned blob is harmless, so just log.
+      if (storageErr) console.error('deleteEntry: failed to remove storage blobs', storageErr)
     }
 
     entries.value = entries.value.filter((e) => !idsToDelete.includes(e.id))
