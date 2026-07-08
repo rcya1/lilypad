@@ -11,7 +11,7 @@ export interface ConfirmOptions {
 }
 
 // Module-level singleton: all callers — and ConfirmDialog.vue — share the same dialog instance.
-// Only one dialog can be active at a time; concurrent calls will clobber each other.
+// Only one dialog can be active at a time; concurrent calls cancel the previous dialog.
 const open = ref(false)
 const title = ref('')
 const message = ref('')
@@ -34,6 +34,9 @@ export function useConfirm() {
       confirmLabel.value = options.confirmLabel ?? 'Confirm'
       cancelLabel.value = options.cancelLabel ?? 'Cancel'
       danger.value = options.danger ?? false
+      // A second dialog supersedes the first: resolve the old promise as "cancelled"
+      // so its awaiting caller doesn't hang forever.
+      resolveFn?.(false)
       resolveFn = resolve
       open.value = true
     })
