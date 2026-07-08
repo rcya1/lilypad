@@ -33,10 +33,12 @@ export const useAuthStore = defineStore('auth', () => {
       useUiStore().loadSettings(currentSession.user.id)
     }
 
-    supabase.auth.onAuthStateChange((_event, newSession) => {
+    supabase.auth.onAuthStateChange((event, newSession) => {
       session.value = newSession
       user.value = newSession?.user ?? null
-      if (newSession?.user) {
+      // Hydrate settings only on a genuine sign-in. TOKEN_REFRESHED fires ~hourly and
+      // re-hydrating then can revert a setting changed within the save-debounce window.
+      if (event === 'SIGNED_IN' && newSession?.user) {
         useUiStore().loadSettings(newSession.user.id)
       }
     })
