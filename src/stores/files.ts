@@ -93,67 +93,44 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   /**
-   * Recursively builds the navigable file tree rooted at `parentId`.
-   * Images are excluded here — they appear only in `imageTree`.
-   * Sort order: sort_order ascending, then name alphabetically as tiebreaker.
+   * Recursively builds a tree rooted at `parentId`, including only rows accepted by `include`.
+   * Directories are always recursed into; `include` decides whether a row appears at all.
    */
-  function buildTree(parentId: string | null): Entry[] {
-    const children = entries.value
+  function buildTreeWith(parentId: string | null, include: (row: EntryRow) => boolean): Entry[] {
+    return entries.value
       .filter((e) => e.parent_id === parentId)
       .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
-
-    return children
-      .filter((row) => row.document_type !== 'image')
-      .map((row) => {
-        if (row.kind === 'directory') {
-          return {
-            kind: 'directory' as const,
-            id: row.id,
-            name: row.name,
-            parentId: row.parent_id,
-            children: buildTree(row.id),
-          }
-        }
-        return {
-          kind: 'document' as const,
-          id: row.id,
-          name: row.name,
-          parentId: row.parent_id,
-          type: row.document_type as DocumentType,
-        }
-      })
+      .filter(include)
+      .map((row) =>
+        row.kind === 'directory'
+          ? {
+              kind: 'directory' as const,
+              id: row.id,
+              name: row.name,
+              parentId: row.parent_id,
+              children: buildTreeWith(row.id, include),
+            }
+          : {
+              kind: 'document' as const,
+              id: row.id,
+              name: row.name,
+              parentId: row.parent_id,
+              type: row.document_type as DocumentType,
+            },
+      )
   }
 
-  /**
-   * Like buildTree but filters to image documents and the folders that contain
-   * them (directly or transitively). Folders with no image descendants are
-   * excluded — the images tab only shows relevant structure.
-   */
-  function buildImageTree(parentId: string | null): Entry[] {
-    const children = entries.value
-      .filter((e) => e.parent_id === parentId)
-      .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+  // File tree: everything except images (images live in imageTree).
+  function buildTree(parentId: string | null): Entry[] {
+    return buildTreeWith(parentId, (row) => row.document_type !== 'image')
+  }
 
-    return children
-      .filter((row) => row.document_type === 'image' || row.kind === 'directory')
-      .map((row) => {
-        if (row.kind === 'directory') {
-          return {
-            kind: 'directory' as const,
-            id: row.id,
-            name: row.name,
-            parentId: row.parent_id,
-            children: buildImageTree(row.id),
-          }
-        }
-        return {
-          kind: 'document' as const,
-          id: row.id,
-          name: row.name,
-          parentId: row.parent_id,
-          type: row.document_type as DocumentType,
-        }
-      })
+  // Images tab: image documents plus all directories (folders always shown for structure).
+  function buildImageTree(parentId: string | null): Entry[] {
+    return buildTreeWith(
+      parentId,
+      (row) => row.document_type === 'image' || row.kind === 'directory',
+    )
   }
 
   /**
