@@ -386,32 +386,39 @@ function createImageSizeExtension(imageResolver?: (imageId: string) => string | 
  *                        omit in tests where image resolution isn't needed.
  * @returns             The rendered HTML string.
  */
+// The image extension reads this at render time so one shared Marked instance can serve
+// every caller; parseMarkdown sets it before each parse.
+let activeImageResolver: ((imageId: string) => string | null) | undefined
+
+const sharedMarked = new Marked()
+sharedMarked.use(markedKatex({ throwOnError: false, macros }))
+sharedMarked.use({ extensions: [admonition] })
+sharedMarked.use({ breaks: true, renderer: sourceLineRenderer })
+sharedMarked.use({
+  extensions: [
+    {
+      name: 'blockKatex',
+      renderer(token: Tokens.Generic) {
+        const a = attr(token)
+        return `<div${a}>${katex.renderToString(token.text, {
+          throwOnError: false,
+          displayMode: token.displayMode,
+          macros,
+        })}</div>\n`
+      },
+    },
+  ],
+})
+sharedMarked.use({
+  extensions: [createImageSizeExtension((id) => activeImageResolver?.(id) ?? null)],
+})
+
 export function parseMarkdown(
   content: string,
   imageResolver?: (imageId: string) => string | null,
 ): string {
-  const marked = new Marked()
-  marked.use(markedKatex({ throwOnError: false, macros }))
-  marked.use({ extensions: [admonition] })
-  marked.use({ breaks: true, renderer: sourceLineRenderer })
-  marked.use({
-    extensions: [
-      {
-        name: 'blockKatex',
-        renderer(token: Tokens.Generic) {
-          const a = attr(token)
-          return `<div${a}>${katex.renderToString(token.text, {
-            throwOnError: false,
-            displayMode: token.displayMode,
-            macros,
-          })}</div>\n`
-        },
-      },
-    ],
-  })
-  marked.use({ extensions: [createImageSizeExtension(imageResolver)] })
-
-  const tokens = marked.lexer(content)
+  activeImageResolver = imageResolver
+  const tokens = sharedMarked.lexer(content)
   annotateSourceLines(tokens, 0)
-  return marked.parser(tokens)
+  return sharedMarked.parser(tokens)
 }
