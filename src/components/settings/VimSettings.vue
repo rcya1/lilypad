@@ -3,6 +3,7 @@
 import { Plus, X } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
 import type { VimMapping } from '@/stores/ui'
+import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 
 const uiStore = useUiStore()
 
@@ -31,18 +32,10 @@ function addMapping() {
     <!-- Vim enabled -->
     <div class="flex items-center justify-between">
       <span class="text-sm text-text-secondary font-ui">Vim mode</span>
-      <button
-        role="switch"
-        :aria-checked="uiStore.vimEnabled"
-        class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
-        :class="uiStore.vimEnabled ? 'bg-accent' : 'bg-surface-overlay'"
-        @click="uiStore.setVimEnabled(!uiStore.vimEnabled)"
-      >
-        <span
-          class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-150"
-          :class="uiStore.vimEnabled ? 'translate-x-4' : 'translate-x-0'"
-        />
-      </button>
+      <ToggleSwitch
+        :model-value="uiStore.vimEnabled"
+        @update:model-value="uiStore.setVimEnabled"
+      />
     </div>
 
     <div
@@ -75,35 +68,19 @@ function addMapping() {
           <!-- Highlight on yank -->
           <div class="flex items-center justify-between">
             <span class="text-sm text-text-secondary font-ui">Highlight on yank</span>
-            <button
-              role="switch"
-              :aria-checked="uiStore.highlightOnYank"
-              class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
-              :class="uiStore.highlightOnYank ? 'bg-accent' : 'bg-surface-overlay'"
-              @click="uiStore.setHighlightOnYank(!uiStore.highlightOnYank)"
-            >
-              <span
-                class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-150"
-                :class="uiStore.highlightOnYank ? 'translate-x-4' : 'translate-x-0'"
-              />
-            </button>
+            <ToggleSwitch
+              :model-value="uiStore.highlightOnYank"
+              @update:model-value="uiStore.setHighlightOnYank"
+            />
           </div>
 
           <!-- Clipboard sync -->
           <div class="flex items-center justify-between">
             <span class="text-sm text-text-secondary font-ui">Sync with system clipboard</span>
-            <button
-              role="switch"
-              :aria-checked="uiStore.vimClipboardSync"
-              class="relative w-9 h-5 rounded-full transition-colors duration-150 cursor-pointer shrink-0"
-              :class="uiStore.vimClipboardSync ? 'bg-accent' : 'bg-surface-overlay'"
-              @click="uiStore.setVimClipboardSync(!uiStore.vimClipboardSync)"
-            >
-              <span
-                class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-150"
-                :class="uiStore.vimClipboardSync ? 'translate-x-4' : 'translate-x-0'"
-              />
-            </button>
+            <ToggleSwitch
+              :model-value="uiStore.vimClipboardSync"
+              @update:model-value="uiStore.setVimClipboardSync"
+            />
           </div>
 
           <div class="border-t border-border-subtle" />
