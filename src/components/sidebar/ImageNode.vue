@@ -10,6 +10,8 @@ import { useUiStore } from '@/stores/ui'
 import { useConfirm } from '@/composables/useConfirm'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useDragDrop, draggingEntry } from '@/composables/useDragDrop'
+import ContextMenu from '@/components/ui/ContextMenu.vue'
+import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
 const props = defineProps<{
   entry: Entry
@@ -341,39 +343,20 @@ async function handleDelete() {
     </div>
 
     <!-- Context menu -->
-    <Teleport to="body">
-      <div
-        v-if="contextMenuVisible"
-        class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36"
-        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
-      >
-        <!-- Multi-select mode: only Delete -->
-        <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
-          <button
-            class="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-surface-elevated transition-colors cursor-pointer"
-            @click="handleDelete"
-          >
-            Delete {{ filesStore.selectedIds.size }} items
-          </button>
-        </template>
+    <ContextMenu v-if="contextMenuVisible" :x="contextMenuPos.x" :y="contextMenuPos.y">
+      <!-- Multi-select mode: only Delete -->
+      <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
+        <ContextMenuItem danger @click="handleDelete">
+          Delete {{ filesStore.selectedIds.size }} items
+        </ContextMenuItem>
+      </template>
 
-        <!-- Single-item menu -->
-        <template v-else>
-          <button
-            class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-            @click="startRename"
-          >
-            Rename
-          </button>
-          <div class="border-t border-border-subtle my-1" />
-          <button
-            class="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-surface-elevated transition-colors cursor-pointer"
-            @click="handleDelete"
-          >
-            Delete
-          </button>
-        </template>
-      </div>
-    </Teleport>
+      <!-- Single-item menu -->
+      <template v-else>
+        <ContextMenuItem @click="startRename">Rename</ContextMenuItem>
+        <div class="border-t border-border-subtle my-1" />
+        <ContextMenuItem danger @click="handleDelete">Delete</ContextMenuItem>
+      </template>
+    </ContextMenu>
   </div>
 </template>

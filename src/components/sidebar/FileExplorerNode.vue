@@ -10,6 +10,8 @@ import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDro
 import { useConfirm } from '@/composables/useConfirm'
 import { useContextMenu } from '@/composables/useContextMenu'
 import PendingInputRow from './PendingInputRow.vue'
+import ContextMenu from '@/components/ui/ContextMenu.vue'
+import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
 const props = defineProps<{
   entry: Entry
@@ -447,67 +449,28 @@ function onPendingDragEnd() {
     </div>
 
     <!-- Context menu -->
-    <Teleport to="body">
-      <div
-        v-if="contextMenuVisible"
-        class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36"
-        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
-      >
-        <!-- Multi-select mode: only Delete -->
-        <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
-          <button
-            class="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-surface-elevated transition-colors cursor-pointer"
-            @click="handleDelete"
-          >
-            Delete {{ filesStore.selectedIds.size }} items
-          </button>
-        </template>
+    <ContextMenu v-if="contextMenuVisible" :x="contextMenuPos.x" :y="contextMenuPos.y">
+      <!-- Multi-select mode: only Delete -->
+      <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
+        <ContextMenuItem danger @click="handleDelete">
+          Delete {{ filesStore.selectedIds.size }} items
+        </ContextMenuItem>
+      </template>
 
-        <!-- Single-item menu -->
-        <template v-else>
-          <button
-            class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-            @click="startRename"
-          >
-            Rename
-          </button>
-          <template v-if="isDirectory(entry)">
-            <button
-              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-              @click="startNewChildFile"
-            >
-              New file
-            </button>
-            <button
-              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-              @click="startNewChildFolder"
-            >
-              New folder
-            </button>
-          </template>
-          <template v-else>
-            <button
-              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-              @click="startNewSiblingFile"
-            >
-              New file
-            </button>
-            <button
-              class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-              @click="startNewSiblingFolder"
-            >
-              New folder
-            </button>
-          </template>
-          <div class="border-t border-border-subtle my-1" />
-          <button
-            class="w-full text-left px-3 py-1.5 text-sm text-red-600 hover:bg-surface-elevated transition-colors cursor-pointer"
-            @click="handleDelete"
-          >
-            Delete
-          </button>
+      <!-- Single-item menu -->
+      <template v-else>
+        <ContextMenuItem @click="startRename">Rename</ContextMenuItem>
+        <template v-if="isDirectory(entry)">
+          <ContextMenuItem @click="startNewChildFile">New file</ContextMenuItem>
+          <ContextMenuItem @click="startNewChildFolder">New folder</ContextMenuItem>
         </template>
-      </div>
-    </Teleport>
+        <template v-else>
+          <ContextMenuItem @click="startNewSiblingFile">New file</ContextMenuItem>
+          <ContextMenuItem @click="startNewSiblingFolder">New folder</ContextMenuItem>
+        </template>
+        <div class="border-t border-border-subtle my-1" />
+        <ContextMenuItem danger @click="handleDelete">Delete</ContextMenuItem>
+      </template>
+    </ContextMenu>
   </div>
 </template>

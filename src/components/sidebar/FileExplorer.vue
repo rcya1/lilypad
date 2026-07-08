@@ -10,6 +10,8 @@ import { useEditorStore } from '@/stores/editor'
 import { draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 import { useToastStore } from '@/stores/toast'
 import type { EntryRow } from '@/types/database'
+import ContextMenu from '@/components/ui/ContextMenu.vue'
+import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
 const files = useFilesStore()
 const editorStore = useEditorStore()
@@ -357,24 +359,8 @@ function onPendingDragEnd() {
     </div>
   </div>
 
-  <Teleport to="body">
-    <div
-      v-if="showEmptyContextMenu"
-      class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36"
-      :style="{ left: emptyContextMenuPos.x + 'px', top: emptyContextMenuPos.y + 'px' }"
-    >
-      <button
-        class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-        @click="emptyAreaNewFile"
-      >
-        New file
-      </button>
-      <button
-        class="w-full text-left px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-elevated hover:text-text-primary transition-colors cursor-pointer"
-        @click="emptyAreaNewFolder"
-      >
-        New folder
-      </button>
-    </div>
-  </Teleport>
+  <ContextMenu v-if="showEmptyContextMenu" :x="emptyContextMenuPos.x" :y="emptyContextMenuPos.y">
+    <ContextMenuItem @click="emptyAreaNewFile">New file</ContextMenuItem>
+    <ContextMenuItem @click="emptyAreaNewFolder">New folder</ContextMenuItem>
+  </ContextMenu>
 </template>

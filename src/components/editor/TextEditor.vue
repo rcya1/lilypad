@@ -66,6 +66,8 @@ import {
 } from './cm/highlight'
 import { indentBullet, dedentBullet } from './cm/commands'
 import { findImageRefs } from '@/lib/image-refs'
+import ContextMenu from '@/components/ui/ContextMenu.vue'
+import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
 // ---------------------------------------------------------------------------
 // Upload spinner widget — replaces the sentinel comment in the editor display
@@ -466,7 +468,7 @@ function resolveStashedUploads(editorView: EditorView) {
 // Right-click rename for images
 // ---------------------------------------------------------------------------
 const imageContextMenu = ref<{ x: number; y: number; entryId: string } | null>(null)
-const contextMenuEl = ref<HTMLDivElement | null>(null)
+const contextMenuEl = ref<InstanceType<typeof ContextMenu> | null>(null)
 const imageRenamePos = ref<{ x: number; y: number } | null>(null)
 const imageRenameInput = ref('')
 const renameInputEl = ref<HTMLInputElement | null>(null)
@@ -614,7 +616,7 @@ const imagePasteHandler = EditorView.domEventHandlers({
         event.preventDefault()
         imageContextMenu.value = { x: event.clientX, y: event.clientY, entryId: ref.entryId }
         const close = (e: MouseEvent) => {
-          if (contextMenuEl.value?.contains(e.target as Node)) return
+          if (contextMenuEl.value?.el?.contains(e.target as Node)) return
           closeImageContextMenu()
           document.removeEventListener('mousedown', close)
         }
@@ -930,21 +932,14 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Image right-click context menu -->
-    <Teleport to="body">
-      <div
-        v-if="imageContextMenu"
-        ref="contextMenuEl"
-        class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36 font-ui text-sm"
-        :style="{ left: imageContextMenu.x + 'px', top: imageContextMenu.y + 'px' }"
-      >
-        <button
-          class="w-full text-left px-3 py-1.5 hover:bg-surface-elevated text-text-primary cursor-pointer"
-          @click="startImageRename"
-        >
-          Rename image
-        </button>
-      </div>
-    </Teleport>
+    <ContextMenu
+      v-if="imageContextMenu"
+      ref="contextMenuEl"
+      :x="imageContextMenu.x"
+      :y="imageContextMenu.y"
+    >
+      <ContextMenuItem @click="startImageRename">Rename image</ContextMenuItem>
+    </ContextMenu>
 
     <!-- Inline image rename input (outside CM DOM so native selection works) -->
     <Teleport to="body">
