@@ -319,19 +319,7 @@ export const useSearchStore = defineStore('search', () => {
    * Closes the search panel after navigating.
    */
   async function openResult(result: SearchResult) {
-    const entryRow = filesStore.entries.find((e) => e.id === result.fileId)
-    if (!entryRow) return
-
-    const type = (entryRow.document_type ?? 'md') as 'pdf' | 'md'
-
-    if (!editorStore.openDocuments.has(result.fileId)) {
-      editorStore.openDocumentOptimistic(result.fileId, result.fileName, type)
-      const content = await filesStore.downloadContent(result.fileId)
-      editorStore.finishLoadingDocument(result.fileId, content ?? '')
-    } else {
-      editorStore.setActiveDocument(result.fileId)
-    }
-
+    await editorStore.openEntry(result.fileId)
     editorStore.requestScrollToLine(result.fileId, result.lineNumber)
     close()
   }

@@ -219,6 +219,42 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   /**
+   * Canonical "open a file from anywhere" flow (sidebar, quick switcher, search, image pane).
+   * Resolves the entry, picks preview vs permanent, serves cached content synchronously when
+   * available, and falls back to an optimistic open + network fetch.
+   */
+  async function openEntry(id: string, { preview = false }: { preview?: boolean } = {}) {
+    const filesStore = useFilesStore()
+    const entry = filesStore.getEntry(id)
+    if (!entry || entry.kind !== 'document' || !entry.document_type) return
+
+    const type = entry.document_type
+
+    // Images have no text content; the ImageDetailPane loads the blob itself.
+    if (type === 'image') {
+      openDocumentInternal(id, entry.name, type, {})
+      return
+    }
+
+    // Already open as a permanent tab: just activate (don't demote to preview).
+    if (openDocuments.value.has(id) && previewDocumentId.value !== id) {
+      setActiveDocument(id)
+      return
+    }
+
+    const cached = filesStore.getCached(id)
+    if (cached !== undefined) {
+      openDocumentInternal(id, entry.name, type, { content: cached, preview })
+      return
+    }
+
+    // Not cached: show the tab immediately with a skeleton, fill in when the fetch lands.
+    openDocumentInternal(id, entry.name, type, { preview, loading: true })
+    const content = await filesStore.downloadContent(id)
+    finishLoadingDocument(id, content ?? '')
+  }
+
+  /**
    * Updates the live content for a document, marks it dirty, promotes any preview tab,
    * and resets the 5 000 ms idle auto-save debounce timer.
    *
@@ -371,6 +407,7 @@ export const useEditorStore = defineStore('editor', () => {
     promotePreview,
     finishLoadingDocument,
     setActiveDocument,
+    openEntry,
     updateContent,
     closeDocument,
     saveDocument,

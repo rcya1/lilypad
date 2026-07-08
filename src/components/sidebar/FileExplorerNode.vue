@@ -145,21 +145,7 @@ async function handleClick(e: MouseEvent) {
   // .md and web docs both carry their notes in the DB `content` column, so they open
   // through the same preview flow (web docs load their snapshot separately, in WebView).
   if (props.entry.type === 'md' || props.entry.type === 'web') {
-    const id = props.entry.id
-    // If it's already open as a permanent tab (not the preview), just activate it.
-    if (editorStore.openDocuments.has(id) && editorStore.previewDocumentId !== id) {
-      editorStore.setActiveDocument(id)
-      return
-    }
-    const cached = filesStore.getCached(id)
-    if (cached !== undefined) {
-      editorStore.openDocumentAsPreview(id, props.entry.name, props.entry.type, cached)
-      return
-    }
-    // Show the tab immediately with a loading state; content arrives asynchronously.
-    editorStore.openDocumentOptimisticAsPreview(id, props.entry.name, props.entry.type)
-    const content = await filesStore.downloadContent(id)
-    editorStore.finishLoadingDocument(id, content ?? '')
+    await editorStore.openEntry(props.entry.id, { preview: true })
   }
 }
 

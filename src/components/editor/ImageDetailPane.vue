@@ -78,25 +78,7 @@ const referencingDocs = computed(() => {
  * the content isn't cached, then fills it in once the download completes.
  */
 function openReferencingDoc(docId: string) {
-  const docEntry = filesStore.entries.find((e) => e.id === docId)
-  if (!docEntry) return
-
-  if (editorStore.openDocuments.has(docId)) {
-    editorStore.setActiveDocument(docId)
-    return
-  }
-
-  const cached = filesStore.getCached(docId)
-  if (cached !== undefined) {
-    editorStore.openDocument(docId, docEntry.name, 'md', cached)
-  } else {
-    // Open the tab immediately with empty content so the user sees a response,
-    // then populate it once the network request resolves.
-    editorStore.openDocumentOptimistic(docId, docEntry.name, 'md')
-    filesStore.downloadContent(docId).then((content) => {
-      editorStore.finishLoadingDocument(docId, content ?? '')
-    })
-  }
+  editorStore.openEntry(docId)
 }
 </script>
 

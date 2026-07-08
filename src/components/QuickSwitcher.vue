@@ -128,22 +128,7 @@ function move(delta: number) {
 
 async function openFile(item: FileItem) {
   uiStore.closeQuickSwitcher()
-  const id = item.id
-
-  if (editorStore.openDocuments.has(id)) {
-    editorStore.setActiveDocument(id)
-    return
-  }
-
-  if (item.type === 'image') {
-    editorStore.openDocument(id, item.name, 'image', '')
-    return
-  }
-
-  // md / pdf — load content, showing a skeleton while it arrives
-  editorStore.openDocumentOptimistic(id, item.name, item.type)
-  const content = await filesStore.downloadContent(id)
-  editorStore.finishLoadingDocument(id, content ?? '')
+  await editorStore.openEntry(item.id)
 }
 
 function openHighlighted() {

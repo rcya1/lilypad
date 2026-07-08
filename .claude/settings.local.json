@@ -18,7 +18,13 @@
       "mcp__chrome-devtools__new_page",
       "mcp__chrome-devtools__list_console_messages",
       "mcp__chrome-devtools__close_page",
-      "Bash(yarn list *)"
+      "Bash(yarn list *)",
+      "Bash(yarn --ignore-engines test)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(yarn --ignore-engines type-check)",
+      "Bash(yarn --ignore-engines build)",
+      "Bash(yarn --ignore-engines build-only)"
     ]
   }
 }
