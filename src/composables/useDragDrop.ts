@@ -206,9 +206,9 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
 
       // Snapshot names + source folders before any moves mutate local state
       const snapshot = topLevel.map((id) => {
-        const e = filesStore.entries.find((en) => en.id === id)
+        const e = filesStore.getEntry(id)
         const srcFolder = e?.parent_id
-          ? (filesStore.entries.find((en) => en.id === e.parent_id)?.name ?? 'root')
+          ? (filesStore.getEntry(e.parent_id)?.name ?? 'root')
           : 'root'
         return { id, label: e ? e.name.replace(/\.[^.]+$/, '') : id, srcFolder }
       })
@@ -224,7 +224,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
       if (failed.length > 0) {
         const toast = useToastStore()
         const destName = newParentId
-          ? (filesStore.entries.find((e) => e.id === newParentId)?.name ?? 'destination')
+          ? (filesStore.getEntry(newParentId)?.name ?? 'destination')
           : 'root'
         const srcGroups = [...new Set(failed.map((f) => f.srcFolder))]
         const srcLabel = srcGroups.join(', ')

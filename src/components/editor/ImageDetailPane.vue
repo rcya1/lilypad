@@ -13,7 +13,7 @@ const filesStore = useFilesStore()
 const editorStore = useEditorStore()
 
 const imageUrl = computed(() => filesStore.getImageUrl(props.documentId))
-const entry = computed(() => filesStore.entries.find((e) => e.id === props.documentId))
+const entry = computed(() => filesStore.getEntry(props.documentId))
 const imageName = computed(() => entry.value?.name ?? 'Unknown')
 
 // Image dimensions (loaded from the img element)
@@ -60,7 +60,7 @@ const referencingDocs = computed(() => {
 
   for (const [docId, content] of contentMap) {
     if (content.includes(pattern)) {
-      const docEntry = filesStore.entries.find((e) => e.id === docId)
+      const docEntry = filesStore.getEntry(docId)
       if (docEntry) {
         results.push({ id: docId, name: docEntry.name })
       }

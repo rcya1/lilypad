@@ -235,7 +235,7 @@ export const useSearchStore = defineStore('search', () => {
         const content = getFileContent(fileId)
         if (content == null) continue
 
-        const entryRow = filesStore.entries.find((e) => e.id === fileId)
+        const entryRow = filesStore.getEntry(fileId)
         if (!entryRow || entryRow.kind !== 'document' || entryRow.document_type !== 'md') continue
 
         // Reset lastIndex between files — the `g` flag makes exec() stateful.
@@ -268,7 +268,7 @@ export const useSearchStore = defineStore('search', () => {
         const content = getFileContent(fileId)
         if (content == null) continue
 
-        const entryRow = filesStore.entries.find((e) => e.id === fileId)
+        const entryRow = filesStore.getEntry(fileId)
         if (!entryRow || entryRow.kind !== 'document' || entryRow.document_type !== 'md') continue
 
         const fileResults = searchLiteral(

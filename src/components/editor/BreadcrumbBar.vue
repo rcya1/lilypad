@@ -19,7 +19,7 @@ const ancestors = computed(() => {
 // Strip the file extension for display — users see "My Note" not "My Note.md".
 const fileName = computed(() => {
   if (!activeId.value) return ''
-  const entry = filesStore.entries.find((e) => e.id === activeId.value)
+  const entry = filesStore.getEntry(activeId.value)
   return entry?.name.replace(/\.[^.]+$/, '') ?? ''
 })
 

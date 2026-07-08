@@ -55,7 +55,7 @@ async function onRootDrop(e: DragEvent) {
   if (filesStore.selectedIds.size >= 2 && filesStore.selectedIds.has(dragId)) {
     const topLevel = filesStore.filterTopLevelIds(filesStore.selectedIds)
     const snapshot = topLevel.map((id) => {
-      const e = filesStore.entries.find((en) => en.id === id)
+      const e = filesStore.getEntry(id)
       return { id, label: e ? e.name.replace(/\.[^.]+$/, '') : id }
     })
     const failed: typeof snapshot = []

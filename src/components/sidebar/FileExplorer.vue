@@ -61,7 +61,7 @@ async function onRootDrop(e: DragEvent) {
   if (files.selectedIds.size >= 2 && files.selectedIds.has(dragId)) {
     const topLevel = files.filterTopLevelIds(files.selectedIds)
     const snapshot = topLevel.map((id) => {
-      const e = files.entries.find((en) => en.id === id)
+      const e = files.getEntry(id)
       return { id, label: e ? e.name.replace(/\.[^.]+$/, '') : id }
     })
     const failed: typeof snapshot = []
@@ -151,7 +151,7 @@ function getInsertBelowActive(): {
 } | null {
   const activeId = editorStore.activeDocumentId
   if (!activeId) return null
-  const activeEntry = files.entries.find((e) => e.id === activeId)
+  const activeEntry = files.getEntry(activeId)
   if (!activeEntry) return null
   const siblings = files.entries
     .filter((e) => e.parent_id === activeEntry.parent_id)
