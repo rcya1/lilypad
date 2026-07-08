@@ -585,11 +585,20 @@ export const useFilesStore = defineStore('files', () => {
       const ext = type === 'pdf' ? 'pdf' : type
       const storagePath = `${auth.user.id}/${data.id}.${ext}`
 
-      await supabase.storage
+      const { error: uploadErr } = await supabase.storage
         .from('user-files')
         .upload(storagePath, new Blob([''], { type: 'text/plain' }))
 
-      await supabase.from('entries').update({ storage_path: storagePath }).eq('id', data.id)
+      const { error: pathErr } = uploadErr
+        ? { error: uploadErr }
+        : await supabase.from('entries').update({ storage_path: storagePath }).eq('id', data.id)
+
+      if (uploadErr || pathErr) {
+        // Roll back the row so no entry exists without a valid storage_path.
+        await supabase.from('entries').delete().eq('id', data.id)
+        showError('Failed to create file.')
+        return null
+      }
 
       data.storage_path = storagePath
     } else {
