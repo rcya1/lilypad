@@ -44,7 +44,7 @@ const emit = defineEmits<{
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       @keydown.enter="emit('submit')"
       @keydown.escape="emit('cancel')"
-      @vue:mounted="($event as any).el.focus()"
+      v-focus
     />
     <!-- @mousedown.prevent stops the input from losing focus before @click fires, so the
          confirm button reliably commits the name instead of triggering the blur-cancel. -->

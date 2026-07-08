@@ -8,6 +8,9 @@ import './index.css'
 import { useAuthStore } from './stores/auth'
 
 const app = createApp(App)
+// Autofocus for inputs that appear conditionally (rename fields, modals).
+app.directive('focus', { mounted: (el: HTMLElement) => el.focus() })
+
 const pinia = createPinia()
 
 app.use(pinia)

@@ -96,7 +96,7 @@ function openReferencingDoc(docId: string) {
               @keydown.enter="submitRename"
               @keydown.escape="isRenaming = false"
               @blur="submitRename"
-              @vue:mounted="($event as any).el.focus()"
+              v-focus
             />
           </div>
           <div v-else class="flex items-center gap-2">

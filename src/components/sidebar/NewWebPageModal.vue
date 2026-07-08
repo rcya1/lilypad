@@ -93,7 +93,7 @@ async function submit() {
             class="w-full px-2.5 py-1.5 text-sm bg-bg border border-border rounded outline-none focus:border-accent text-text-primary font-ui disabled:opacity-60"
             :disabled="capturing"
             @keydown.enter="submit"
-            @vue:mounted="($event as any).el.focus()"
+            v-focus
           />
           <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
           <p v-else class="text-xs text-text-muted">

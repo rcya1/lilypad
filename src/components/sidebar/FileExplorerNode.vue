@@ -330,7 +330,7 @@ function onPendingDragEnd() {
         @keydown.enter="submitRename"
         @keydown.escape="isRenaming = false"
         @blur="submitRename"
-        @vue:mounted="($event as any).el.focus()"
+        v-focus
       />
     </div>
 
