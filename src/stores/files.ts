@@ -372,12 +372,15 @@ export const useFilesStore = defineStore('files', () => {
    */
   async function bulkMove(ids: string[], targetFolderId: string | null): Promise<boolean> {
     const base = getNextSortOrder(targetFolderId)
-    const results = await Promise.all(
-      // Spread by 1000 so each entry lands in clean renumber-friendly positions.
-      ids.map((id, i) => moveEntry(id, targetFolderId, base + i * 1000)),
-    )
+    // Sequential (not Promise.all): each moveEntry renumbers siblings in the target folder,
+    // and concurrent renumber passes would interleave writes against mutating local state.
+    let allOk = true
+    for (let i = 0; i < ids.length; i++) {
+      const ok = await moveEntry(ids[i]!, targetFolderId, base + i * 1000, true)
+      if (!ok) allOk = false
+    }
     clearSelection()
-    return results.every(Boolean)
+    return allOk
   }
 
   /**
