@@ -348,17 +348,9 @@ export const useFilesStore = defineStore('files', () => {
    * @returns true if every delete succeeded.
    */
   async function bulkDelete(ids: string[]): Promise<boolean> {
-    const idSet = new Set(ids)
     // Only delete top-level entries in the selection — descendants will be
     // removed by the recursive deleteEntry cascade.
-    const topLevel = ids.filter((id) => {
-      let parentId = entryById.value.get(id)?.parent_id ?? null
-      while (parentId) {
-        if (idSet.has(parentId)) return false
-        parentId = entryById.value.get(parentId)?.parent_id ?? null
-      }
-      return true
-    })
+    const topLevel = filterTopLevelIds(ids)
     const results = await Promise.all(topLevel.map((id) => deleteEntry(id)))
     clearSelection()
     return results.every(Boolean)
@@ -734,6 +726,23 @@ export const useFilesStore = defineStore('files', () => {
       result.push(...collectDescendantIds(child.id))
     }
     return result
+  }
+
+  /**
+   * Filters `ids` down to entries whose ancestors are NOT also in `ids`.
+   * Moving/deleting a folder already covers its descendants, so bulk operations
+   * must act only on these "top-level" ids to avoid double-processing subtrees.
+   */
+  function filterTopLevelIds(ids: Iterable<string>): string[] {
+    const idSet = new Set(ids)
+    return [...idSet].filter((id) => {
+      let parentId = entryById.value.get(id)?.parent_id ?? null
+      while (parentId) {
+        if (idSet.has(parentId)) return false
+        parentId = entryById.value.get(parentId)?.parent_id ?? null
+      }
+      return true
+    })
   }
 
   /**
@@ -1206,6 +1215,7 @@ Happy note-taking!
     deleteEntry,
     moveEntry,
     collectDescendantIds,
+    filterTopLevelIds,
     selectFolder,
     isFolderCollapsed,
     expandFolder,

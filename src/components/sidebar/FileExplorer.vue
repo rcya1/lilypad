@@ -57,16 +57,7 @@ async function onRootDrop(e: DragEvent) {
   const baseOrder = getRootAppendOrder()
 
   if (files.selectedIds.size >= 2 && files.selectedIds.has(dragId)) {
-    const idSet = files.selectedIds
-    // Filter out entries whose ancestor is also in the selection set.
-    const topLevel = [...idSet].filter((id) => {
-      let parentId = files.entries.find((e) => e.id === id)?.parent_id ?? null
-      while (parentId) {
-        if (idSet.has(parentId)) return false
-        parentId = files.entries.find((e) => e.id === parentId)?.parent_id ?? null
-      }
-      return true
-    })
+    const topLevel = files.filterTopLevelIds(files.selectedIds)
     const snapshot = topLevel.map((id) => {
       const e = files.entries.find((en) => en.id === id)
       return { id, label: e ? e.name.replace(/\.[^.]+$/, '') : id }

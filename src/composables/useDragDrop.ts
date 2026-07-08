@@ -202,15 +202,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
     // since moving the parent moves the child implicitly).
     const isMultiDrag = filesStore.selectedIds.size >= 2 && filesStore.selectedIds.has(dragId)
     if (isMultiDrag) {
-      const idSet = filesStore.selectedIds
-      const topLevel = [...idSet].filter((id) => {
-        let parentId = filesStore.entries.find((e) => e.id === id)?.parent_id ?? null
-        while (parentId) {
-          if (idSet.has(parentId)) return false
-          parentId = filesStore.entries.find((e) => e.id === parentId)?.parent_id ?? null
-        }
-        return true
-      })
+      const topLevel = filesStore.filterTopLevelIds(filesStore.selectedIds)
 
       // Snapshot names + source folders before any moves mutate local state
       const snapshot = topLevel.map((id) => {
