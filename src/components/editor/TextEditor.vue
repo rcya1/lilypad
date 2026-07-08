@@ -39,7 +39,7 @@ const sentinelPattern = /<!--uploading:[a-f0-9-]+-->/g
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, StateEffect, StateField, Compartment, type Range } from '@codemirror/state'
-import { Decoration, type DecorationSet, keymap, WidgetType, type Command } from '@codemirror/view'
+import { Decoration, type DecorationSet, keymap } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
 import { search, searchKeymap } from '@codemirror/search'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
@@ -48,79 +48,18 @@ import { useFilesStore } from '@/stores/files'
 import { useToastStore } from '@/stores/toast'
 import { useUiStore } from '@/stores/ui'
 import { lilypadTheme } from './cm/theme'
-
-// StateEffect/StateField pair for the line-flash highlight triggered by search result navigation.
-// The effect carries the 1-based line number to highlight, or null to clear.
-const highlightLineEffect = StateEffect.define<number | null>()
-
-const highlightLineField = StateField.define<DecorationSet>({
-  create: () => Decoration.none,
-  update(value, tr) {
-    for (const effect of tr.effects) {
-      if (effect.is(highlightLineEffect)) {
-        if (effect.value == null) return Decoration.none
-        const line = tr.state.doc.line(effect.value)
-        return Decoration.set([Decoration.line({ class: 'cm-highlight-line' }).range(line.from)])
-      }
-    }
-    return value
-  },
-  provide: (f) => EditorView.decorations.from(f),
-})
-
-// StateEffect/StateField pair for the yank flash (brief highlight of the yanked range).
-// value.map(tr.changes) keeps the range valid as the document is edited — without this,
-// a document change could make stored positions point to the wrong characters.
-const yankFlashEffect = StateEffect.define<{ from: number; to: number } | null>()
-
-const yankFlashField = StateField.define<DecorationSet>({
-  create: () => Decoration.none,
-  update(value, tr) {
-    // Remap positions against document changes so the flash decoration stays accurate
-    // if the user types while the flash is still visible.
-    value = value.map(tr.changes)
-    for (const effect of tr.effects) {
-      if (effect.is(yankFlashEffect)) {
-        if (effect.value == null) return Decoration.none
-        const { from, to } = effect.value
-        if (from >= to) return Decoration.none
-        return Decoration.set([Decoration.mark({ class: 'cm-yank-flash' }).range(from, to)])
-      }
-    }
-    return value
-  },
-  provide: (f) => EditorView.decorations.from(f),
-})
+import { UploadSpinnerWidget, GhostNameWidget, RenameAnchorWidget } from './cm/widgets'
+import {
+  highlightLineEffect,
+  highlightLineField,
+  yankFlashEffect,
+  yankFlashField,
+} from './cm/highlight'
+import { indentBullet, dedentBullet } from './cm/commands'
 
 // ---------------------------------------------------------------------------
 // Upload spinner widget — replaces the sentinel comment in the editor display
 // ---------------------------------------------------------------------------
-
-/**
- * A CodeMirror WidgetType that replaces an `<!--uploading:<uuid>-->` sentinel
- * comment with a visible spinner pill. contenteditable=false prevents the user
- * from placing the cursor inside the widget.
- */
-class UploadSpinnerWidget extends WidgetType {
-  toDOM() {
-    const wrap = document.createElement('span')
-    wrap.className = 'cm-upload-spinner'
-    // contenteditable=false ensures CM does not allow the cursor inside this widget.
-    wrap.setAttribute('contenteditable', 'false')
-    const spinner = document.createElement('span')
-    spinner.className = 'cm-upload-spinner-icon'
-    wrap.appendChild(spinner)
-    const label = document.createElement('span')
-    label.className = 'cm-upload-spinner-label'
-    label.textContent = 'Uploading image…'
-    wrap.appendChild(label)
-    return wrap
-  }
-
-  ignoreEvent() {
-    return true
-  }
-}
 
 /**
  * Scan the document for sentinel comments and build Decoration.replace entries
@@ -203,59 +142,6 @@ const sentinelGuard = EditorState.transactionFilter.of((tr) => {
 // Ghost text widget — shows image entry name after img: references
 // ---------------------------------------------------------------------------
 
-/**
- * Renders the human-readable filename of an image reference as ghost (muted italic)
- * text immediately after `![](img:<id>)` syntax in the editor.
- * eq() is implemented so CM can diff decorations and skip DOM updates when the name
- * hasn't changed.
- */
-class GhostNameWidget extends WidgetType {
-  constructor(private name: string) {
-    super()
-  }
-
-  toDOM() {
-    const span = document.createElement('span')
-    span.className = 'cm-image-ghost-name'
-    span.textContent = ` ${this.name}`
-    return span
-  }
-
-  eq(other: GhostNameWidget) {
-    return this.name === other.name
-  }
-
-  ignoreEvent() {
-    return true
-  }
-}
-
-/**
- * Zero-width anchor widget injected in place of the ghost name while the user is
- * renaming an image. The rename input (in the Vue template) is positioned over this
- * anchor via getBoundingClientRect(), so it appears exactly where the ghost text would be.
- */
-class RenameAnchorWidget extends WidgetType {
-  constructor(private id: string) {
-    super()
-  }
-
-  toDOM() {
-    const span = document.createElement('span')
-    span.className = 'cm-image-rename-anchor'
-    span.dataset.renameAnchor = this.id
-    return span
-  }
-
-  eq(other: RenameAnchorWidget) {
-    return this.id === other.id
-  }
-
-  ignoreEvent() {
-    return true
-  }
-}
-
 const imgRefPattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
 
 const props = defineProps<{ documentId: string; isActive: boolean }>()
@@ -315,47 +201,6 @@ const imgGhostNameField = StateField.define<DecorationSet>({
 
 function rebuildGhosts() {
   view?.dispatch({ effects: rebuildGhostEffect.of(null) })
-}
-/**
- * Tab key command: indent a markdown bullet line by 2 spaces.
- * Returns false (deferring to default Tab behaviour) if the current line is not a bullet.
- * seenLines deduplicates multi-cursor ranges that land on the same line.
- */
-const indentBullet: Command = (editorView) => {
-  const { state } = editorView
-  const seenLines = new Set<number>()
-  const changes: { from: number; insert: string }[] = []
-  for (const range of state.selection.ranges) {
-    const line = state.doc.lineAt(range.from)
-    if (seenLines.has(line.number)) continue
-    if (!/^\s*-\s/.test(line.text)) return false
-    seenLines.add(line.number)
-    changes.push({ from: line.from, insert: '  ' })
-  }
-  if (changes.length === 0) return false
-  editorView.dispatch(state.update({ changes, scrollIntoView: true }))
-  return true
-}
-
-/**
- * Shift+Tab command: dedent a markdown bullet line by removing 2 leading spaces.
- * Returns false if the line is not a bullet, or if there are fewer than 2 leading spaces.
- */
-const dedentBullet: Command = (editorView) => {
-  const { state } = editorView
-  const seenLines = new Set<number>()
-  const changes: { from: number; to: number; insert: string }[] = []
-  for (const range of state.selection.ranges) {
-    const line = state.doc.lineAt(range.from)
-    if (seenLines.has(line.number)) continue
-    if (!/^\s*-\s/.test(line.text)) return false
-    if (!line.text.startsWith('  ')) return false
-    seenLines.add(line.number)
-    changes.push({ from: line.from, to: line.from + 2, insert: '' })
-  }
-  if (changes.length === 0) return false
-  editorView.dispatch(state.update({ changes, scrollIntoView: true }))
-  return true
 }
 
 const container = ref<HTMLDivElement>()
