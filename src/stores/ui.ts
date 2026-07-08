@@ -227,11 +227,19 @@ export const useUiStore = defineStore('ui', () => {
    * @param userId - The authenticated Supabase user ID.
    */
   async function loadSettings(userId: string) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_settings')
       .select('settings')
       .eq('user_id', userId)
       .single()
+
+    // PGRST116 = zero rows for .single() — the only case that means "first login".
+    // Any other error is transient/unknown: bail without seeding, so a network blip
+    // can't overwrite the user's cloud settings with this device's local values.
+    if (error && error.code !== 'PGRST116') {
+      console.error('loadSettings failed:', error)
+      return
+    }
 
     if (!data) {
       // First login — seed Supabase with whatever is already in localStorage.
