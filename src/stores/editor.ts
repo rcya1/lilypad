@@ -94,19 +94,61 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   /**
+   * Shared implementation behind the four public open* variants.
+   *
+   * - preview: open as a VSCode-style preview tab that replaces the current preview tab
+   *   in the same slot. Non-preview opens append a permanent tab.
+   * - loading: mark the document as still fetching (skeleton) until finishLoadingDocument().
+   */
+  function openDocumentInternal(
+    id: string,
+    name: string,
+    type: DocumentType,
+    {
+      content = '',
+      preview = false,
+      loading = false,
+    }: {
+      content?: string
+      preview?: boolean
+      loading?: boolean
+    } = {},
+  ) {
+    // Already open (as this preview or as a permanent tab): just activate.
+    if (openDocuments.value.has(id)) {
+      activeDocumentId.value = id
+      return
+    }
+
+    let insertIndex = tabOrder.value.length
+    if (preview && previewDocumentId.value) {
+      // Replace the existing preview tab in-place so it stays in the same tab slot.
+      const oldId = previewDocumentId.value
+      insertIndex = tabOrder.value.indexOf(oldId)
+      openDocuments.value.delete(oldId)
+      dirtyIds.value.delete(oldId)
+      loadingIds.value.delete(oldId)
+      tabOrder.value.splice(insertIndex, 1)
+    }
+
+    openDocuments.value.set(id, { id, name, type, content })
+    tabOrder.value.splice(insertIndex, 0, id)
+    if (preview) previewDocumentId.value = id
+
+    dirtyIds.value.delete(id)
+    if (loading) loadingIds.value.add(id)
+    else loadingIds.value.delete(id)
+    activeDocumentId.value = id
+  }
+
+  /**
    * Opens a document as a permanent tab with its content already available.
    * If the document is already open, just activates it without re-adding.
    *
    * @param initialContent - Starting content; empty string is valid (e.g. a new blank file).
    */
   function openDocument(id: string, name: string, type: DocumentType, initialContent = '') {
-    if (!openDocuments.value.has(id)) {
-      openDocuments.value.set(id, { id, name, type, content: initialContent })
-      tabOrder.value.push(id)
-    }
-    dirtyIds.value.delete(id)
-    loadingIds.value.delete(id)
-    activeDocumentId.value = id
+    openDocumentInternal(id, name, type, { content: initialContent })
   }
 
   /**
@@ -117,12 +159,7 @@ export const useEditorStore = defineStore('editor', () => {
    * network fetch completes (avoids a perceived delay on large files).
    */
   function openDocumentOptimistic(id: string, name: string, type: DocumentType) {
-    if (!openDocuments.value.has(id)) {
-      openDocuments.value.set(id, { id, name, type, content: '' })
-      tabOrder.value.push(id)
-    }
-    loadingIds.value.add(id)
-    activeDocumentId.value = id
+    openDocumentInternal(id, name, type, { loading: true })
   }
 
   /**
@@ -135,34 +172,7 @@ export const useEditorStore = defineStore('editor', () => {
    * in that case it simply activates without changing the preview state.
    */
   function openDocumentAsPreview(id: string, name: string, type: DocumentType, content: string) {
-    // Already the preview — just activate
-    if (previewDocumentId.value === id) {
-      activeDocumentId.value = id
-      return
-    }
-    // Already a permanent tab — just activate, don't convert to preview
-    if (openDocuments.value.has(id) && previewDocumentId.value !== id) {
-      activeDocumentId.value = id
-      return
-    }
-
-    // Replace the existing preview tab in-place so it stays in the same tab slot.
-    let insertIndex = tabOrder.value.length
-    if (previewDocumentId.value) {
-      const oldId = previewDocumentId.value
-      insertIndex = tabOrder.value.indexOf(oldId)
-      openDocuments.value.delete(oldId)
-      dirtyIds.value.delete(oldId)
-      loadingIds.value.delete(oldId)
-      tabOrder.value.splice(insertIndex, 1)
-    }
-
-    openDocuments.value.set(id, { id, name, type, content })
-    tabOrder.value.splice(insertIndex, 0, id)
-    previewDocumentId.value = id
-    dirtyIds.value.delete(id)
-    loadingIds.value.delete(id)
-    activeDocumentId.value = id
+    openDocumentInternal(id, name, type, { content, preview: true })
   }
 
   /**
@@ -170,30 +180,7 @@ export const useEditorStore = defineStore('editor', () => {
    * Same replacement semantics as openDocumentAsPreview.
    */
   function openDocumentOptimisticAsPreview(id: string, name: string, type: DocumentType) {
-    if (previewDocumentId.value === id) {
-      activeDocumentId.value = id
-      return
-    }
-    if (openDocuments.value.has(id) && previewDocumentId.value !== id) {
-      activeDocumentId.value = id
-      return
-    }
-
-    let insertIndex = tabOrder.value.length
-    if (previewDocumentId.value) {
-      const oldId = previewDocumentId.value
-      insertIndex = tabOrder.value.indexOf(oldId)
-      openDocuments.value.delete(oldId)
-      dirtyIds.value.delete(oldId)
-      loadingIds.value.delete(oldId)
-      tabOrder.value.splice(insertIndex, 1)
-    }
-
-    openDocuments.value.set(id, { id, name, type, content: '' })
-    tabOrder.value.splice(insertIndex, 0, id)
-    previewDocumentId.value = id
-    loadingIds.value.add(id)
-    activeDocumentId.value = id
+    openDocumentInternal(id, name, type, { preview: true, loading: true })
   }
 
   /**
