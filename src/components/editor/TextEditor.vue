@@ -56,6 +56,7 @@ import {
   yankFlashField,
 } from './cm/highlight'
 import { indentBullet, dedentBullet } from './cm/commands'
+import { findImageRefs } from '@/lib/image-refs'
 
 // ---------------------------------------------------------------------------
 // Upload spinner widget — replaces the sentinel comment in the editor display
@@ -142,8 +143,6 @@ const sentinelGuard = EditorState.transactionFilter.of((tr) => {
 // Ghost text widget — shows image entry name after img: references
 // ---------------------------------------------------------------------------
 
-const imgRefPattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
-
 const props = defineProps<{ documentId: string; isActive: boolean }>()
 
 const store = useEditorStore()
@@ -157,17 +156,14 @@ const renamingImageExt = ref<string>('')
 function buildGhostDecorations(state: EditorState): DecorationSet {
   const builder: Range<Decoration>[] = []
   const doc = state.doc.toString()
-  imgRefPattern.lastIndex = 0
-  let match: RegExpExecArray | null
-  while ((match = imgRefPattern.exec(doc)) !== null) {
-    const entryId = match[1]!
-    const entry = filesStore.getEntry(entryId)
+  for (const ref of findImageRefs(doc)) {
+    const entry = filesStore.getEntry(ref.entryId)
     if (entry) {
-      const pos = match.index + match[0].length
-      if (renamingImageId.value === entryId) {
+      const pos = ref.to
+      if (renamingImageId.value === ref.entryId) {
         builder.push(
           Decoration.widget({
-            widget: new RenameAnchorWidget(entryId),
+            widget: new RenameAnchorWidget(ref.entryId),
             side: 1,
           }).range(pos),
         )
@@ -559,11 +555,9 @@ function isOverImageRef(editorView: EditorView, x: number, y: number): boolean {
   const pos = editorView.posAtCoords({ x, y })
   if (pos === null) return false
   const line = editorView.state.doc.lineAt(pos)
-  const imagePattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
-  let match: RegExpExecArray | null
-  while ((match = imagePattern.exec(line.text)) !== null) {
-    const absFrom = line.from + match.index
-    const absTo = absFrom + match[0].length
+  for (const ref of findImageRefs(line.text)) {
+    const absFrom = line.from + ref.from
+    const absTo = line.from + ref.to
     if (pos >= absFrom && pos <= absTo) return true
   }
   return false
@@ -582,14 +576,12 @@ const imagePasteHandler = EditorView.domEventHandlers({
     if (pos === null) return false
 
     const line = editorView.state.doc.lineAt(pos)
-    const imagePattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
-    let match: RegExpExecArray | null
-    while ((match = imagePattern.exec(line.text)) !== null) {
-      const absFrom = line.from + match.index
-      const absTo = absFrom + match[0].length
+    for (const ref of findImageRefs(line.text)) {
+      const absFrom = line.from + ref.from
+      const absTo = line.from + ref.to
       if (pos >= absFrom && pos <= absTo) {
         event.preventDefault()
-        uiStore.navigateToImage(match[1]!)
+        uiStore.navigateToImage(ref.entryId)
         return true
       }
     }
@@ -620,14 +612,12 @@ const imagePasteHandler = EditorView.domEventHandlers({
     if (pos === null) return false
 
     const line = editorView.state.doc.lineAt(pos)
-    const imagePattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
-    let match: RegExpExecArray | null
-    while ((match = imagePattern.exec(line.text)) !== null) {
-      const absFrom = line.from + match.index
-      const absTo = absFrom + match[0].length
+    for (const ref of findImageRefs(line.text)) {
+      const absFrom = line.from + ref.from
+      const absTo = line.from + ref.to
       if (pos >= absFrom && pos <= absTo) {
         event.preventDefault()
-        imageContextMenu.value = { x: event.clientX, y: event.clientY, entryId: match[1]! }
+        imageContextMenu.value = { x: event.clientX, y: event.clientY, entryId: ref.entryId }
         const close = (e: MouseEvent) => {
           if (contextMenuEl.value?.contains(e.target as Node)) return
           closeImageContextMenu()
