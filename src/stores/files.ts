@@ -14,6 +14,13 @@ import {
   removeFileFromIndex,
   type TrigramIndex,
 } from '@/lib/trigram'
+import {
+  getNextSortOrder as entryTreeGetNextSortOrder,
+  collectDescendantIds as entryTreeCollectDescendantIds,
+  filterTopLevelIds as entryTreeFilterTopLevelIds,
+  isDuplicateName as entryTreeIsDuplicateName,
+  deduplicateName as entryTreeDeduplicateName,
+} from '@/lib/entry-tree'
 
 // ---------------------------------------------------------------------------
 // Module-level singletons shared across all store instances.
@@ -83,9 +90,7 @@ export const useFilesStore = defineStore('files', () => {
    * Pass `excludeId` when renaming so the entry doesn't collide with itself.
    */
   function isDuplicateName(name: string, parentId: string | null, excludeId?: string): boolean {
-    return entries.value.some(
-      (e) => e.parent_id === parentId && e.name === name && e.id !== excludeId,
-    )
+    return entryTreeIsDuplicateName(entries.value, name, parentId, excludeId)
   }
 
   function showError(msg: string) {
@@ -139,9 +144,7 @@ export const useFilesStore = defineStore('files', () => {
    * before renumbering is needed.
    */
   function getNextSortOrder(parentId: string | null): number {
-    const siblings = entries.value.filter((e) => e.parent_id === parentId)
-    if (siblings.length === 0) return 1000
-    return Math.max(...siblings.map((e) => e.sort_order)) + 1000
+    return entryTreeGetNextSortOrder(entries.value, parentId)
   }
 
   /**
@@ -697,12 +700,7 @@ export const useFilesStore = defineStore('files', () => {
    * Used by `deleteEntry` and `moveEntry` (cycle detection).
    */
   function collectDescendantIds(id: string): string[] {
-    const result = [id]
-    const children = entries.value.filter((e) => e.parent_id === id)
-    for (const child of children) {
-      result.push(...collectDescendantIds(child.id))
-    }
-    return result
+    return entryTreeCollectDescendantIds(entries.value, id)
   }
 
   /**
@@ -711,15 +709,7 @@ export const useFilesStore = defineStore('files', () => {
    * must act only on these "top-level" ids to avoid double-processing subtrees.
    */
   function filterTopLevelIds(ids: Iterable<string>): string[] {
-    const idSet = new Set(ids)
-    return [...idSet].filter((id) => {
-      let parentId = entryById.value.get(id)?.parent_id ?? null
-      while (parentId) {
-        if (idSet.has(parentId)) return false
-        parentId = entryById.value.get(parentId)?.parent_id ?? null
-      }
-      return true
-    })
+    return entryTreeFilterTopLevelIds(entryById.value, ids)
   }
 
   /**
@@ -943,17 +933,7 @@ export const useFilesStore = defineStore('files', () => {
    * the name is unique.
    */
   function deduplicateName(name: string, parentId: string | null): string {
-    const siblings = new Set(
-      entries.value.filter((e) => e.parent_id === parentId).map((e) => e.name),
-    )
-    if (!siblings.has(name)) return name
-
-    const dotIdx = name.lastIndexOf('.')
-    const base = dotIdx > 0 ? name.slice(0, dotIdx) : name
-    const ext = dotIdx > 0 ? name.slice(dotIdx) : ''
-    let i = 2
-    while (siblings.has(`${base} (${i})${ext}`)) i++
-    return `${base} (${i})${ext}`
+    return entryTreeDeduplicateName(entries.value, name, parentId)
   }
 
   /**
