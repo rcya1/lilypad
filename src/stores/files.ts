@@ -779,7 +779,15 @@ export const useFilesStore = defineStore('files', () => {
       if (siblings[i]!.sort_order !== clean) {
         siblings[i]!.sort_order = clean
         updates.push(
-          supabase.from('entries').update({ sort_order: clean }).eq('id', siblings[i]!.id).then(),
+          supabase
+            .from('entries')
+            .update({ sort_order: clean })
+            .eq('id', siblings[i]!.id)
+            .then(({ error }) => {
+              // Local sort_order has already been mutated; a log is enough to make
+              // divergence between local and remote state diagnosable.
+              if (error) console.error('renumberSiblings: failed to update sort_order', error)
+            }),
         )
       }
     }

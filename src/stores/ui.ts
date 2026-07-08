@@ -193,7 +193,9 @@ export const useUiStore = defineStore('ui', () => {
           settings: serializeSettings(),
           updated_at: new Date().toISOString(),
         })
-        .then()
+        .then(({ error }) => {
+          if (error) console.error('settings save failed:', error)
+        })
     }, REMOTE_SAVE_DEBOUNCE_MS)
   }
 
