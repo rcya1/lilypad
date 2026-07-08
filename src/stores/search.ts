@@ -70,7 +70,6 @@ function searchLiteral(
   folderPath: string,
 ): SearchResult[] {
   const results: SearchResult[] = []
-  const haystack = caseSensitive ? content : content.toLowerCase()
   const needle = caseSensitive ? query : query.toLowerCase()
   const lines = content.split('\n')
 
@@ -92,8 +91,6 @@ function searchLiteral(
     }
   }
 
-  // haystack is used for the case-insensitive check above; suppress unused-var lint.
-  void haystack
   return results
 }
 
