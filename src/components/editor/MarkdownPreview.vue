@@ -61,13 +61,13 @@ onBeforeUnmount(() => {
   }
 })
 
-// 5 ms debounce prevents a re-render on every single keystroke while still being
-// imperceptibly fast — the preview updates after the JS microtask queue drains.
+// 50 ms debounce: coalesces re-renders during fast typing bursts while staying
+// imperceptible. (Anything under a keystroke interval re-renders every keypress.)
 watch(
   () => store.openDocuments.get(props.documentId)?.content,
   (content) => {
     if (debounceTimer) clearTimeout(debounceTimer)
-    debounceTimer = setTimeout(() => render(content ?? ''), 5)
+    debounceTimer = setTimeout(() => render(content ?? ''), 50)
   },
 )
 
