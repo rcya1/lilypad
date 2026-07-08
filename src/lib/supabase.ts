@@ -7,4 +7,10 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 // the Supabase side. Service-role keys must never be shipped to the client.
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY — check your .env file (see README).',
+  )
+}
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
