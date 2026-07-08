@@ -3,6 +3,7 @@
 import FileExplorer from './FileExplorer.vue'
 import ImagesTab from './ImagesTab.vue'
 import SearchPanel from './SearchPanel.vue'
+import BulkActionBar from './BulkActionBar.vue'
 import LilypadIcon from '@/assets/icon.svg'
 import { LogOut, Loader2, Settings, Search } from 'lucide-vue-next'
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
@@ -187,6 +188,7 @@ onBeforeUnmount(() => {
         <FileExplorer v-if="uiStore.sidebarTab === 'files'" />
         <ImagesTab v-else />
       </template>
+      <BulkActionBar />
     </div>
 
     <div
