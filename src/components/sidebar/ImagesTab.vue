@@ -69,7 +69,7 @@ async function onRootDrop(e: DragEvent) {
     })
     const failed: typeof snapshot = []
     for (let i = 0; i < topLevel.length; i++) {
-      // Pass checkConflict=true to detect name collisions at the root level.
+      // silent=true: suppress per-entry toasts; we show one aggregate toast for all failures below.
       const ok = await filesStore.moveEntry(topLevel[i]!, null, baseOrder + i, true)
       if (!ok) failed.push(snapshot[i]!)
     }
