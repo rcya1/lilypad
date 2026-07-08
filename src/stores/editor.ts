@@ -1,6 +1,6 @@
 // Pinia store for the multi-tab editor: open documents, tab ordering, dirty tracking, auto-save timers, and preview tabs.
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { DocumentType } from '@/types/file-explorer'
 import { useFilesStore } from './files'
 import { useToastStore } from './toast'
@@ -18,7 +18,10 @@ export const useEditorStore = defineStore('editor', () => {
   // Separate from Map insertion order so tabs can be dragged into any position.
   const tabOrder = ref<string[]>([])
   const activeDocumentId = ref<string | null>(null)
-  const activeDocument = ref<OpenDocument | null>(null)
+  // Derived, never assigned: single source of truth is activeDocumentId + openDocuments.
+  const activeDocument = computed<OpenDocument | null>(() =>
+    activeDocumentId.value ? (openDocuments.value.get(activeDocumentId.value) ?? null) : null,
+  )
   // IDs of documents with unsaved edits.
   const dirtyIds = ref(new Set<string>())
   // IDs of documents currently being uploaded to Supabase (prevents duplicate concurrent saves).
@@ -104,7 +107,6 @@ export const useEditorStore = defineStore('editor', () => {
     dirtyIds.value.delete(id)
     loadingIds.value.delete(id)
     activeDocumentId.value = id
-    activeDocument.value = openDocuments.value.get(id) ?? null
   }
 
   /**
@@ -121,7 +123,6 @@ export const useEditorStore = defineStore('editor', () => {
     }
     loadingIds.value.add(id)
     activeDocumentId.value = id
-    activeDocument.value = openDocuments.value.get(id) ?? null
   }
 
   /**
@@ -137,13 +138,11 @@ export const useEditorStore = defineStore('editor', () => {
     // Already the preview — just activate
     if (previewDocumentId.value === id) {
       activeDocumentId.value = id
-      activeDocument.value = openDocuments.value.get(id) ?? null
       return
     }
     // Already a permanent tab — just activate, don't convert to preview
     if (openDocuments.value.has(id) && previewDocumentId.value !== id) {
       activeDocumentId.value = id
-      activeDocument.value = openDocuments.value.get(id) ?? null
       return
     }
 
@@ -164,7 +163,6 @@ export const useEditorStore = defineStore('editor', () => {
     dirtyIds.value.delete(id)
     loadingIds.value.delete(id)
     activeDocumentId.value = id
-    activeDocument.value = openDocuments.value.get(id) ?? null
   }
 
   /**
@@ -174,12 +172,10 @@ export const useEditorStore = defineStore('editor', () => {
   function openDocumentOptimisticAsPreview(id: string, name: string, type: DocumentType) {
     if (previewDocumentId.value === id) {
       activeDocumentId.value = id
-      activeDocument.value = openDocuments.value.get(id) ?? null
       return
     }
     if (openDocuments.value.has(id) && previewDocumentId.value !== id) {
       activeDocumentId.value = id
-      activeDocument.value = openDocuments.value.get(id) ?? null
       return
     }
 
@@ -198,7 +194,6 @@ export const useEditorStore = defineStore('editor', () => {
     previewDocumentId.value = id
     loadingIds.value.add(id)
     activeDocumentId.value = id
-    activeDocument.value = openDocuments.value.get(id) ?? null
   }
 
   /**
@@ -233,7 +228,6 @@ export const useEditorStore = defineStore('editor', () => {
   function setActiveDocument(id: string) {
     if (openDocuments.value.has(id)) {
       activeDocumentId.value = id
-      activeDocument.value = openDocuments.value.get(id) ?? null
     }
   }
 
@@ -296,7 +290,6 @@ export const useEditorStore = defineStore('editor', () => {
       // Prefer the tab to the left; fall back to the right if this was the first tab.
       const nextId: string | null = tabOrder.value[Math.max(0, idx - 1)] ?? null
       activeDocumentId.value = nextId
-      activeDocument.value = nextId ? (openDocuments.value.get(nextId) ?? null) : null
     }
   }
 
@@ -347,7 +340,6 @@ export const useEditorStore = defineStore('editor', () => {
     openDocuments.value.clear()
     tabOrder.value = []
     activeDocumentId.value = null
-    activeDocument.value = null
     dirtyIds.value.clear()
     savingIds.value.clear()
     loadingIds.value.clear()
