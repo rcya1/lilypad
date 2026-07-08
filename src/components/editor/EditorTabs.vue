@@ -96,6 +96,14 @@ function onDragEnd() {
 function handleClose(id: string) {
   store.closeDocument(id)
 }
+
+// Middle-click closes the tab (standard tab-strip behavior).
+function onTabMouseDown(e: MouseEvent, id: string) {
+  if (e.button === 1) {
+    e.preventDefault()
+    handleClose(id)
+  }
+}
 </script>
 
 <template>
@@ -119,14 +127,7 @@ function handleClose(id: string) {
         draggable="true"
         @click="switchToTab(tab.id)"
         @dblclick="store.promotePreview(tab.id)"
-        @mousedown="
-          (e: MouseEvent) => {
-            if (e.button === 1) {
-              e.preventDefault()
-              handleClose(tab.id)
-            }
-          }
-        "
+        @mousedown="onTabMouseDown($event, tab.id)"
         @dragstart="onDragStart($event, tab.id)"
         @dragover="onDragOver($event, i)"
         @dragend="onDragEnd"
