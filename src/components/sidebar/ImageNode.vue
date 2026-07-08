@@ -7,9 +7,10 @@ import { isDirectory } from '@/types/file-explorer'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import { useUiStore } from '@/stores/ui'
-import { useConfirm } from '@/composables/useConfirm'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useDragDrop, draggingEntry } from '@/composables/useDragDrop'
+import { useEntrySelection } from '@/composables/useEntrySelection'
+import { useEntryDelete } from '@/composables/useEntryDelete'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
@@ -26,7 +27,6 @@ const emit = defineEmits<{
 const filesStore = useFilesStore()
 const editorStore = useEditorStore()
 const uiStore = useUiStore()
-const { confirm } = useConfirm()
 
 const isRenaming = ref(false)
 const renameValue = ref('')
@@ -68,17 +68,7 @@ const {
   onDrop,
 } = useDragDrop(entryRef, isOpen, filesStore)
 
-const isSelected = computed(() => filesStore.selectedIds.has(props.entry.id))
-const isCoveredBySelection = computed(() => {
-  if (filesStore.selectedIds.size === 0) return false
-  let parentId: string | null = props.entry.parentId
-  while (parentId) {
-    if (filesStore.selectedIds.has(parentId)) return true
-    parentId = filesStore.entries.find((e) => e.id === parentId)?.parent_id ?? null
-  }
-  return false
-})
-const inSelectionMode = computed(() => filesStore.selectedIds.size >= 2)
+const { isSelected, isCoveredBySelection, inSelectionMode } = useEntrySelection(entryRef)
 
 /**
  * Handles click interactions on an image or folder node.
@@ -159,43 +149,11 @@ async function submitRename() {
   isRenaming.value = false
 }
 
-/**
- * Deletes this entry (or the multi-select set if active).
- * Closes any open editor tabs for the affected entries before calling the store.
- */
-async function handleDelete() {
-  closeContextMenu()
-
-  const isInSelection = isSelected.value || isCoveredBySelection.value
-  if (filesStore.selectedIds.size >= 2 && isInSelection) {
-    const count = filesStore.selectedIds.size
-    const ok = await confirm({
-      title: `Delete ${count} items?`,
-      message: 'These items will be permanently deleted.',
-      confirmLabel: 'Delete',
-      danger: true,
-    })
-    if (!ok) return
-    for (const id of filesStore.selectedIds) {
-      await editorStore.closeDocument(id)
-    }
-    await filesStore.bulkDelete([...filesStore.selectedIds])
-    return
-  }
-
-  const label = props.entry.name
-  const ok = await confirm({
-    title: `Delete "${label}"?`,
-    message: isDirectory(props.entry)
-      ? 'This folder and all its contents will be permanently deleted.'
-      : 'This image will be permanently deleted.',
-    confirmLabel: 'Delete',
-    danger: true,
-  })
-  if (!ok) return
-  await editorStore.closeDocument(props.entry.id)
-  await filesStore.deleteEntry(props.entry.id)
-}
+const { handleDelete } = useEntryDelete(
+  entryRef,
+  { isSelected, isCoveredBySelection },
+  { noun: 'image', closeContextMenu },
+)
 </script>
 
 <template>

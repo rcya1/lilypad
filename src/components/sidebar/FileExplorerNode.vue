@@ -7,8 +7,9 @@ import { Folder, FolderOpen, FileText, File, Globe } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
-import { useConfirm } from '@/composables/useConfirm'
 import { useContextMenu } from '@/composables/useContextMenu'
+import { useEntrySelection } from '@/composables/useEntrySelection'
+import { useEntryDelete } from '@/composables/useEntryDelete'
 import PendingInputRow from './PendingInputRow.vue'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
@@ -20,7 +21,6 @@ const props = defineProps<{
 
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
-const { confirm } = useConfirm()
 
 // Writable computed so useDragDrop can set isOpen.value = true (auto-expand on hover) while
 // the source of truth stays in the files store's collapsedFolderIds set.
@@ -57,26 +57,7 @@ const isSelectedFolder = computed(
   () => isDirectory(props.entry) && filesStore.selectedFolderId === props.entry.id,
 )
 
-const isSelected = computed(() => filesStore.selectedIds.has(props.entry.id))
-
-/**
- * True when an ancestor of this entry is in the multi-select set.
- * Used to apply the same selection highlight without explicitly selecting every descendant,
- * and to prevent moving a subtree twice during a bulk drag.
- */
-const isCoveredBySelection = computed(() => {
-  if (filesStore.selectedIds.size === 0) return false
-  let parentId: string | null = props.entry.parentId
-  while (parentId) {
-    if (filesStore.selectedIds.has(parentId)) return true
-    parentId = filesStore.entries.find((e) => e.id === parentId)?.parent_id ?? null
-  }
-  return false
-})
-
-// Once ≥2 items are selected, single-clicking an entry adjusts the selection
-// instead of opening the document (to avoid accidentally navigating away).
-const inSelectionMode = computed(() => filesStore.selectedIds.size >= 2)
+const { isSelected, isCoveredBySelection, inSelectionMode } = useEntrySelection(entryRef)
 
 // True when this folder is the target of a pending child-creation operation.
 const showNewInput = computed(
@@ -207,45 +188,15 @@ async function submitRename() {
   isRenaming.value = false
 }
 
-/**
- * Deletes this entry (or the full multi-select set if active) after a confirm dialog.
- *
- * When operating in multi-select mode, closes all affected tabs before deleting
- * to avoid dangling references in the editor store.
- */
-async function handleDelete() {
-  closeContextMenu()
-
-  const isInSelection = isSelected.value || isCoveredBySelection.value
-  if (filesStore.selectedIds.size >= 2 && isInSelection) {
-    const count = filesStore.selectedIds.size
-    const ok = await confirm({
-      title: `Delete ${count} items?`,
-      message: 'These items will be permanently deleted.',
-      confirmLabel: 'Delete',
-      danger: true,
-    })
-    if (!ok) return
-    for (const id of filesStore.selectedIds) {
-      await editorStore.closeDocument(id)
-    }
-    await filesStore.bulkDelete([...filesStore.selectedIds])
-    return
-  }
-
-  const label = isDirectory(props.entry) ? props.entry.name : stripExtension(props.entry.name)
-  const ok = await confirm({
-    title: `Delete "${label}"?`,
-    message: isDirectory(props.entry)
-      ? 'This folder and all its contents will be permanently deleted.'
-      : 'This file will be permanently deleted.',
-    confirmLabel: 'Delete',
-    danger: true,
-  })
-  if (!ok) return
-  await editorStore.closeDocument(props.entry.id)
-  await filesStore.deleteEntry(props.entry.id)
-}
+const { handleDelete } = useEntryDelete(
+  entryRef,
+  { isSelected, isCoveredBySelection },
+  {
+    noun: 'file',
+    closeContextMenu,
+    label: (entry) => (isDirectory(entry) ? entry.name : stripExtension(entry.name)),
+  },
+)
 
 function startNewChildFile() {
   closeContextMenu()
