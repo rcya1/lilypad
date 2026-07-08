@@ -45,6 +45,8 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
     e.preventDefault()
     e.returnValue = ''
   }
+  // Best-effort: these saves are async and the browser may kill them during unload.
+  // The preventDefault dialog above is the real safety net for dirty documents.
   editorStore.saveAll()
 }
 
