@@ -1,5 +1,6 @@
 <!-- Modal for confirming destructive actions; driven by the useConfirm singleton so any caller can await a boolean result. -->
 <script setup lang="ts">
+import { watch, onBeforeUnmount } from 'vue'
 import { useConfirm } from '@/composables/useConfirm'
 
 const { open, title, message, confirmLabel, cancelLabel, danger, onConfirm, onCancel } =
@@ -10,9 +11,17 @@ function onOverlayClick(e: MouseEvent) {
   if (e.target === e.currentTarget) onCancel()
 }
 
-function onKeydown(e: KeyboardEvent) {
+function onWindowKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') onCancel()
 }
+
+// Listen globally only while the dialog is open, so Escape works regardless of focus.
+watch(open, (isOpen) => {
+  if (isOpen) window.addEventListener('keydown', onWindowKeydown)
+  else window.removeEventListener('keydown', onWindowKeydown)
+})
+
+onBeforeUnmount(() => window.removeEventListener('keydown', onWindowKeydown))
 </script>
 
 <template>
@@ -23,13 +32,12 @@ function onKeydown(e: KeyboardEvent) {
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
         style="background: rgba(30, 42, 30, 0.4); backdrop-filter: blur(2px)"
         @mousedown="onOverlayClick"
-        @keydown="onKeydown"
       >
         <div
           class="relative w-full max-w-sm bg-surface border border-border rounded-xl shadow-xl p-6 flex flex-col gap-4"
           role="dialog"
           aria-modal="true"
-          :aria-labelledby="title"
+          :aria-label="title"
         >
           <div class="flex flex-col gap-1.5">
             <h2 class="font-ui font-semibold text-text-primary text-base leading-snug">
