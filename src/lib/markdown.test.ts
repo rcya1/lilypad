@@ -270,3 +270,11 @@ describe('source line annotation — edge cases', () => {
     expect(html).not.toMatch(/<strong[^>]*data-source-line/)
   })
 })
+
+describe('admonition security', () => {
+  it('escapes HTML in admonition titles', () => {
+    const html = parseMarkdown('||info <img src=x onerror=alert(1)>\nbody\n||\n')
+    expect(html).not.toContain('<img src=x')
+    expect(html).toContain('&lt;img')
+  })
+})

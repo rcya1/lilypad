@@ -120,7 +120,7 @@ const admonition = {
     const body: string = this.parser.parse(t.tokens)
     const a = attr(token)
     return `<div${a} class="admonition admonition-${t.admonitionType}">
-      <div class="admonition-title">${icon}<span>${t.title}</span></div>
+      <div class="admonition-title">${icon}<span>${escapeHtml(t.title)}</span></div>
       <div class="admonition-body">${body}</div>
     </div>`
   },
