@@ -33,7 +33,7 @@ async function handleDelete() {
   if (!ok) return
 
   for (const id of ids) {
-    editorStore.closeDocument(id)
+    await editorStore.closeDocument(id)
   }
 
   const success = await filesStore.bulkDelete(ids)

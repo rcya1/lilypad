@@ -175,7 +175,7 @@ async function handleDelete() {
     })
     if (!ok) return
     for (const id of filesStore.selectedIds) {
-      editorStore.closeDocument(id)
+      await editorStore.closeDocument(id)
     }
     await filesStore.bulkDelete([...filesStore.selectedIds])
     return
@@ -191,7 +191,7 @@ async function handleDelete() {
     danger: true,
   })
   if (!ok) return
-  editorStore.closeDocument(props.entry.id)
+  await editorStore.closeDocument(props.entry.id)
   await filesStore.deleteEntry(props.entry.id)
 }
 </script>
