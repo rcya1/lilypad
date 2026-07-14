@@ -7,7 +7,7 @@ import { useUiStore } from '@/stores/ui'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
 import ImageDetailPane from './ImageDetailPane.vue'
-import WebView from './WebView.vue'
+import WebDocPane from './WebDocPane.vue'
 import EditorTabs from './EditorTabs.vue'
 import BreadcrumbBar from './BreadcrumbBar.vue'
 import LilypadIcon from '@/assets/icon.svg'
@@ -242,8 +242,13 @@ onBeforeUnmount(() => {
           <!-- Image detail pane -->
           <ImageDetailPane v-if="activeDocType === 'image'" :document-id="id" class="h-full" />
 
-          <!-- Captured web page -->
-          <WebView v-else-if="activeDocType === 'web'" :document-id="id" class="h-full" />
+          <!-- Captured web page + notes split -->
+          <WebDocPane
+            v-else-if="activeDocType === 'web'"
+            :document-id="id"
+            :is-active="id === activeId"
+            class="h-full"
+          />
 
           <!-- Markdown split pane -->
           <div v-else ref="splitPane" class="relative h-full bg-surface overflow-hidden">

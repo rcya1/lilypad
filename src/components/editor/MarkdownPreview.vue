@@ -4,6 +4,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, useTemplate
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useUiStore } from '@/stores/ui'
+import { useWebAnnotationsStore } from '@/stores/webAnnotations'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
 
@@ -12,6 +13,7 @@ const props = defineProps<{ documentId: string }>()
 const store = useEditorStore()
 const filesStore = useFilesStore()
 const uiStore = useUiStore()
+const anno = useWebAnnotationsStore()
 const html = ref('')
 const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
 
@@ -112,6 +114,15 @@ function findSelectableSourceLine(el: HTMLElement): HTMLElement | null {
 }
 
 function onMouseOver(event: MouseEvent) {
+  // Highlight-reference chips: mirror hover state to the captured page.
+  const refEl = (event.target as HTMLElement).closest?.('[data-lily-ref]') as HTMLElement | null
+  if (refEl) {
+    const h = anno.findByLocalId(props.documentId, refEl.getAttribute('data-lily-ref') ?? '')
+    anno.setHoveredHighlight(h?.id ?? null)
+  } else if (anno.hoveredHighlightId) {
+    anno.setHoveredHighlight(null)
+  }
+
   const target = findSelectableSourceLine(event.target as HTMLElement)
   if (!target) {
     hoveredLine.value = null
@@ -125,6 +136,7 @@ function onMouseOver(event: MouseEvent) {
 
 function onMouseLeave() {
   hoveredLine.value = null
+  if (anno.hoveredHighlightId) anno.setHoveredHighlight(null)
 }
 
 /**
@@ -133,6 +145,14 @@ function onMouseLeave() {
  * the editor line highlight.
  */
 function onClick(event: MouseEvent) {
+  // Clicking a highlight-reference chip scrolls the captured page to that highlight.
+  const refEl = (event.target as HTMLElement).closest?.('[data-lily-ref]') as HTMLElement | null
+  if (refEl) {
+    const h = anno.findByLocalId(props.documentId, refEl.getAttribute('data-lily-ref') ?? '')
+    if (h) anno.requestScrollToHighlight(h.id)
+    return
+  }
+
   const target = findSelectableSourceLine(event.target as HTMLElement)
   if (!target) {
     selectedLine.value = null
@@ -313,6 +333,49 @@ function syncFromEditorCursor() {
 }
 
 watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
+
+// --- Highlight-reference chips (web documents) ---
+
+/** Add the `lily-ref-active` class to chips whose highlight is active or hovered on the page side. */
+function updateRefChips() {
+  const container = scrollContainer.value?.querySelector('.markdown-body')
+  if (!container) return
+  container
+    .querySelectorAll('.lily-ref-active')
+    .forEach((el) => el.classList.remove('lily-ref-active'))
+  for (const id of [anno.activeHighlightId, anno.hoveredHighlightId]) {
+    const h = id ? anno.getById(id) : null
+    if (h && h.entryId === props.documentId) {
+      container
+        .querySelectorAll(`[data-lily-ref="${CSS.escape(h.localId)}"]`)
+        .forEach((el) => el.classList.add('lily-ref-active'))
+    }
+  }
+}
+
+watch(
+  () => [anno.activeHighlightId, anno.hoveredHighlightId],
+  () => nextTick(updateRefChips),
+)
+// Re-apply chip classes after every re-render (the DOM was replaced).
+watch(html, () => nextTick(updateRefChips))
+
+// A highlight was clicked on the page → scroll to its first reference chip here and flash it.
+watch(
+  () => anno.scrollToNoteRequest,
+  (req) => {
+    if (!req || req.entryId !== props.documentId) return
+    anno.scrollToNoteRequest = null
+    nextTick(() => {
+      const container = scrollContainer.value?.querySelector('.markdown-body')
+      const chip = container?.querySelector(`[data-lily-ref="${CSS.escape(req.localId)}"]`)
+      if (!chip) return
+      chip.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      chip.classList.add('lily-ref-flash')
+      setTimeout(() => chip.classList.remove('lily-ref-flash'), 1200)
+    })
+  },
+)
 </script>
 
 <template>
@@ -350,7 +413,9 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 .markdown-body :deep([data-source-line].preview-selected) {
   background-color: var(--surface-elevated);
   border-radius: 4px;
-  box-shadow: -4px 0 0 0 var(--surface-elevated), 4px 0 0 0 var(--surface-elevated);
+  box-shadow:
+    -4px 0 0 0 var(--surface-elevated),
+    4px 0 0 0 var(--surface-elevated);
   outline: none;
   width: fit-content;
   transition:
@@ -361,7 +426,9 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 /* Hover over the selected element — darker accent */
 .markdown-body :deep([data-source-line].preview-hover.preview-selected) {
   background-color: var(--surface-overlay);
-  box-shadow: -5px 0 0 0 var(--surface-overlay), 5px 0 0 0 var(--surface-overlay);
+  box-shadow:
+    -5px 0 0 0 var(--surface-overlay),
+    5px 0 0 0 var(--surface-overlay);
 }
 
 /* For list items: don't highlight the full li bounding box (which includes nested lists).
@@ -393,7 +460,9 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 .markdown-body :deep(li[data-source-line].preview-selected > p) {
   background-color: var(--surface-elevated);
   border-radius: 4px;
-  box-shadow: -4px 0 0 0 var(--surface-elevated), 4px 0 0 0 var(--surface-elevated);
+  box-shadow:
+    -4px 0 0 0 var(--surface-elevated),
+    4px 0 0 0 var(--surface-elevated);
   transition:
     background-color 100ms ease,
     box-shadow 100ms ease;
@@ -402,7 +471,9 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 .markdown-body :deep(li[data-source-line].preview-hover.preview-selected > .li-text),
 .markdown-body :deep(li[data-source-line].preview-hover.preview-selected > p) {
   background-color: var(--surface-overlay);
-  box-shadow: -5px 0 0 0 var(--surface-overlay), 5px 0 0 0 var(--surface-overlay);
+  box-shadow:
+    -5px 0 0 0 var(--surface-overlay),
+    5px 0 0 0 var(--surface-overlay);
 }
 
 /* For headings with border-bottom underlines: the rounded box-shadow corners arc
@@ -629,6 +700,85 @@ watch(() => store.editorCursorLine.get(props.documentId), syncFromEditorCursor)
 /* KaTeX display blocks */
 .markdown-body :deep(.katex-display) {
   margin: 1em 0;
+}
+
+/* Display-math blocks keep full width when highlighted so the equation stays centered.
+   The general rule sets `width: fit-content` + side box-shadows, which would shrink the box
+   to the equation's width and strand it against the left edge. Override to a full-width band.
+   The combined-state selector is required because .preview-hover.preview-selected (0,5,0)
+   outranks a single-class .katex-block rule (0,4,1); the element+combined form reaches (0,5,1). */
+.markdown-body :deep(.katex-block.preview-hover),
+.markdown-body :deep(.katex-block.preview-selected),
+.markdown-body :deep(.katex-block.preview-hover.preview-selected) {
+  width: auto;
+  box-shadow: none;
+}
+
+/* LaTeX error diagnostics */
+.markdown-body :deep(.katex-error-msg) {
+  margin-top: 0.5em;
+  padding: 0.4em 0.7em;
+  border-left: 3px solid #c0392b;
+  border-radius: 4px;
+  background: rgba(192, 57, 43, 0.08);
+  color: #c0392b;
+  font-family: var(--font-family-mono);
+  font-size: 0.72em;
+  line-height: 1.4;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.markdown-body :deep(.katex-error-inline) {
+  color: #c0392b;
+  background: rgba(192, 57, 43, 0.08);
+  border-radius: 3px;
+  padding: 0 0.2em;
+  text-decoration: underline wavy #c0392b;
+  text-underline-offset: 2px;
+  cursor: help;
+}
+
+/* Highlight-reference chips (web documents): [text](lily:hl-3) */
+.markdown-body :deep(.lily-ref) {
+  display: inline;
+  cursor: pointer;
+  color: var(--amber);
+  background: var(--amber-subtle);
+  border-radius: 4px;
+  padding: 0.02em 0.3em;
+  text-decoration: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition:
+    background-color 100ms ease,
+    color 100ms ease;
+}
+.markdown-body :deep(.lily-ref::before) {
+  content: '¶';
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-right: 0.15em;
+}
+.markdown-body :deep(.lily-ref:hover),
+.markdown-body :deep(.lily-ref.lily-ref-active) {
+  background: var(--amber);
+  color: white;
+}
+.markdown-body :deep(.lily-ref.lily-ref-flash) {
+  animation: lily-ref-flash 1.2s ease;
+}
+@keyframes lily-ref-flash {
+  0%,
+  40% {
+    background: var(--amber);
+    color: white;
+  }
+  100% {
+    background: var(--amber-subtle);
+    color: var(--amber);
+  }
 }
 
 /* Admonitions */

@@ -145,6 +145,25 @@ function escapeHtml(s: string, encode = false): string {
 }
 
 /**
+ * Render a math expression to HTML with a visible diagnostic on failure.
+ *
+ * KaTeX's `throwOnError: false` silently paints only the broken tokens red and buries the
+ * reason in a `title` tooltip. Instead we render once strictly (`throwOnError: true`); on
+ * success we return that HTML, and on a `ParseError` we still show the best-effort partial
+ * render (so the good part of the equation is visible) followed by the exact error message
+ * (e.g. "KaTeX parse error: Undefined control sequence: \foo at position 3: …").
+ */
+function renderMath(text: string, displayMode: boolean): string {
+  try {
+    return katex.renderToString(text, { throwOnError: true, displayMode, macros })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    const partial = katex.renderToString(text, { throwOnError: false, displayMode, macros })
+    return `${partial}<div class="katex-error-msg" role="alert">${escapeHtml(message)}</div>`
+  }
+}
+
+/**
  * Mutates each token in `tokens` to add a `_sourceLine` property indicating which
  * 1-indexed source line the token starts on. Used by the renderer to emit
  * `data-source-line` attributes, which the preview uses to sync click-to-line with the editor.
@@ -224,6 +243,18 @@ function attr(token: Tokens.Generic): string {
 const sourceLineRenderer: RendererObject = {
   heading(token: Tokens.Heading) {
     return `<h${token.depth}${attr(token)}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`
+  },
+  link(token: Tokens.Link) {
+    const href = token.href || ''
+    const text = this.parser.parseInline(token.tokens)
+    // Highlight references (`[text](lily:hl-3)`) render as a chip with no real href, so they never
+    // navigate; WebNotesPane/MarkdownPreview intercept clicks on the data attribute instead.
+    if (href.startsWith('lily:')) {
+      const ref = href.slice('lily:'.length)
+      return `<a class="lily-ref" data-lily-ref="${escapeHtml(ref, true)}">${text}</a>`
+    }
+    const titleAttr = token.title ? ` title="${escapeHtml(token.title, true)}"` : ''
+    return `<a href="${escapeHtml(href)}"${titleAttr}>${text}</a>`
   },
   paragraph(token: Tokens.Paragraph) {
     // If the paragraph contains only an image, render the <figure> as a
@@ -400,11 +431,53 @@ sharedMarked.use({
       name: 'blockKatex',
       renderer(token: Tokens.Generic) {
         const a = attr(token)
-        return `<div${a}>${katex.renderToString(token.text, {
-          throwOnError: false,
-          displayMode: token.displayMode,
-          macros,
-        })}</div>\n`
+        // `katex-block` lets the preview target display-math blocks for highlighting
+        // (full-width, so the centered equation stays centered — see MarkdownPreview.vue).
+        return `<div${a} class="katex-block">${renderMath(token.text as string, token.displayMode as boolean)}</div>\n`
+      },
+    },
+    // Override marked-katex's inline renderer so inline `$…$` errors surface a diagnostic too.
+    // A block error message would break the inline flow, so on failure we render the raw source
+    // in red with the full KaTeX message in a hover tooltip (`title`).
+    {
+      name: 'inlineKatex',
+      renderer(token: Tokens.Generic) {
+        try {
+          return katex.renderToString(token.text as string, {
+            throwOnError: true,
+            displayMode: token.displayMode as boolean,
+            macros,
+          })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          return `<span class="katex-error-inline" title="${escapeHtml(message, true)}">${escapeHtml(token.text as string)}</span>`
+        }
+      },
+    },
+    // marked-katex-extension only recognises *block* display math when the `$$` delimiters sit
+    // on their own lines (`$$\n…\n$$`); a one-line `$$…$$` falls through to the inline rule and
+    // gets absorbed into a preceding paragraph, sharing its source line and rendering inline.
+    // This extension (a) registers a `start` so any `$$` opener at the head of a line interrupts
+    // the current paragraph, and (b) tokenizes a one-line `$$…$$` as its own block-level
+    // `blockKatex` token. Multi-line `$$\n…\n$$` still falls through to marked-katex's own
+    // block tokenizer (the `(?!\n)` guard rejects it here).
+    {
+      name: 'blockKatexBreak',
+      level: 'block' as const,
+      start(src: string) {
+        return src.match(/\n\$\$|\n\$\n/)?.index
+      },
+      tokenizer(src: string): Tokens.Generic | undefined {
+        const match = /^\$\$(?!\n)((?:\\[^]|[^\\])+?)\$\$(?:\n|$)/.exec(src)
+        if (match) {
+          return {
+            type: 'blockKatex',
+            raw: match[0],
+            text: match[1]!.trim(),
+            displayMode: true,
+          } as unknown as Tokens.Generic
+        }
+        return undefined
       },
     },
   ],

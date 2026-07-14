@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useSearchStore } from '@/stores/search'
+import { useWebAnnotationsStore } from '@/stores/webAnnotations'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import SettingsModal from '@/components/settings/SettingsModal.vue'
@@ -19,6 +20,7 @@ const auth = useAuthStore()
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
 const searchStore = useSearchStore()
+const webAnnotationsStore = useWebAnnotationsStore()
 const uiStore = useUiStore()
 const router = useRouter()
 
@@ -34,6 +36,7 @@ const showSettings = ref(false)
 async function signOut() {
   editorStore.$reset()
   filesStore.$reset()
+  webAnnotationsStore.$reset()
   await auth.signOut()
   router.replace({ name: 'login' })
 }

@@ -911,6 +911,22 @@ watch(
   },
 )
 
+// The web-annotation "insert reference" action asks the editor to drop a `[quote](lily:hl-x)`
+// link at the cursor. Insert at the current selection head and move the cursor after the text.
+watch(
+  () => store.insertTextRequest,
+  (req) => {
+    if (!req || req.documentId !== props.documentId || !view) return
+    store.insertTextRequest = null
+    const pos = view.state.selection.main.head
+    view.dispatch({
+      changes: { from: pos, insert: req.text },
+      selection: { anchor: pos + req.text.length },
+    })
+    view.focus()
+  },
+)
+
 onBeforeUnmount(() => {
   if (highlightTimer) clearTimeout(highlightTimer)
   if (yankFlashTimer) clearTimeout(yankFlashTimer)

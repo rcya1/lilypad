@@ -9,6 +9,19 @@ export interface WebDocMeta {
   title: string
 }
 
+/** Fixed palette of highlight colours; the client maps each to a paint style. */
+export type HighlightColor = 'amber' | 'green' | 'blue' | 'rose'
+
+/**
+ * Text anchors for a highlight, stored in `annotations.selectors`.
+ * Because the captured snapshot is immutable, `position` (character offsets into the
+ * snapshot body's text) resolves exactly; `quote` is kept for robustness / future re-capture.
+ */
+export interface HighlightSelectors {
+  quote: { exact: string; prefix: string; suffix: string }
+  position: { start: number; end: number }
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -62,6 +75,44 @@ export interface Database {
         }
         Relationships: []
       }
+      annotations: {
+        Row: {
+          id: string
+          entry_id: string
+          user_id: string
+          /** Short per-document reference id (e.g. "hl-3"), unique within an entry. */
+          local_id: string
+          color: HighlightColor
+          selectors: HighlightSelectors
+          /** Optional inline markdown note; null when the highlight has no note. */
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          entry_id: string
+          user_id: string
+          local_id: string
+          color?: HighlightColor
+          selectors: HighlightSelectors
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          entry_id?: string
+          user_id?: string
+          local_id?: string
+          color?: HighlightColor
+          selectors?: HighlightSelectors
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           user_id: string
@@ -91,3 +142,5 @@ export interface Database {
 /** Convenience aliases used throughout the files store instead of the long generic path. */
 export type EntryRow = Database['public']['Tables']['entries']['Row']
 export type EntryInsert = Database['public']['Tables']['entries']['Insert']
+export type AnnotationRow = Database['public']['Tables']['annotations']['Row']
+export type AnnotationInsert = Database['public']['Tables']['annotations']['Insert']

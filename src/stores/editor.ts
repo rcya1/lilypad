@@ -47,6 +47,12 @@ export const useEditorStore = defineStore('editor', () => {
   /** Set to a documentId to ask the editor to cancel its current line-flash highlight. */
   const clearHighlightRequest = ref<string | null>(null)
 
+  /**
+   * Pending request to insert text at the editor's cursor (used by the web-annotation
+   * "insert reference" action). TextEditor consumes and clears it after dispatching the edit.
+   */
+  const insertTextRequest = ref<{ documentId: string; text: string } | null>(null)
+
   /** ID of the tab in preview (single-click) mode; replaced by the next single-clicked file. */
   const previewDocumentId = ref<string | null>(null)
 
@@ -73,6 +79,11 @@ export const useEditorStore = defineStore('editor', () => {
   /** Asks TextEditor to cancel any active line-flash highlight for the named document. */
   function requestClearEditorHighlight(documentId: string) {
     clearHighlightRequest.value = documentId
+  }
+
+  /** Asks TextEditor to insert `text` at its current cursor position. */
+  function requestInsertText(documentId: string, text: string) {
+    insertTextRequest.value = { documentId, text }
   }
 
   /** Records the current editor cursor line for cross-pane sync. */
@@ -416,6 +427,8 @@ export const useEditorStore = defineStore('editor', () => {
     requestScrollToLine,
     clearHighlightRequest,
     requestClearEditorHighlight,
+    insertTextRequest,
+    requestInsertText,
     editorCursorLine,
     setEditorCursorLine,
     previewCursorLine,

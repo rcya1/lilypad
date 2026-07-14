@@ -24,7 +24,11 @@
       "Bash(git commit *)",
       "Bash(yarn --ignore-engines type-check)",
       "Bash(yarn --ignore-engines build)",
-      "Bash(yarn --ignore-engines build-only)"
+      "Bash(yarn --ignore-engines build-only)",
+      "Bash(npx oxlint *)",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier *)",
+      "Bash(grep *)"
     ]
   }
 }
