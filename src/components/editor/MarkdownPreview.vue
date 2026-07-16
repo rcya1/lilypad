@@ -744,27 +744,18 @@ watch(
 .markdown-body :deep(.lily-ref) {
   display: inline;
   cursor: pointer;
-  color: var(--amber);
-  background: var(--amber-subtle);
+  color: var(--text-primary);
+  background: var(--accent-subtle);
   border-radius: 4px;
   padding: 0.02em 0.3em;
   text-decoration: none;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-  transition:
-    background-color 100ms ease,
-    color 100ms ease;
-}
-.markdown-body :deep(.lily-ref::before) {
-  content: '¶';
-  font-size: 0.8em;
-  opacity: 0.7;
-  margin-right: 0.15em;
+  transition: background-color 100ms ease;
 }
 .markdown-body :deep(.lily-ref:hover),
 .markdown-body :deep(.lily-ref.lily-ref-active) {
-  background: var(--amber);
-  color: white;
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg));
 }
 .markdown-body :deep(.lily-ref.lily-ref-flash) {
   animation: lily-ref-flash 1.2s ease;
@@ -772,12 +763,10 @@ watch(
 @keyframes lily-ref-flash {
   0%,
   40% {
-    background: var(--amber);
-    color: white;
+    background: color-mix(in srgb, var(--accent) 30%, var(--bg));
   }
   100% {
-    background: var(--amber-subtle);
-    color: var(--amber);
+    background: var(--accent-subtle);
   }
 }
 

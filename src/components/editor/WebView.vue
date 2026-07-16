@@ -5,8 +5,8 @@
      and links to the notes pane (click a highlight → jump to its reference; notes chip → scroll
      the page here). Also intercepts in-frame link clicks so the frozen snapshot never navigates. -->
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
-import { StickyNote, Pencil, Trash2, Link2, Check } from 'lucide-vue-next'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { StickyNote, Pencil, Trash2, Link2, Check, Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import {
@@ -46,7 +46,13 @@ const DEFAULT_COLOR: HighlightColor = 'amber'
 // ── Selection toolbar + note popover (positioned in this component, over the iframe) ──────────
 const toolbar = ref<{ x: number; y: number } | null>(null)
 const popover = ref<{ id: string; x: number; y: number; editing: boolean } | null>(null)
+const toolbarEl = ref<HTMLDivElement | null>(null)
+const popoverEl = ref<HTMLDivElement | null>(null)
 const noteDraft = ref('')
+
+// Save shortcut is ⌘↵ on macOS, Ctrl+↵ elsewhere — label it to match the platform.
+const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform)
+const saveHint = isMac ? '⌘↵ to save' : 'Ctrl+↵ to save'
 // The selection range captured at mouseup, held until the user picks a colour.
 let pendingRange: Range | null = null
 
@@ -81,15 +87,19 @@ async function load(id: string) {
     return
   }
   blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
+  // Leave `loading` true here: the iframe hasn't parsed/painted the blob yet, so clearing it now
+  // would flash a blank white frame. onFrameLoad clears it once the snapshot is actually up.
   if (frame.value) frame.value.src = blobUrl
-  loading.value = false
 }
 
 /** Wire up the loaded snapshot: grab its document, attach listeners, load + paint highlights. */
 async function onFrameLoad() {
   frameDoc = frame.value?.contentDocument ?? null
   frameWin = (frame.value?.contentWindow as (Window & typeof globalThis) | null) ?? null
-  if (!frameDoc || !frameWin) return
+  if (!frameDoc || !frameWin) {
+    loading.value = false
+    return
+  }
 
   frameDoc.addEventListener('click', onFrameClick)
   frameDoc.addEventListener('mouseup', onFrameMouseUp)
@@ -98,6 +108,7 @@ async function onFrameLoad() {
 
   await anno.loadForEntry(props.documentId)
   repaint()
+  loading.value = false
 }
 
 // ── Coordinate mapping ────────────────────────────────────────────────────────────────────────
@@ -112,6 +123,27 @@ function toContainer(left: number, top: number): { x: number; y: number } {
   const cr = container.value?.getBoundingClientRect()
   if (!fr || !cr) return { x: left, y: top }
   return { x: fr.left - cr.left + left, y: fr.top - cr.top + top }
+}
+
+/**
+ * Nudge an already-positioned overlay (toolbar/popover) back inside the pane if it spills past an
+ * edge — the anchor is derived from a selection/highlight rect that can sit anywhere, so near the
+ * edges the centred toolbar or the drop-down popover would otherwise clip. Runs after the DOM
+ * updates so the element's real measured size is known, then adjusts the stored x/y in place.
+ */
+async function clampOverlay(
+  getEl: () => HTMLElement | null,
+  pos: { x: number; y: number } | null,
+): Promise<void> {
+  await nextTick()
+  const cont = container.value?.getBoundingClientRect()
+  const r = getEl()?.getBoundingClientRect()
+  if (!cont || !r || !pos) return
+  const margin = 8
+  if (r.left < cont.left + margin) pos.x += cont.left + margin - r.left
+  else if (r.right > cont.right - margin) pos.x += cont.right - margin - r.right
+  if (r.top < cont.top + margin) pos.y += cont.top + margin - r.top
+  else if (r.bottom > cont.bottom - margin) pos.y += cont.bottom - margin - r.bottom
 }
 
 // ── Painting (CSS Custom Highlight API) ─────────────────────────────────────────────────────────
@@ -188,41 +220,20 @@ function repaint() {
   }
 }
 
-// ── Caret hit-testing (find the highlight under a point) ─────────────────────────────────────────
-/** Resolve a point in the iframe viewport to a { node, offset } text caret. */
-function caretAt(x: number, y: number): { node: Node; offset: number } | null {
-  const d = frameDoc as
-    | (Document & {
-        caretPositionFromPoint?: (
-          x: number,
-          y: number,
-        ) => { offsetNode: Node; offset: number } | null
-        caretRangeFromPoint?: (x: number, y: number) => Range | null
-      })
-    | null
-  if (!d) return null
-  if (d.caretPositionFromPoint) {
-    const p = d.caretPositionFromPoint(x, y)
-    return p ? { node: p.offsetNode, offset: p.offset } : null
-  }
-  if (d.caretRangeFromPoint) {
-    const r = d.caretRangeFromPoint(x, y)
-    return r ? { node: r.startContainer, offset: r.startOffset } : null
-  }
-  return null
-}
-
-/** The highlight whose range contains the point (x, y) in iframe viewport coords, if any. */
+// ── Rect hit-testing (find the highlight under a point) ─────────────────────────────────────────
+/**
+ * The highlight whose *painted* box contains the point (x, y) in iframe viewport coords, if any.
+ * We test the range's own client rects rather than a caret hit-test: `caretPositionFromPoint`
+ * clamps a point past the end of a line to the nearest caret, so hovering the empty space to the
+ * right of the last word would otherwise land on a highlight that ends there. The client rects are
+ * the exact glyph boxes, so hovering only triggers over the actual highlighted text.
+ */
 function highlightAtPoint(x: number, y: number): Highlight | null {
-  const p = caretAt(x, y)
-  if (!p) return null
   for (const h of highlights.value) {
     const r = resolvedRanges.get(h.id)
     if (!r) continue
-    try {
-      if (r.comparePoint(p.node, p.offset) === 0) return h
-    } catch {
-      // comparePoint throws if the node is outside the range's document — ignore.
+    for (const rect of r.getClientRects()) {
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return h
     }
   }
   return null
@@ -258,6 +269,7 @@ function onFrameMouseUp() {
   pendingRange = range.cloneRange()
   const rect = range.getBoundingClientRect()
   toolbar.value = toContainer(rect.left + rect.width / 2, rect.top)
+  clampOverlay(() => toolbarEl.value, toolbar.value)
 }
 
 function onFrameClick(e: MouseEvent) {
@@ -296,6 +308,7 @@ function onFrameScroll() {
       const rect = r.getBoundingClientRect()
       const pos = toContainer(rect.left, rect.bottom + 6)
       popover.value = { ...popover.value, x: pos.x, y: pos.y }
+      clampOverlay(() => popoverEl.value, popover.value)
     }
   }
 }
@@ -352,6 +365,7 @@ function openPopover(h: Highlight, editing = false) {
   const pos = toContainer(rect.left, rect.bottom + 6)
   noteDraft.value = h.note
   popover.value = { id: h.id, x: pos.x, y: pos.y, editing: editing || !h.note }
+  clampOverlay(() => popoverEl.value, popover.value)
 }
 
 function startEditNote() {
@@ -363,6 +377,13 @@ function startEditNote() {
 async function saveNote() {
   if (!popover.value) return
   await anno.updateNote(popover.value.id, noteDraft.value.trim())
+  popover.value = { ...popover.value, editing: false }
+}
+
+/** Escape out of note editing: drop the draft and return to the rendered view. */
+function cancelEditNote() {
+  if (!popover.value) return
+  noteDraft.value = popoverHighlight.value?.note ?? ''
   popover.value = { ...popover.value, editing: false }
 }
 
@@ -393,6 +414,36 @@ function closeOverlays() {
   toolbar.value = null
   popover.value = null
   pendingRange = null
+}
+
+// Escape dismisses whichever overlay is open (popover first). Note-editing Escape is handled on the
+// textarea itself with `.stop`, so it cancels the edit before this window handler ever sees it.
+function onWindowKeyDown(e: KeyboardEvent) {
+  if (e.key !== 'Escape') return
+  if (popover.value) {
+    popover.value = null
+    if (anno.activeHighlightId) {
+      anno.setActiveHighlight(null)
+      repaint()
+    }
+  } else if (toolbar.value) {
+    toolbar.value = null
+  }
+}
+
+// Click-away: a mousedown anywhere in the parent document that lands outside the overlays closes
+// them. Clicks *inside* the snapshot iframe never reach here (they don't cross the frame boundary),
+// so opening a popover by clicking a highlight isn't immediately undone by this handler.
+function onWindowMouseDown(e: MouseEvent) {
+  const t = e.target as Node
+  if (toolbar.value && !toolbarEl.value?.contains(t)) toolbar.value = null
+  if (popover.value && !popoverEl.value?.contains(t)) {
+    popover.value = null
+    if (anno.activeHighlightId) {
+      anno.setActiveHighlight(null)
+      repaint()
+    }
+  }
 }
 
 // ── React to cross-pane requests ────────────────────────────────────────────────────────────────
@@ -445,6 +496,8 @@ function highlightViewportRect(id: string): {
   bottom: number
   frameTop: number
   frameBottom: number
+  frameLeft: number
+  frameRight: number
 } | null {
   if (!frameDoc?.body || !frame.value) return null
   let r = resolvedRanges.get(id)
@@ -463,13 +516,22 @@ function highlightViewportRect(id: string): {
     bottom: fr.top + rr.bottom,
     frameTop: fr.top,
     frameBottom: fr.bottom,
+    frameLeft: fr.left,
+    frameRight: fr.right,
   }
 }
 
 defineExpose({ highlightViewportRect })
 
+onMounted(() => {
+  window.addEventListener('keydown', onWindowKeyDown)
+  window.addEventListener('mousedown', onWindowMouseDown)
+})
+
 onBeforeUnmount(() => {
   if (hoverRaf) cancelAnimationFrame(hoverRaf)
+  window.removeEventListener('keydown', onWindowKeyDown)
+  window.removeEventListener('mousedown', onWindowMouseDown)
   revoke()
 })
 </script>
@@ -487,7 +549,8 @@ onBeforeUnmount(() => {
     <!-- Selection toolbar: colour swatches + add-note, anchored above the selection. -->
     <div
       v-if="toolbar"
-      class="absolute z-30 flex items-center gap-1 px-1.5 py-1 rounded-lg bg-surface border border-border shadow-lg -translate-x-1/2 -translate-y-full"
+      ref="toolbarEl"
+      class="overlay-pop absolute z-30 flex items-center gap-1 px-1.5 py-1 rounded-lg bg-surface border border-border shadow-lg -translate-x-1/2 -translate-y-full"
       :style="{ left: toolbar.x + 'px', top: toolbar.y - 8 + 'px' }"
     >
       <button
@@ -511,7 +574,8 @@ onBeforeUnmount(() => {
     <!-- Inline note popover for the active highlight. -->
     <div
       v-if="popover"
-      class="absolute z-30 w-72 max-w-[90%] rounded-lg bg-surface border border-border shadow-xl -translate-x-1/2"
+      ref="popoverEl"
+      class="overlay-pop absolute z-30 w-72 max-w-[90%] rounded-lg bg-surface border border-border shadow-xl -translate-x-1/2"
       :style="{ left: popover.x + 'px', top: popover.y + 'px' }"
     >
       <!-- Colour row + actions -->
@@ -561,8 +625,13 @@ onBeforeUnmount(() => {
             rows="3"
             placeholder="Write a note (markdown supported)…"
             class="w-full resize-y rounded border border-border-subtle bg-bg px-2 py-1.5 text-sm font-preview text-text-primary outline-none focus:border-accent"
+            @keydown.enter.meta.prevent="saveNote"
+            @keydown.enter.ctrl.prevent="saveNote"
+            @keydown.esc.stop.prevent="cancelEditNote"
+            v-focus
           />
-          <div class="flex justify-end mt-1.5">
+          <div class="flex items-center justify-between mt-1.5">
+            <span class="text-[11px] text-text-muted font-ui">{{ saveHint }}</span>
             <button
               class="flex items-center gap-1 h-6 px-2 rounded bg-accent text-white text-xs font-ui cursor-pointer hover:bg-accent-hover"
               @click="saveNote"
@@ -585,8 +654,9 @@ onBeforeUnmount(() => {
 
     <div
       v-if="loading"
-      class="absolute inset-0 flex items-center justify-center bg-bg text-sm text-text-muted"
+      class="absolute inset-0 flex items-center justify-center gap-2 bg-bg text-sm text-text-muted"
     >
+      <Loader2 :size="15" class="animate-spin" />
       Loading captured page…
     </div>
     <div
@@ -599,6 +669,21 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Overlays (selection toolbar, note popover) fade in so they don't pop abruptly. Only opacity is
+   animated — the elements rely on translate utilities for positioning, which a transform-based
+   animation would fight. */
+.overlay-pop {
+  animation: overlay-in 120ms ease-out;
+}
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .hl-note-body :deep(p) {
   margin: 0.25em 0;
 }

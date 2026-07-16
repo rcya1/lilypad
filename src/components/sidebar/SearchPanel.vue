@@ -1,7 +1,7 @@
 <!-- Full-text search UI: query input with regex/case-sensitivity toggles, grouped result snippets, and keyboard shortcuts. -->
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
-import { Search, X, Loader2 } from 'lucide-vue-next'
+import { Search, X, Loader2, ChevronRight, FileText } from 'lucide-vue-next'
 import { useSearchStore } from '@/stores/search'
 import { useFilesStore } from '@/stores/files'
 import type { SearchResult } from '@/stores/search'
@@ -59,11 +59,12 @@ function clearSearch() {
 const groupedResults = computed(() => {
   const groups = new Map<
     string,
-    { fileName: string; folderPath: string; results: SearchResult[] }
+    { fileId: string; fileName: string; folderPath: string; results: SearchResult[] }
   >()
   for (const result of searchStore.results) {
     if (!groups.has(result.fileId)) {
       groups.set(result.fileId, {
+        fileId: result.fileId,
         fileName: result.fileName,
         folderPath: result.folderPath,
         results: [],
@@ -73,6 +74,23 @@ const groupedResults = computed(() => {
   }
   return [...groups.values()]
 })
+
+// Total hit count across all files, shown in the results header.
+const totalMatches = computed(() => searchStore.results.length)
+
+// Per-file collapse state (by fileId). Reset whenever the query changes so a new search always
+// starts fully expanded.
+const collapsedFiles = ref(new Set<string>())
+watch(
+  () => searchStore.query,
+  () => (collapsedFiles.value = new Set()),
+)
+function toggleCollapse(fileId: string) {
+  const next = new Set(collapsedFiles.value)
+  if (next.has(fileId)) next.delete(fileId)
+  else next.add(fileId)
+  collapsedFiles.value = next
+}
 
 /**
  * The following three helpers split a result's snippet string into the
@@ -183,31 +201,66 @@ const isLoading = computed(() => filesStore.loading && !filesStore.indexReady)
     </div>
 
     <!-- Results -->
-    <div v-else-if="groupedResults.length > 0" class="flex-1 overflow-y-auto">
-      <div v-for="group in groupedResults" :key="group.fileName + group.folderPath" class="mb-1">
-        <!-- File header -->
-        <div class="px-3 pt-2 pb-0.5">
-          <span class="text-xs font-medium text-text-secondary truncate block">
-            {{ group.fileName }}
-          </span>
-          <span v-if="group.folderPath" class="text-xs text-text-muted truncate block">
-            {{ group.folderPath }}
-          </span>
-        </div>
+    <div v-else-if="groupedResults.length > 0" class="flex flex-1 flex-col overflow-hidden">
+      <!-- Result count summary -->
+      <div
+        class="shrink-0 px-3 py-1.5 border-b border-border-subtle text-[11px] font-ui text-text-muted"
+      >
+        {{ totalMatches }} {{ totalMatches === 1 ? 'result' : 'results' }} in
+        {{ groupedResults.length }} {{ groupedResults.length === 1 ? 'file' : 'files' }}
+      </div>
 
-        <!-- Snippet rows -->
-        <button
-          v-for="result in group.results"
-          :key="result.fileId + result.lineNumber"
-          class="w-full text-left px-3 py-1 hover:bg-surface-elevated cursor-pointer transition-colors duration-75"
-          @click="searchStore.openResult(result)"
-        >
-          <span class="text-xs font-mono text-text-muted leading-relaxed break-all">
-            <span>{{ snippetBefore(result) }}</span>
-            <span class="text-accent font-semibold">{{ snippetMatch(result) }}</span>
-            <span>{{ snippetAfter(result) }}</span>
-          </span>
-        </button>
+      <div class="flex-1 overflow-y-auto py-1">
+        <div v-for="group in groupedResults" :key="group.fileId" class="mb-0.5">
+          <!-- File header (click to collapse/expand this file's matches) -->
+          <button
+            class="sticky top-0 z-10 flex w-full items-center gap-1 bg-surface px-2 py-1 text-left transition-colors duration-75 hover:bg-surface-elevated cursor-pointer"
+            @click="toggleCollapse(group.fileId)"
+          >
+            <ChevronRight
+              :size="12"
+              class="shrink-0 text-text-muted transition-transform duration-100"
+              :class="collapsedFiles.has(group.fileId) ? '' : 'rotate-90'"
+            />
+            <FileText :size="13" class="shrink-0 text-text-secondary" />
+            <span class="truncate text-xs font-medium text-text-primary">{{ group.fileName }}</span>
+            <span
+              v-if="group.folderPath"
+              class="truncate text-[10px] text-text-muted"
+              :title="group.folderPath"
+            >
+              {{ group.folderPath }}
+            </span>
+            <span
+              class="ml-auto shrink-0 rounded-full bg-surface-overlay px-1.5 text-[10px] font-medium tabular-nums text-text-secondary"
+            >
+              {{ group.results.length }}
+            </span>
+          </button>
+
+          <!-- Snippet rows -->
+          <template v-if="!collapsedFiles.has(group.fileId)">
+            <button
+              v-for="result in group.results"
+              :key="result.fileId + result.lineNumber"
+              class="flex w-full items-baseline gap-2 py-0.5 pl-3 pr-2 text-left transition-colors duration-75 hover:bg-surface-elevated cursor-pointer"
+              @click="searchStore.openResult(result)"
+            >
+              <span
+                class="w-6 shrink-0 text-right text-[10px] font-mono tabular-nums text-text-muted"
+              >
+                {{ result.lineNumber }}
+              </span>
+              <span class="text-xs font-ui leading-snug text-text-secondary break-words">
+                <span>{{ snippetBefore(result) }}</span>
+                <span class="rounded-sm bg-accent-subtle px-0.5 font-semibold text-accent">{{
+                  snippetMatch(result)
+                }}</span>
+                <span>{{ snippetAfter(result) }}</span>
+              </span>
+            </button>
+          </template>
+        </div>
       </div>
     </div>
 

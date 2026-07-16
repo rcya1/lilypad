@@ -186,15 +186,22 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return true
   }
 
-  /** Update a highlight's colour. Mutates local state on success. */
+  /**
+   * Update a highlight's colour. Applies the change locally first (optimistic) so the repaint is
+   * instant, then persists to Supabase in the background and reverts if the write fails — otherwise
+   * every colour swap would visibly lag behind the network round-trip.
+   */
   async function updateColor(id: string, color: HighlightColor): Promise<boolean> {
+    const h = getById(id)
+    if (!h) return false
+    const previous = h.color
+    h.color = color
     const { error } = await supabase.from('annotations').update({ color }).eq('id', id)
     if (error) {
+      h.color = previous
       toast.addToast('Failed to update highlight.', 'error')
       return false
     }
-    const h = getById(id)
-    if (h) h.color = color
     return true
   }
 

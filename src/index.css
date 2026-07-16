@@ -2,15 +2,15 @@
 
 :root {
   --bg: #f4f8f4;
-  --surface: #eaf2ea;
+  --surface: #e5eee5;
   --tab-active-bg: #f0f5f0;
-  --surface-elevated: #deeade;
-  --surface-overlay: #d0e2d0;
-  --border: #b8cfb8;
-  --border-subtle: #d6e6d6;
-  --text-primary: #1e2a1e;
-  --text-secondary: #456045;
-  --text-muted: #789078;
+  --surface-elevated: #d6e5d6;
+  --surface-overlay: #c1d9c1;
+  --border: #8fb08f;
+  --border-subtle: #b1ccb1;
+  --text-primary: #1b271b;
+  --text-secondary: #3c563c;
+  --text-muted: #647c64;
   --accent: #3d7a3d;
   --accent-hover: #336833;
   --accent-subtle: #cce0cc;

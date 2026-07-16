@@ -1,7 +1,7 @@
 <!-- Modal for entering a URL to capture as a frozen web snapshot stored in Supabase. -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Globe, X } from 'lucide-vue-next'
+import { Globe, X, Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import type { EntryRow } from '@/types/database'
 
@@ -111,10 +111,11 @@ async function submit() {
             Cancel
           </button>
           <button
-            class="px-3 py-1.5 text-xs font-ui bg-accent text-white rounded hover:bg-accent/90 transition-colors duration-75 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+            class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-ui bg-accent text-white rounded hover:bg-accent-hover transition-colors duration-75 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
             :disabled="capturing"
             @click="submit"
           >
+            <Loader2 v-if="capturing" :size="13" class="animate-spin" />
             {{ capturing ? 'Capturing…' : 'Capture' }}
           </button>
         </div>

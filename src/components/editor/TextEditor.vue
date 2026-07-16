@@ -66,6 +66,7 @@ import {
 } from './cm/highlight'
 import { indentBullet, dedentBullet } from './cm/commands'
 import { findImageRefs } from '@/lib/image-refs'
+import { Pencil } from 'lucide-vue-next'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
@@ -954,7 +955,7 @@ onBeforeUnmount(() => {
       :x="imageContextMenu.x"
       :y="imageContextMenu.y"
     >
-      <ContextMenuItem @click="startImageRename">Rename image</ContextMenuItem>
+      <ContextMenuItem :icon="Pencil" @click="startImageRename">Rename image</ContextMenuItem>
     </ContextMenu>
 
     <!-- Inline image rename input (outside CM DOM so native selection works) -->

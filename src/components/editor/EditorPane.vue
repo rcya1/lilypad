@@ -247,6 +247,8 @@ onBeforeUnmount(() => {
             v-else-if="activeDocType === 'web'"
             :document-id="id"
             :is-active="id === activeId"
+            :is-vertical="isVertical"
+            :is-swapped="isSwapped"
             class="h-full"
           />
 

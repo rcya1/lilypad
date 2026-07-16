@@ -1,7 +1,7 @@
 <!-- Individual image or folder node in the images gallery with thumbnail, rename, drag-drop, and context menu. -->
 <script setup lang="ts">
 import { computed, ref, type WritableComputedRef } from 'vue'
-import { Folder, FolderOpen, Image } from 'lucide-vue-next'
+import { Folder, FolderOpen, Image, Pencil, Trash2 } from 'lucide-vue-next'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
 import { useFilesStore } from '@/stores/files'
@@ -37,7 +37,7 @@ const {
   close: closeContextMenu,
 } = useContextMenu()
 
-const paddingLeft = computed(() => `${12 + props.depth * 20}px`)
+const paddingLeft = computed(() => `${12 + props.depth * 24}px`)
 const isDir = computed(() => isDirectory(props.entry))
 // Resolved public URL from Supabase Storage; null for folders.
 const url = computed(() => (isDir.value ? null : filesStore.getImageUrl(props.entry.id)))
@@ -202,7 +202,7 @@ const { handleDelete } = useEntryDelete(
             v-for="i in depth"
             :key="i"
             class="absolute top-0 bottom-0 w-px bg-border pointer-events-none"
-            :style="{ left: (i - 1) * 20 + 22 + 'px' }"
+            :style="{ left: (i - 1) * 24 + 22 + 'px' }"
           />
 
           <!-- Before drop indicator -->
@@ -226,7 +226,7 @@ const { handleDelete } = useEntryDelete(
 
         <!-- Children with grid animation -->
         <div
-          class="grid transition-[grid-template-rows] duration-150 ease-in-out"
+          class="grid transition-[grid-template-rows] duration-100 ease-in-out"
           :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
         >
           <div class="overflow-hidden min-h-0">
@@ -274,7 +274,7 @@ const { handleDelete } = useEntryDelete(
           v-for="i in depth"
           :key="i"
           class="absolute top-0 bottom-0 w-px bg-border pointer-events-none"
-          :style="{ left: (i - 1) * 20 + 22 + 'px' }"
+          :style="{ left: (i - 1) * 24 + 22 + 'px' }"
         />
 
         <!-- Before drop indicator -->
@@ -304,16 +304,16 @@ const { handleDelete } = useEntryDelete(
     <ContextMenu v-if="contextMenuVisible" :x="contextMenuPos.x" :y="contextMenuPos.y">
       <!-- Multi-select mode: only Delete -->
       <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
-        <ContextMenuItem danger @click="handleDelete">
+        <ContextMenuItem :icon="Trash2" danger @click="handleDelete">
           Delete {{ filesStore.selectedIds.size }} items
         </ContextMenuItem>
       </template>
 
       <!-- Single-item menu -->
       <template v-else>
-        <ContextMenuItem @click="startRename">Rename</ContextMenuItem>
+        <ContextMenuItem :icon="Pencil" @click="startRename">Rename</ContextMenuItem>
         <div class="border-t border-border-subtle my-1" />
-        <ContextMenuItem danger @click="handleDelete">Delete</ContextMenuItem>
+        <ContextMenuItem :icon="Trash2" danger @click="handleDelete">Delete</ContextMenuItem>
       </template>
     </ContextMenu>
   </div>

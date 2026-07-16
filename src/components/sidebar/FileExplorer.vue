@@ -360,7 +360,7 @@ function onPendingDragEnd() {
   </div>
 
   <ContextMenu v-if="showEmptyContextMenu" :x="emptyContextMenuPos.x" :y="emptyContextMenuPos.y">
-    <ContextMenuItem @click="emptyAreaNewFile">New file</ContextMenuItem>
-    <ContextMenuItem @click="emptyAreaNewFolder">New folder</ContextMenuItem>
+    <ContextMenuItem :icon="FilePlus" @click="emptyAreaNewFile">New file</ContextMenuItem>
+    <ContextMenuItem :icon="FolderPlus" @click="emptyAreaNewFolder">New folder</ContextMenuItem>
   </ContextMenu>
 </template>

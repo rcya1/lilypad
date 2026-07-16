@@ -185,7 +185,7 @@ function onTabMouseDown(e: MouseEvent, id: string) {
           <PanelRightClose v-else :size="16" />
         </button>
       </template>
-      <template v-if="previewVisible">
+      <template v-if="previewVisible || store.activeDocument?.type === 'web'">
         <button
           class="rotate-btn flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
           :class="rotationClockwise ? 'rotate-cw' : 'rotate-ccw'"
@@ -197,7 +197,7 @@ function onTabMouseDown(e: MouseEvent, id: string) {
         </button>
         <button
           class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-          :title="isSwapped ? 'Move editor to primary position' : 'Swap editor and preview'"
+          :title="isSwapped ? 'Move primary panel back' : 'Swap the two panels'"
           @click="emit('toggle-swap')"
         >
           <ArrowLeftRight v-if="!isVertical" :size="16" />

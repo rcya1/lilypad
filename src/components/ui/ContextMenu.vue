@@ -12,7 +12,7 @@ defineExpose({ el: rootEl })
   <Teleport to="body">
     <div
       ref="rootEl"
-      class="fixed z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-36 font-ui"
+      class="fixed z-50 w-max min-w-[7.5rem] max-w-64 bg-bg border border-border rounded-lg shadow-lg py-1 font-ui"
       :style="{ left: x + 'px', top: y + 'px' }"
     >
       <slot />

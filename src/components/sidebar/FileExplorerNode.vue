@@ -3,7 +3,17 @@
 import { ref, computed, watch, type WritableComputedRef } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
-import { Folder, FolderOpen, FileText, File, Globe } from 'lucide-vue-next'
+import {
+  Folder,
+  FolderOpen,
+  FileText,
+  File,
+  Globe,
+  Pencil,
+  FilePlus,
+  FolderPlus,
+  Trash2,
+} from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
@@ -276,7 +286,7 @@ function onPendingDragEnd() {
 <template>
   <div>
     <!-- Rename input -->
-    <div v-if="isRenaming" class="py-0.5 px-2" :style="{ paddingLeft: depth * 20 + 12 + 'px' }">
+    <div v-if="isRenaming" class="py-0.5 px-2" :style="{ paddingLeft: depth * 24 + 12 + 'px' }">
       <input
         v-model="renameValue"
         class="w-full px-2 py-0.5 text-sm bg-bg border border-accent rounded outline-none text-text-primary font-ui"
@@ -309,7 +319,7 @@ function onPendingDragEnd() {
             ? 'ring-1 ring-inset ring-accent'
             : '',
         ]"
-        :style="{ paddingLeft: depth * 20 + 12 + 'px' }"
+        :style="{ paddingLeft: depth * 24 + 12 + 'px' }"
         draggable="true"
         @dragstart="onDragStart"
         @dragend="onDragEnd"
@@ -325,7 +335,7 @@ function onPendingDragEnd() {
           v-for="i in depth"
           :key="'guide-' + i"
           class="absolute top-0 bottom-0 w-px bg-border pointer-events-none"
-          :style="{ left: (i - 1) * 20 + 22 + 'px' }"
+          :style="{ left: (i - 1) * 24 + 22 + 'px' }"
         />
 
         <!-- Before drop indicator -->
@@ -366,7 +376,7 @@ function onPendingDragEnd() {
       <!-- Children (inside wrapper so the drop ring encompasses them) -->
       <div
         v-if="isDirectory(entry)"
-        class="grid transition-[grid-template-rows] duration-150 ease-in-out"
+        class="grid transition-[grid-template-rows] duration-100 ease-in-out"
         :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
       >
         <div class="overflow-hidden min-h-0">
@@ -403,24 +413,28 @@ function onPendingDragEnd() {
     <ContextMenu v-if="contextMenuVisible" :x="contextMenuPos.x" :y="contextMenuPos.y">
       <!-- Multi-select mode: only Delete -->
       <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
-        <ContextMenuItem danger @click="handleDelete">
+        <ContextMenuItem :icon="Trash2" danger @click="handleDelete">
           Delete {{ filesStore.selectedIds.size }} items
         </ContextMenuItem>
       </template>
 
       <!-- Single-item menu -->
       <template v-else>
-        <ContextMenuItem @click="startRename">Rename</ContextMenuItem>
+        <ContextMenuItem :icon="Pencil" @click="startRename">Rename</ContextMenuItem>
         <template v-if="isDirectory(entry)">
-          <ContextMenuItem @click="startNewChildFile">New file</ContextMenuItem>
-          <ContextMenuItem @click="startNewChildFolder">New folder</ContextMenuItem>
+          <ContextMenuItem :icon="FilePlus" @click="startNewChildFile">New file</ContextMenuItem>
+          <ContextMenuItem :icon="FolderPlus" @click="startNewChildFolder"
+            >New folder</ContextMenuItem
+          >
         </template>
         <template v-else>
-          <ContextMenuItem @click="startNewSiblingFile">New file</ContextMenuItem>
-          <ContextMenuItem @click="startNewSiblingFolder">New folder</ContextMenuItem>
+          <ContextMenuItem :icon="FilePlus" @click="startNewSiblingFile">New file</ContextMenuItem>
+          <ContextMenuItem :icon="FolderPlus" @click="startNewSiblingFolder"
+            >New folder</ContextMenuItem
+          >
         </template>
         <div class="border-t border-border-subtle my-1" />
-        <ContextMenuItem danger @click="handleDelete">Delete</ContextMenuItem>
+        <ContextMenuItem :icon="Trash2" danger @click="handleDelete">Delete</ContextMenuItem>
       </template>
     </ContextMenu>
   </div>
