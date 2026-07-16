@@ -485,6 +485,21 @@ sharedMarked.use({
 sharedMarked.use({
   extensions: [createImageSizeExtension((id) => activeImageResolver?.(id) ?? null)],
 })
+// Soften Setext (underline) headings: a line of text followed by a single `-`
+// underline normally becomes an <h2>, which mangles ordinary text the moment you
+// start an empty bullet list on the next line. Require at least two dashes (`--`)
+// before treating a `-` underline as a heading; `=` underlines are unchanged.
+// Returning `undefined` tells marked "no heading here" (falls through to paragraph);
+// returning `false` defers to marked's built-in lheading behavior.
+sharedMarked.use({
+  tokenizer: {
+    lheading(src: string) {
+      const match = /^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/.exec(src)
+      if (match && match[2] === '-') return undefined
+      return false
+    },
+  },
+})
 
 export function parseMarkdown(
   content: string,
