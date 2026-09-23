@@ -310,7 +310,7 @@ function onPendingDragEnd() {
       <div
         class="relative flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
         :class="[
-          isSelected || isCoveredBySelection
+          isSelected
             ? 'bg-surface-overlay text-text-primary'
             : isSelectedFolder
               ? 'bg-surface-elevated text-text-primary'

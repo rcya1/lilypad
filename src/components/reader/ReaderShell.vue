@@ -82,7 +82,7 @@ function onSelectHeading(id: string) {
           </button>
           <button
             v-if="reader.toc.length"
-            class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated"
+            class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated xl:hidden"
             aria-label="Table of contents"
             @click="tocOpen = true"
           >

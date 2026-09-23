@@ -183,7 +183,7 @@ const { handleDelete } = useEntryDelete(
         <div
           class="relative flex items-center gap-1.5 py-1 px-2 cursor-pointer rounded-sm transition-colors duration-100"
           :class="
-            isSelected || isCoveredBySelection
+            isSelected
               ? 'bg-surface-overlay text-text-primary'
               : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary'
           "
@@ -252,7 +252,7 @@ const { handleDelete } = useEntryDelete(
       <div
         class="relative flex items-center gap-2 py-1 px-2 cursor-grab rounded-sm transition-colors duration-100"
         :class="[
-          isSelected || isCoveredBySelection
+          isSelected
             ? 'bg-surface-overlay text-text-primary'
             : isHighlighted
               ? 'bg-accent/15 ring-1 ring-accent/30'

@@ -159,7 +159,7 @@ export const lilypadTheme = EditorView.theme({
     boxShadow: 'inset 2px 0 0 color-mix(in srgb, var(--amber) 45%, transparent)',
   },
   '.cm-math-mark': {
-    color: 'var(--amber)',
+    color: 'var(--text-muted)',
     fontWeight: '600',
   },
   '.cm-math-command': {

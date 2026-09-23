@@ -10,8 +10,8 @@ export function useEntrySelection(entry: Ref<Entry>) {
 
   /**
    * True when an ancestor of this entry is in the multi-select set.
-   * Used to apply the same selection highlight without explicitly selecting every descendant,
-   * and to prevent moving a subtree twice during a bulk drag.
+   * Covered entries act as selected for bulk delete/drag (preventing a subtree from being moved
+   * twice) but aren't highlighted — only the explicitly selected row is.
    */
   const isCoveredBySelection = computed(() => {
     if (filesStore.selectedIds.size === 0) return false

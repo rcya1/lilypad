@@ -6,8 +6,9 @@ import { ref, watch, inject, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { FileWarning, Monitor } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
-import { parseMarkdownWithToc } from '@/lib/markdown'
+import { parseMarkdownWithToc, type TocItem } from '@/lib/markdown'
 import { readerKey, ensureEntriesLoaded } from './context'
+import ReaderTocRail from './ReaderTocRail.vue'
 import 'katex/dist/katex.min.css'
 import '@/assets/markdown-body.css'
 
@@ -21,6 +22,9 @@ const status = ref<Status>('loading')
 const html = ref('')
 const wordCount = ref(0)
 const placeholderKind = ref<'pdf' | 'web'>('pdf')
+const toc = ref<TocItem[]>([])
+// Heading currently at the top of the viewport, highlighted in the wide-screen TOC rail.
+const activeHeadingId = ref<string | null>(null)
 const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
 
 // Monotonic token so a slow load() whose entryId changed mid-await can't overwrite newer state.
@@ -41,6 +45,29 @@ function scrollToHeading(id: string) {
   })
 }
 
+// A heading counts as "current" once its top has scrolled within this many px of the container top.
+const ACTIVE_HEADING_OFFSET = 32
+let scrollFrame = 0
+
+function updateActiveHeading() {
+  scrollFrame = 0
+  const container = scrollContainer.value
+  if (!container || toc.value.length === 0) return
+  const top = container.getBoundingClientRect().top + ACTIVE_HEADING_OFFSET
+  let active: string | null = toc.value[0]!.id
+  for (const item of toc.value) {
+    const el = container.querySelector('#' + CSS.escape(item.id))
+    if (!el) continue
+    if (el.getBoundingClientRect().top > top) break
+    active = item.id
+  }
+  activeHeadingId.value = active
+}
+
+function onScroll() {
+  if (!scrollFrame) scrollFrame = requestAnimationFrame(updateActiveHeading)
+}
+
 function backToNotes() {
   router.push({ name: 'reader-browser' })
 }
@@ -57,6 +84,8 @@ async function load() {
   status.value = 'loading'
   html.value = ''
   wordCount.value = 0
+  toc.value = []
+  activeHeadingId.value = null
   resetContext()
   // The view is reused across /read/a → /read/b; start each note at the top.
   if (scrollContainer.value) scrollContainer.value.scrollTop = 0
@@ -84,13 +113,15 @@ async function load() {
     const content =
       filesStore.getCached(props.entryId) ?? (await filesStore.downloadContent(props.entryId))
     if (token !== loadToken) return
-    const { html: rendered, toc } = parseMarkdownWithToc(content ?? '', (id) =>
+    const { html: rendered, toc: headings } = parseMarkdownWithToc(content ?? '', (id) =>
       filesStore.getImageUrl(id),
     )
     html.value = rendered
     wordCount.value = countWords(content ?? '')
+    toc.value = headings
+    activeHeadingId.value = headings[0]?.id ?? null
     if (reader) {
-      reader.toc = toc
+      reader.toc = headings
       reader.scrollToHeading = scrollToHeading
     }
     status.value = 'md'
@@ -108,11 +139,12 @@ watch(() => props.entryId, load, { immediate: true })
 onBeforeUnmount(() => {
   if (reader) reader.title = ''
   resetContext()
+  cancelAnimationFrame(scrollFrame)
 })
 </script>
 
 <template>
-  <div ref="scrollContainer" class="min-h-0 flex-1 overflow-y-auto bg-bg">
+  <div ref="scrollContainer" class="min-h-0 flex-1 overflow-y-auto bg-bg" @scroll="onScroll">
     <!-- Loading skeleton -->
     <div v-if="status === 'loading'" class="mx-auto max-w-[70ch] px-5 py-6">
       <div class="animate-pulse space-y-3">
@@ -124,20 +156,35 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Rendered markdown -->
-    <template v-else-if="status === 'md'">
-      <!-- scroll-mt on headings: the scroll container already starts below the app bar, so this
-           is just breathing room so a TOC jump doesn't pin the heading flush to the bar's edge. -->
-      <article
-        class="markdown-body mx-auto max-w-[70ch] px-5 py-6 font-preview text-[16px] leading-[1.7] text-text-primary [&_:is(h1,h2,h3,h4,h5,h6)]:scroll-mt-4"
-        v-html="html"
-      />
-      <div
-        v-if="wordCount > 0"
-        class="mx-auto max-w-[70ch] px-5 pb-[calc(env(safe-area-inset-bottom)+2rem)] text-right text-xs text-text-muted"
-      >
-        {{ wordCount.toLocaleString() }} words
+    <!-- Wide screens: three columns with the note centred and the TOC rail in the left margin.
+         font-preview on the grid so the 70ch middle column matches the article's own 70ch. -->
+    <div
+      v-else-if="status === 'md'"
+      class="font-preview text-[16px] xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,70ch)_minmax(0,1fr)]"
+    >
+      <aside v-if="toc.length" class="hidden font-ui xl:block">
+        <ReaderTocRail
+          :toc="toc"
+          :active-id="activeHeadingId"
+          class="sticky top-0 ml-auto max-h-[calc(100dvh-3.5rem)] w-60 overflow-y-auto pr-10"
+          @select="scrollToHeading"
+        />
+      </aside>
+      <div class="xl:col-start-2">
+        <!-- scroll-mt on headings: the scroll container already starts below the app bar, so this
+             is just breathing room so a TOC jump doesn't pin the heading flush to the bar's edge. -->
+        <article
+          class="markdown-body mx-auto max-w-[70ch] px-5 py-6 font-preview text-[16px] leading-[1.7] text-text-primary [&_:is(h1,h2,h3,h4,h5,h6)]:scroll-mt-4"
+          v-html="html"
+        />
+        <div
+          v-if="wordCount > 0"
+          class="mx-auto max-w-[70ch] px-5 pb-[calc(env(safe-area-inset-bottom)+2rem)] text-right font-ui text-xs text-text-muted"
+        >
+          {{ wordCount.toLocaleString() }} words
+        </div>
       </div>
-    </template>
+    </div>
 
     <!-- Image -->
     <div v-else-if="status === 'image'" class="px-4 py-6">
