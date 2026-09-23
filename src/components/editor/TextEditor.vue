@@ -50,6 +50,7 @@ import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, StateEffect, StateField, Compartment, type Range } from '@codemirror/state'
 import { Decoration, type DecorationSet, keymap } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
+import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { search, searchKeymap } from '@codemirror/search'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
 import { useEditorStore } from '@/stores/editor'
@@ -65,6 +66,7 @@ import {
   yankFlashField,
 } from './cm/highlight'
 import { indentBullet, dedentBullet } from './cm/commands'
+import { latexMath, latexEditorExtensions } from './cm/latex'
 import { findImageRefs } from '@/lib/image-refs'
 import { Pencil } from 'lucide-vue-next'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
@@ -754,7 +756,11 @@ onMounted(() => {
         fontSizeCompartment.of(
           EditorView.theme({ '&': { fontSize: `${uiStore.editorFontSize}px` } }),
         ),
-        markdown(),
+        markdown({ extensions: [latexMath] }),
+        latexEditorExtensions,
+        // basicSetup registers defaultHighlightStyle only as a *fallback*, which switches off
+        // once any other highlighter (the LaTeX one above) is present — so register it directly.
+        syntaxHighlighting(defaultHighlightStyle),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             store.updateContent(props.documentId, update.state.doc.toString())

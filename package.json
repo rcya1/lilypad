@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.5.0",
+    "@lezer/highlight": "^1.2.3",
+    "@lezer/markdown": "^1.6.3",
     "@replit/codemirror-vim": "^6.3.0",
     "@sparticuz/chromium": "149.0.0",
     "@supabase/supabase-js": "^2.98.0",
