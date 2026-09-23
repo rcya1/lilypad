@@ -1,6 +1,6 @@
 // Unit tests for parseMarkdown — focused on source-line annotation correctness across block types.
 import { describe, it, expect } from 'vitest'
-import { parseMarkdown } from './markdown'
+import { parseMarkdown, parseMarkdownWithToc } from './markdown'
 
 /** Extract all data-source-line values from HTML in order of appearance */
 function extractSourceLines(html: string): { tag: string; line: number }[] {
@@ -60,6 +60,60 @@ describe('source line annotation — basic blocks', () => {
   it('annotates tables', () => {
     const html = parseMarkdown('text\n\n| a | b |\n| - | - |\n| 1 | 2 |\n')
     expect(lineFor(html, 'table')).toBe(3)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Heading ids + table of contents
+// ---------------------------------------------------------------------------
+
+describe('heading ids', () => {
+  it('renders GitHub-style id slugs on headings', () => {
+    const html = parseMarkdown('# Metric Spaces\n')
+    expect(html).toContain('<h1 id="metric-spaces"')
+  })
+
+  it('strips punctuation and lowercases in slugs', () => {
+    const html = parseMarkdown('## Theorem 1.2: Convergence!\n')
+    expect(html).toContain('id="theorem-12-convergence"')
+  })
+
+  it('deduplicates repeated headings within one document', () => {
+    const html = parseMarkdown('## A\n\n## A\n')
+    expect(html).toContain('id="a"')
+    expect(html).toContain('id="a-1"')
+  })
+
+  it('does not leak dedupe state between separate parses', () => {
+    parseMarkdown('## A\n')
+    const html = parseMarkdown('## A\n')
+    // A fresh document must slug the first "A" as "a", not "a-1".
+    expect(html).toContain('id="a"')
+    expect(html).not.toContain('id="a-1"')
+  })
+})
+
+describe('parseMarkdownWithToc', () => {
+  it('collects headings in document order with depth and text', () => {
+    const { toc } = parseMarkdownWithToc('# Intro\n\n## Definitions\n\n### Metric spaces\n')
+    expect(toc).toEqual([
+      { depth: 1, text: 'Intro', id: 'intro' },
+      { depth: 2, text: 'Definitions', id: 'definitions' },
+      { depth: 3, text: 'Metric spaces', id: 'metric-spaces' },
+    ])
+  })
+
+  it('TOC ids match the ids rendered into the HTML', () => {
+    const { html, toc } = parseMarkdownWithToc('## A\n\n## A\n')
+    for (const item of toc) {
+      expect(html).toContain(`id="${item.id}"`)
+    }
+    expect(toc.map((t) => t.id)).toEqual(['a', 'a-1'])
+  })
+
+  it('returns an empty TOC for content with no headings', () => {
+    const { toc } = parseMarkdownWithToc('just a paragraph\n')
+    expect(toc).toEqual([])
   })
 })
 

@@ -242,7 +242,12 @@ function attr(token: Tokens.Generic): string {
  */
 const sourceLineRenderer: RendererObject = {
   heading(token: Tokens.Heading) {
-    return `<h${token.depth}${attr(token)}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`
+    // Slug is pre-assigned per top-level heading in parseMarkdownWithToc so the id here and the
+    // TOC entry share one slugger pass (see slugify). Nested headings carry no slug → no id.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const slug = (token as any)._slug as string | undefined
+    const idAttr = slug ? ` id="${escapeHtml(slug, true)}"` : ''
+    return `<h${token.depth}${idAttr}${attr(token)}>${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`
   },
   link(token: Tokens.Link) {
     const href = token.href || ''
@@ -501,12 +506,72 @@ sharedMarked.use({
   },
 })
 
+/** A single entry in a document's table of contents, one per top-level heading. */
+export interface TocItem {
+  /** Heading level, 1–6. */
+  depth: number
+  /** Plain heading text (the token's raw text). */
+  text: string
+  /** GitHub-style slug; matches the `id` rendered onto the heading. */
+  id: string
+}
+
+// Per-parse slug dedupe counts, cleared at the top of each parse (same lifecycle as
+// activeImageResolver) so slugs never leak between documents.
+const slugCounts = new Map<string, number>()
+
+/**
+ * GitHub-style heading slug: lowercase, spaces→hyphens, strip anything but [a-z0-9-_].
+ * Repeats within one document get `-1`, `-2`, … suffixes. Relies on `slugCounts` being cleared
+ * once per parse; every heading must be slugged exactly once so the counter stays accurate.
+ */
+function slugify(text: string): string {
+  const base = text
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-_]/g, '')
+  const seen = slugCounts.get(base) ?? 0
+  slugCounts.set(base, seen + 1)
+  return seen === 0 ? base : `${base}-${seen}`
+}
+
+/**
+ * Parse markdown to HTML and, in the same pass, collect a table of contents from the top-level
+ * headings. Each heading is slugged once here and the slug is stashed on the token so the renderer
+ * emits the identical `id` — the TOC ids and the rendered ids can never drift.
+ *
+ * @param content       - Raw markdown string to parse.
+ * @param imageResolver - Optional callback to resolve `img:<uuid>` hrefs to URLs.
+ * @returns             The rendered HTML and the ordered list of heading TOC items.
+ */
+export function parseMarkdownWithToc(
+  content: string,
+  imageResolver?: (imageId: string) => string | null,
+): { html: string; toc: TocItem[] } {
+  activeImageResolver = imageResolver
+  slugCounts.clear()
+  const tokens = sharedMarked.lexer(content)
+  annotateSourceLines(tokens, 0)
+
+  const toc: TocItem[] = []
+  for (const token of tokens) {
+    if (token.type !== 'heading') continue
+    const heading = token as Tokens.Heading
+    const slug = slugify(heading.text)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(heading as any)._slug = slug
+    toc.push({ depth: heading.depth, text: heading.text, id: slug })
+  }
+
+  const html = sharedMarked.parser(tokens)
+  return { html, toc }
+}
+
+/** Parse markdown to HTML. Thin wrapper over parseMarkdownWithToc that discards the TOC. */
 export function parseMarkdown(
   content: string,
   imageResolver?: (imageId: string) => string | null,
 ): string {
-  activeImageResolver = imageResolver
-  const tokens = sharedMarked.lexer(content)
-  annotateSourceLines(tokens, 0)
-  return sharedMarked.parser(tokens)
+  return parseMarkdownWithToc(content, imageResolver).html
 }

@@ -1,8 +1,15 @@
-// Vue Router config: two routes (login + app shell) with an auth guard that defers while loading.
+// Vue Router config: login + desktop app shell + mobile reader, with an auth guard that defers
+// while loading and a small-viewport redirect from the desktop app to the reader.
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginPage from '@/components/auth/LoginPage.vue'
 import AppShell from '@/components/AppShell.vue'
+import ReaderShell from '@/components/reader/ReaderShell.vue'
+import ReaderBrowser from '@/components/reader/ReaderBrowser.vue'
+import ReaderDocument from '@/components/reader/ReaderDocument.vue'
 import { useAuthStore } from '@/stores/auth'
+
+// Below this viewport width, navigating to the desktop app route redirects to the reader.
+const MOBILE_BREAKPOINT = 768
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +23,14 @@ const router = createRouter({
       path: '/',
       name: 'app',
       component: AppShell,
+    },
+    {
+      path: '/read',
+      component: ReaderShell,
+      children: [
+        { path: '', name: 'reader-browser', component: ReaderBrowser },
+        { path: ':entryId', name: 'reader-document', component: ReaderDocument, props: true },
+      ],
     },
   ],
 })
@@ -34,6 +49,12 @@ router.beforeEach((to) => {
   // Redirect already-authed users away from the login page.
   if (auth.session && to.name === 'login') {
     return { name: 'app' }
+  }
+
+  // Small viewports get the mobile reader instead of the desktop app. `?desktop=1` opts out.
+  // This is the entire "mobile detection" — no user-agent sniffing; /read stays reachable by URL.
+  if (to.name === 'app' && window.innerWidth < MOBILE_BREAKPOINT && to.query.desktop !== '1') {
+    return { name: 'reader-browser' }
   }
 })
 

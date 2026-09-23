@@ -7,6 +7,9 @@ import { useUiStore } from '@/stores/ui'
 import { useWebAnnotationsStore } from '@/stores/webAnnotations'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
+// Shared markdown typography (single source of truth, also used by the mobile reader). The
+// editor-sync interaction styles + card shadow stay in this component's scoped block below.
+import '@/assets/markdown-body.css'
 
 const props = defineProps<{ documentId: string }>()
 
@@ -499,193 +502,6 @@ watch(
   width: auto;
 }
 
-/* Headings */
-.markdown-body :deep(h1),
-.markdown-body :deep(h2),
-.markdown-body :deep(h3),
-.markdown-body :deep(h4),
-.markdown-body :deep(h5),
-.markdown-body :deep(h6) {
-  font-family: var(--font-family-preview);
-  font-weight: 600;
-  line-height: 1.3;
-  margin-top: 1.1em;
-  margin-bottom: 0.5em;
-  color: var(--text-primary);
-}
-
-.markdown-body :deep(h1):first-child,
-.markdown-body :deep(h2):first-child,
-.markdown-body :deep(h3):first-child,
-.markdown-body :deep(h4):first-child,
-.markdown-body :deep(h5):first-child,
-.markdown-body :deep(h6):first-child {
-  margin-top: 0;
-}
-
-.markdown-body :deep(h1) {
-  font-size: 1.75rem;
-  border-bottom: 1px solid var(--text-primary);
-  padding-bottom: 0.3em;
-  margin-top: 0;
-}
-.markdown-body :deep(h2) {
-  font-size: 1.5rem;
-  border-bottom: 1px solid var(--text-primary);
-  padding-bottom: 0.2em;
-}
-.markdown-body :deep(h3) {
-  font-size: 1.25rem;
-  border-bottom: 1px solid var(--text-primary);
-  padding-bottom: 0.15em;
-}
-.markdown-body :deep(h4) {
-  font-size: 1.1rem;
-  border-bottom: 1px solid var(--text-primary);
-  padding-bottom: 0.15em;
-}
-.markdown-body :deep(h5),
-.markdown-body :deep(h6) {
-  font-size: 1rem;
-}
-
-/* Paragraphs & spacing */
-.markdown-body :deep(p) {
-  margin: 0.45em 0;
-}
-
-/* Links */
-.markdown-body :deep(a) {
-  color: var(--accent);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.markdown-body :deep(a:hover) {
-  opacity: 0.8;
-}
-
-/* Inline code */
-.markdown-body :deep(code) {
-  font-family: var(--font-family-mono);
-  font-size: 0.85em;
-  background: var(--surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: 3px;
-  padding: 0.1em 0.35em;
-  color: var(--text-primary);
-}
-
-/* Code blocks */
-.markdown-body :deep(pre) {
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  padding: 14px 16px;
-  overflow-x: auto;
-  margin: 1em 0;
-}
-.markdown-body :deep(pre code) {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 0.82rem;
-  line-height: 1.6;
-}
-
-/* Blockquotes */
-.markdown-body :deep(blockquote) {
-  border-left: 3px solid var(--border);
-  margin: 1em 0;
-  padding: 0.4em 1em;
-  color: var(--text-secondary);
-}
-.markdown-body :deep(blockquote p) {
-  margin: 0;
-}
-
-/* Lists */
-.markdown-body :deep(ul),
-.markdown-body :deep(ol) {
-  padding-left: 2em;
-  margin-top: 0.15em;
-  margin-bottom: 0.75em;
-}
-.markdown-body :deep(ul) {
-  list-style-type: disc;
-}
-.markdown-body :deep(ol) {
-  list-style-type: decimal;
-}
-.markdown-body :deep(ul ul) {
-  list-style-type: circle;
-}
-.markdown-body :deep(ul ul ul) {
-  list-style-type: square;
-}
-.markdown-body :deep(li) {
-  margin: 0.2em 0;
-}
-.markdown-body :deep(li > ul),
-.markdown-body :deep(li > ol) {
-  margin: 0.1em 0;
-}
-
-/* Tables */
-.markdown-body :deep(table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
-  font-size: 0.9em;
-}
-.markdown-body :deep(th) {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 6px 12px;
-  font-weight: 600;
-  text-align: left;
-}
-.markdown-body :deep(td) {
-  border: 1px solid var(--border-subtle);
-  padding: 6px 12px;
-}
-.markdown-body :deep(tr:nth-child(even) td) {
-  background: var(--surface);
-}
-
-/* Horizontal rule */
-.markdown-body :deep(hr) {
-  border: none;
-  border-top: 1px solid var(--border-subtle);
-  margin: 1.5em 0;
-}
-
-/* Images */
-.markdown-body :deep(img) {
-  max-width: 100%;
-  border-radius: 4px;
-}
-
-.markdown-body :deep(.image-container) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 1.5em auto;
-}
-
-.markdown-body :deep(.image-container img) {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-}
-
-.markdown-body :deep(.image-container figcaption) {
-  margin-top: 0.5em;
-  font-size: 0.85em;
-  color: var(--text-muted);
-  font-style: italic;
-  text-align: center;
-}
-
 /* Image containers — ring on the image, background covers the whole figure */
 .markdown-body :deep(figure.image-container.preview-hover img),
 .markdown-body :deep(figure.image-container.preview-selected img) {
@@ -695,11 +511,6 @@ watch(
 
 .markdown-body :deep(figure.image-container.preview-hover.preview-selected img) {
   box-shadow: 0 0 0 6px var(--surface-overlay);
-}
-
-/* KaTeX display blocks */
-.markdown-body :deep(.katex-display) {
-  margin: 1em 0;
 }
 
 /* Display-math blocks keep full width when highlighted so the equation stays centered.
@@ -714,33 +525,9 @@ watch(
   box-shadow: none;
 }
 
-/* LaTeX error diagnostics */
-.markdown-body :deep(.katex-error-msg) {
-  margin-top: 0.5em;
-  padding: 0.4em 0.7em;
-  border-left: 3px solid #c0392b;
-  border-radius: 4px;
-  background: rgba(192, 57, 43, 0.08);
-  color: #c0392b;
-  font-family: var(--font-family-mono);
-  font-size: 0.72em;
-  line-height: 1.4;
-  text-align: left;
-  white-space: pre-wrap;
-  overflow-x: auto;
-}
-
-.markdown-body :deep(.katex-error-inline) {
-  color: #c0392b;
-  background: rgba(192, 57, 43, 0.08);
-  border-radius: 3px;
-  padding: 0 0.2em;
-  text-decoration: underline wavy #c0392b;
-  text-underline-offset: 2px;
-  cursor: help;
-}
-
-/* Highlight-reference chips (web documents): [text](lily:hl-3) */
+/* Highlight-reference chips (web documents): [text](lily:hl-3). Kept scoped — only web-doc notes
+   contain these, and the hover/active/flash states are driven by cross-pane annotation interaction,
+   which the reader doesn't have. */
 .markdown-body :deep(.lily-ref) {
   display: inline;
   cursor: pointer;
@@ -768,58 +555,5 @@ watch(
   100% {
     background: var(--accent-subtle);
   }
-}
-
-/* Admonitions */
-.markdown-body :deep(.admonition) {
-  border-radius: 6px;
-  border-left: 3px solid var(--border);
-  background: var(--surface);
-  margin: 1.25em 0;
-  overflow: hidden;
-}
-
-.markdown-body :deep(.admonition-title) {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  font-weight: 600;
-  background: var(--surface-elevated);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.markdown-body :deep(.admonition-body) {
-  padding: 10px 14px;
-}
-.markdown-body :deep(.admonition-body > p:first-child) {
-  margin-top: 0;
-}
-.markdown-body :deep(.admonition-body > p:last-child) {
-  margin-bottom: 0;
-}
-
-/* Admonition type colours */
-.markdown-body :deep(.admonition-info) {
-  border-left-color: #4a9a9a;
-}
-.markdown-body :deep(.admonition-info .admonition-title) {
-  color: #4a9a9a;
-}
-
-.markdown-body :deep(.admonition-definition) {
-  border-left-color: var(--amber);
-}
-.markdown-body :deep(.admonition-definition .admonition-title) {
-  color: var(--amber);
-}
-
-.markdown-body :deep(.admonition-theorem),
-.markdown-body :deep(.admonition-proposition) {
-  border-left-color: var(--accent);
-}
-.markdown-body :deep(.admonition-theorem .admonition-title),
-.markdown-body :deep(.admonition-proposition .admonition-title) {
-  color: var(--accent);
 }
 </style>
