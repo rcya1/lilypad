@@ -111,6 +111,25 @@ describe('parseMarkdownWithToc', () => {
     expect(toc.map((t) => t.id)).toEqual(['a', 'a-1'])
   })
 
+  it('never emits an empty id for headings with no slug-able characters', () => {
+    const { html, toc } = parseMarkdownWithToc('## ???\n\n## 日本語\n')
+    expect(toc.map((t) => t.id)).toEqual(['section', 'section-1'])
+    expect(html).toContain('id="section"')
+    expect(html).toContain('id="section-1"')
+  })
+
+  it('suffixed slugs do not collide with a heading that slugs to the same text', () => {
+    const { toc } = parseMarkdownWithToc('## A\n\n## A-1\n\n## A\n')
+    const ids = toc.map((t) => t.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toEqual(['a', 'a-1', 'a-2'])
+  })
+
+  it('TOC text is plain text, not raw inline markdown', () => {
+    const { toc } = parseMarkdownWithToc('## **Bold** and `code` <b>x</b>\n')
+    expect(toc[0]!.text).toBe('Bold and code x')
+  })
+
   it('returns an empty TOC for content with no headings', () => {
     const { toc } = parseMarkdownWithToc('just a paragraph\n')
     expect(toc).toEqual([])

@@ -4,12 +4,16 @@ import { onMounted } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import ReaderTreeNode from './ReaderTreeNode.vue'
+import { ensureEntriesLoaded } from './context'
 
 const filesStore = useFilesStore()
 
+// Kick off the fetch during setup (not onMounted) so `loading` is already true on first render —
+// otherwise the empty state flashes for a frame. No-op if the desktop shell already loaded them.
+ensureEntriesLoaded()
+
 onMounted(() => {
-  // The desktop shell may have already loaded these in the same session; only fetch if empty.
-  if (filesStore.entries.length === 0) filesStore.fetchEntries()
+  document.title = 'Lilypad'
 })
 </script>
 

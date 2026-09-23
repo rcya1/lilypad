@@ -7,7 +7,7 @@ import { useRouter } from 'vue-router'
 import { FileWarning, Monitor } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import { parseMarkdownWithToc } from '@/lib/markdown'
-import { readerKey } from './context'
+import { readerKey, ensureEntriesLoaded } from './context'
 import 'katex/dist/katex.min.css'
 import '@/assets/markdown-body.css'
 
@@ -41,6 +41,10 @@ function scrollToHeading(id: string) {
   })
 }
 
+function backToNotes() {
+  router.push({ name: 'reader-browser' })
+}
+
 function resetContext() {
   if (!reader) return
   reader.toc = []
@@ -53,12 +57,15 @@ async function load() {
   html.value = ''
   wordCount.value = 0
   resetContext()
+  // The view is reused across /read/a → /read/b; start each note at the top.
+  if (scrollContainer.value) scrollContainer.value.scrollTop = 0
 
-  if (filesStore.entries.length === 0) await filesStore.fetchEntries()
+  await ensureEntriesLoaded()
   if (token !== loadToken) return
 
   const entry = filesStore.getEntry(props.entryId)
-  if (!entry) {
+  // Folder ids are valid entries but not readable notes — treat them as not found.
+  if (!entry || entry.kind !== 'document') {
     status.value = 'notfound'
     if (reader) reader.title = 'Not found'
     document.title = 'Not found · Lilypad'
@@ -114,8 +121,10 @@ onBeforeUnmount(() => {
 
     <!-- Rendered markdown -->
     <template v-else-if="status === 'md'">
+      <!-- scroll-mt on headings: the scroll container already starts below the app bar, so this
+           is just breathing room so a TOC jump doesn't pin the heading flush to the bar's edge. -->
       <article
-        class="markdown-body mx-auto max-w-[70ch] px-5 py-6 font-preview text-[16px] leading-[1.7] text-text-primary"
+        class="markdown-body mx-auto max-w-[70ch] px-5 py-6 font-preview text-[16px] leading-[1.7] text-text-primary [&_:is(h1,h2,h3,h4,h5,h6)]:scroll-mt-4"
         v-html="html"
       />
       <div
@@ -148,13 +157,22 @@ onBeforeUnmount(() => {
             : 'PDFs open in the desktop app'
         }}
       </p>
+      <button
+        class="min-h-11 rounded-lg px-4 text-sm text-accent active:bg-surface-elevated"
+        @click="backToNotes"
+      >
+        Back to notes
+      </button>
     </div>
 
     <!-- Not found -->
     <div v-else class="flex flex-col items-center gap-3 px-6 py-24 text-center">
       <FileWarning :size="40" class="text-text-muted" />
       <p class="text-sm text-text-secondary">Note not found</p>
-      <button class="text-sm text-accent" @click="router.push({ name: 'reader-browser' })">
+      <button
+        class="min-h-11 rounded-lg px-4 text-sm text-accent active:bg-surface-elevated"
+        @click="backToNotes"
+      >
         Back to notes
       </button>
     </div>

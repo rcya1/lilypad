@@ -510,30 +510,59 @@ sharedMarked.use({
 export interface TocItem {
   /** Heading level, 1–6. */
   depth: number
-  /** Plain heading text (the token's raw text). */
+  /** Plain heading text for display (inline markdown flattened; the slug uses the raw text). */
   text: string
   /** GitHub-style slug; matches the `id` rendered onto the heading. */
   id: string
 }
 
-// Per-parse slug dedupe counts, cleared at the top of each parse (same lifecycle as
-// activeImageResolver) so slugs never leak between documents.
+// Per-parse slug state, cleared at the top of each parse (same lifecycle as activeImageResolver)
+// so slugs never leak between documents. `slugCounts` tracks repeats of each base slug;
+// `usedSlugs` holds every slug already emitted so a suffixed slug can't collide with a heading
+// whose own text slugs to the same thing (e.g. `## A`, `## A`, `## A-1`).
 const slugCounts = new Map<string, number>()
+const usedSlugs = new Set<string>()
+
+// Base slug for headings with no [a-z0-9-_] characters at all (pure punctuation, non-Latin
+// script) — an empty id can't be anchored, and `querySelector('#')` throws.
+const EMPTY_SLUG_FALLBACK = 'section'
 
 /**
  * GitHub-style heading slug: lowercase, spaces→hyphens, strip anything but [a-z0-9-_].
- * Repeats within one document get `-1`, `-2`, … suffixes. Relies on `slugCounts` being cleared
+ * Repeats within one document get `-1`, `-2`, … suffixes. Relies on the slug state being cleared
  * once per parse; every heading must be slugged exactly once so the counter stays accurate.
  */
 function slugify(text: string): string {
-  const base = text
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-_]/g, '')
-  const seen = slugCounts.get(base) ?? 0
+  const base =
+    text
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-_]/g, '') || EMPTY_SLUG_FALLBACK
+  let seen = slugCounts.get(base) ?? 0
+  let slug = seen === 0 ? base : `${base}-${seen}`
+  while (usedSlugs.has(slug)) {
+    seen++
+    slug = `${base}-${seen}`
+  }
   slugCounts.set(base, seen + 1)
-  return seen === 0 ? base : `${base}-${seen}`
+  usedSlugs.add(slug)
+  return slug
+}
+
+/**
+ * Flattens a heading's inline tokens to display text for the TOC, so `## **Bold** \`code\``
+ * shows as "Bold code" rather than raw markdown. Raw HTML tags are dropped; math keeps its TeX.
+ */
+function inlinePlainText(tokens: Token[] | undefined): string {
+  if (!tokens) return ''
+  let out = ''
+  for (const t of tokens) {
+    if (t.type === 'html') continue
+    if ('tokens' in t && Array.isArray(t.tokens)) out += inlinePlainText(t.tokens)
+    else if ('text' in t && typeof t.text === 'string') out += t.text
+  }
+  return out
 }
 
 /**
@@ -551,6 +580,7 @@ export function parseMarkdownWithToc(
 ): { html: string; toc: TocItem[] } {
   activeImageResolver = imageResolver
   slugCounts.clear()
+  usedSlugs.clear()
   const tokens = sharedMarked.lexer(content)
   annotateSourceLines(tokens, 0)
 
@@ -561,7 +591,11 @@ export function parseMarkdownWithToc(
     const slug = slugify(heading.text)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(heading as any)._slug = slug
-    toc.push({ depth: heading.depth, text: heading.text, id: slug })
+    toc.push({
+      depth: heading.depth,
+      text: inlinePlainText(heading.tokens).trim() || heading.text,
+      id: slug,
+    })
   }
 
   const html = sharedMarked.parser(tokens)

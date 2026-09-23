@@ -2,7 +2,7 @@
      child route) and the TOC bottom sheet; the child route fills in title/toc via the injected
      reader context. A completely separate tree from the desktop AppShell. -->
 <script setup lang="ts">
-import { reactive, provide, ref, computed } from 'vue'
+import { reactive, provide, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, TableOfContents } from 'lucide-vue-next'
 import LilypadIcon from '@/assets/icon.svg'
@@ -17,6 +17,21 @@ provide(readerKey, reader)
 
 const isDocument = computed(() => route.name === 'reader-document')
 const tocOpen = ref(false)
+
+// Close the sheet on any navigation (e.g. browser back while it's open) so it doesn't linger,
+// empty, over the next view.
+watch(
+  () => route.path,
+  () => (tocOpen.value = false),
+)
+
+// If we came from the tree, pop back to it so history stays linear (no tree → note → tree →
+// note loop on the browser back button); otherwise (deep link, from search) push the tree.
+function goBack() {
+  const back = (window.history.state as { back?: string | null } | null)?.back
+  if (back && router.resolve(back).name === 'reader-browser') router.back()
+  else router.push({ name: 'reader-browser' })
+}
 
 function onSelectHeading(id: string) {
   reader.scrollToHeading(id)
@@ -34,7 +49,7 @@ function onSelectHeading(id: string) {
           <button
             class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated"
             aria-label="Back to notes"
-            @click="router.push({ name: 'reader-browser' })"
+            @click="goBack"
           >
             <ArrowLeft :size="20" />
           </button>
