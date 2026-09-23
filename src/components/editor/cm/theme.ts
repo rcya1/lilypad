@@ -153,6 +153,39 @@ export const lilypadTheme = EditorView.theme({
     outline: '2px solid var(--accent)',
     outlineOffset: '1px',
   },
+  // LaTeX math (classes from latexEditorExtensions in cm/latex.ts)
+  '.cm-math-block': {
+    backgroundColor: 'var(--surface)',
+    boxShadow: 'inset 2px 0 0 color-mix(in srgb, var(--amber) 45%, transparent)',
+  },
+  '.cm-math-mark': {
+    color: 'var(--amber)',
+    fontWeight: '600',
+  },
+  '.cm-math-command': {
+    color: 'var(--accent)',
+  },
+  '.cm-math-env': {
+    color: 'var(--amber)',
+    fontStyle: 'italic',
+  },
+  '.cm-math-brace': {
+    color: 'var(--text-muted)',
+  },
+  '.cm-math-script': {
+    color: 'var(--text-secondary)',
+    fontWeight: '600',
+  },
+  '.cm-math-align': {
+    color: 'var(--amber)',
+  },
+  '.cm-math-comment': {
+    color: 'var(--text-muted)',
+    fontStyle: 'italic',
+  },
+  '.cm-math-number': {
+    color: 'color-mix(in srgb, var(--amber) 65%, var(--text-primary))',
+  },
   '.cm-fat-cursor': {
     background: 'color-mix(in srgb, var(--accent) 35%, transparent) !important',
     color: 'var(--text-primary) !important',
