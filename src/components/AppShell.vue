@@ -2,6 +2,10 @@
 <script setup lang="ts">
 import LilypadSidebar from './sidebar/LilypadSidebar.vue'
 import EditorPane from './editor/EditorPane.vue'
+import { useOpenEntryFromQuery } from '@/composables/useOpenEntryFromQuery'
+
+// `/?open=<entryId>` (e.g. the reader's Edit button) opens that entry in the editor.
+useOpenEntryFromQuery()
 </script>
 
 <template>

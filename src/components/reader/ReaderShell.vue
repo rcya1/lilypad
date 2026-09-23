@@ -4,7 +4,7 @@
 <script setup lang="ts">
 import { reactive, provide, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, TableOfContents } from 'lucide-vue-next'
+import { ArrowLeft, SquarePen, TableOfContents } from 'lucide-vue-next'
 import LilypadIcon from '@/assets/icon.svg'
 import ReaderTocSheet from './ReaderTocSheet.vue'
 import { readerKey, type ReaderContext } from './context'
@@ -12,7 +12,12 @@ import { readerKey, type ReaderContext } from './context'
 const route = useRoute()
 const router = useRouter()
 
-const reader = reactive<ReaderContext>({ title: '', toc: [], scrollToHeading: () => {} })
+const reader = reactive<ReaderContext>({
+  title: '',
+  toc: [],
+  editable: false,
+  scrollToHeading: () => {},
+})
 provide(readerKey, reader)
 
 const isDocument = computed(() => route.name === 'reader-document')
@@ -31,6 +36,14 @@ function goBack() {
   const back = (window.history.state as { back?: string | null } | null)?.back
   if (back && router.resolve(back).name === 'reader-browser') router.back()
   else router.push({ name: 'reader-browser' })
+}
+
+// Extension E1: jump to the desktop editor with this note open. `desktop=1` opts out of the
+// small-viewport redirect; AppShell's useOpenEntryFromQuery opens the entry and cleans the URL.
+function openInEditor() {
+  const entryId = route.params.entryId
+  if (typeof entryId !== 'string') return
+  router.push({ name: 'app', query: { open: entryId, desktop: '1' } })
 }
 
 function onSelectHeading(id: string) {
@@ -56,6 +69,14 @@ function onSelectHeading(id: string) {
           <span class="min-w-0 flex-1 truncate text-sm font-medium text-text-primary">
             {{ reader.title }}
           </span>
+          <button
+            v-if="reader.editable"
+            class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated"
+            aria-label="Edit in desktop app"
+            @click="openInEditor"
+          >
+            <SquarePen :size="20" />
+          </button>
           <button
             v-if="reader.toc.length"
             class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated"

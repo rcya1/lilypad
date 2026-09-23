@@ -48,6 +48,7 @@ function backToNotes() {
 function resetContext() {
   if (!reader) return
   reader.toc = []
+  reader.editable = false
   reader.scrollToHeading = () => {}
 }
 
@@ -73,7 +74,10 @@ async function load() {
   }
 
   const name = displayName(entry.name)
-  if (reader) reader.title = name
+  if (reader) {
+    reader.title = name
+    reader.editable = true
+  }
   document.title = `${name} · Lilypad`
 
   if (entry.document_type === 'md') {

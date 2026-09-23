@@ -7,9 +7,7 @@ import ReaderShell from '@/components/reader/ReaderShell.vue'
 import ReaderBrowser from '@/components/reader/ReaderBrowser.vue'
 import ReaderDocument from '@/components/reader/ReaderDocument.vue'
 import { useAuthStore } from '@/stores/auth'
-
-// Below this viewport width, navigating to the desktop app route redirects to the reader.
-const MOBILE_BREAKPOINT = 768
+import { isSmallViewport } from '@/lib/viewport'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,7 +51,7 @@ router.beforeEach((to) => {
 
   // Small viewports get the mobile reader instead of the desktop app. `?desktop=1` opts out.
   // This is the entire "mobile detection" — no user-agent sniffing; /read stays reachable by URL.
-  if (to.name === 'app' && window.innerWidth < MOBILE_BREAKPOINT && to.query.desktop !== '1') {
+  if (to.name === 'app' && isSmallViewport() && to.query.desktop !== '1') {
     return { name: 'reader-browser' }
   }
 })
