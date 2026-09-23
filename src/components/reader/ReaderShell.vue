@@ -4,7 +4,7 @@
 <script setup lang="ts">
 import { reactive, provide, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, SquarePen, TableOfContents } from 'lucide-vue-next'
+import { ArrowLeft, Search, SquarePen, TableOfContents } from 'lucide-vue-next'
 import LilypadIcon from '@/assets/icon.svg'
 import ReaderTocSheet from './ReaderTocSheet.vue'
 import { readerKey, type ReaderContext } from './context'
@@ -21,6 +21,7 @@ const reader = reactive<ReaderContext>({
 provide(readerKey, reader)
 
 const isDocument = computed(() => route.name === 'reader-document')
+const isSearch = computed(() => route.name === 'reader-search')
 const tocOpen = ref(false)
 
 // Close the sheet on any navigation (e.g. browser back while it's open) so it doesn't linger,
@@ -54,7 +55,9 @@ function onSelectHeading(id: string) {
 
 <template>
   <div class="flex h-dvh flex-col bg-bg font-ui text-text-primary">
+    <!-- The search view renders its own bar (back + input). -->
     <header
+      v-if="!isSearch"
       class="flex shrink-0 items-center gap-1 border-b border-border-subtle bg-surface px-2 pt-[env(safe-area-inset-top)]"
     >
       <div class="flex h-14 w-full items-center gap-1">
@@ -88,7 +91,16 @@ function onSelectHeading(id: string) {
         </template>
         <template v-else>
           <LilypadIcon class="ml-1 h-8 w-8 shrink-0" />
-          <span class="ml-2 font-display text-xl font-medium text-text-primary">Lilypad</span>
+          <span class="ml-2 flex-1 font-display text-xl font-medium text-text-primary">
+            Lilypad
+          </span>
+          <button
+            class="flex h-11 w-11 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated"
+            aria-label="Search notes"
+            @click="router.push({ name: 'reader-search' })"
+          >
+            <Search :size="20" />
+          </button>
         </template>
       </div>
     </header>

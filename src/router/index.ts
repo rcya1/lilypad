@@ -6,6 +6,7 @@ import AppShell from '@/components/AppShell.vue'
 import ReaderShell from '@/components/reader/ReaderShell.vue'
 import ReaderBrowser from '@/components/reader/ReaderBrowser.vue'
 import ReaderDocument from '@/components/reader/ReaderDocument.vue'
+import ReaderSearch from '@/components/reader/ReaderSearch.vue'
 import { useAuthStore } from '@/stores/auth'
 import { isSmallViewport } from '@/lib/viewport'
 
@@ -27,6 +28,8 @@ const router = createRouter({
       component: ReaderShell,
       children: [
         { path: '', name: 'reader-browser', component: ReaderBrowser },
+        // Must precede ':entryId' so "search" isn't captured as an entry id.
+        { path: 'search', name: 'reader-search', component: ReaderSearch },
         { path: ':entryId', name: 'reader-document', component: ReaderDocument, props: true },
       ],
     },
