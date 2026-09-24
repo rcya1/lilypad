@@ -15,6 +15,10 @@ import LilypadIcon from '@/assets/icon.svg'
 const store = useEditorStore()
 const uiStore = useUiStore()
 const hasTabs = computed(() => store.tabOrder.length > 0)
+
+// Arriving from the reader via the Read/Edit switch: the tab bar grows down into place instead of
+// snapping in (the reader collapses its copy of it upward on the way out).
+const slideTabsIn = ref(uiStore.arrivedViaModeSwitch('to-edit'))
 const activeId = computed(() => store.activeDocumentId)
 const activeDocType = computed(() => store.activeDocument?.type)
 
@@ -174,14 +178,21 @@ onBeforeUnmount(() => {
 <template>
   <main class="flex-1 flex flex-col overflow-hidden bg-bg">
     <template v-if="hasTabs">
-      <EditorTabs
-        :is-vertical="isVertical"
-        :is-swapped="isSwapped"
-        :rotation-clockwise="rotationClockwise"
-        :preview-visible="uiStore.previewVisible"
-        @toggle-layout="toggleLayout"
-        @toggle-swap="toggleSwap"
-      />
+      <!-- Bottom-aligned in a growing box so the bar slides down from above. -->
+      <div
+        class="flex shrink-0 flex-col justify-end overflow-hidden"
+        :class="{ 'animate-bar-expand': slideTabsIn }"
+        @animationend="slideTabsIn = false"
+      >
+        <EditorTabs
+          :is-vertical="isVertical"
+          :is-swapped="isSwapped"
+          :rotation-clockwise="rotationClockwise"
+          :preview-visible="uiStore.previewVisible"
+          @toggle-layout="toggleLayout"
+          @toggle-swap="toggleSwap"
+        />
+      </div>
 
       <div class="relative shrink-0">
         <BreadcrumbBar />

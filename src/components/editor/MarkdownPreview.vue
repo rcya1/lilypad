@@ -524,36 +524,4 @@ watch(
   width: auto;
   box-shadow: none;
 }
-
-/* Highlight-reference chips (web documents): [text](lily:hl-3). Kept scoped — only web-doc notes
-   contain these, and the hover/active/flash states are driven by cross-pane annotation interaction,
-   which the reader doesn't have. */
-.markdown-body :deep(.lily-ref) {
-  display: inline;
-  cursor: pointer;
-  color: var(--text-primary);
-  background: var(--accent-subtle);
-  border-radius: 4px;
-  padding: 0.02em 0.3em;
-  text-decoration: none;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  transition: background-color 100ms ease;
-}
-.markdown-body :deep(.lily-ref:hover),
-.markdown-body :deep(.lily-ref.lily-ref-active) {
-  background: color-mix(in srgb, var(--accent) 30%, var(--bg));
-}
-.markdown-body :deep(.lily-ref.lily-ref-flash) {
-  animation: lily-ref-flash 1.2s ease;
-}
-@keyframes lily-ref-flash {
-  0%,
-  40% {
-    background: color-mix(in srgb, var(--accent) 30%, var(--bg));
-  }
-  100% {
-    background: var(--accent-subtle);
-  }
-}
 </style>

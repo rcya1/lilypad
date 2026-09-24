@@ -44,6 +44,8 @@ export function useOpenEntryFromQuery() {
       pendingId.value = null
       // No-ops for unknown ids / folders, so a stale link just lands on the normal app.
       editorStore.openEntry(id)
+      // Highlight it in the file tree too, matching the reader's highlight of the open note.
+      if (filesStore.getEntry(id)) filesStore.selectSingle(id)
     },
     { immediate: true },
   )

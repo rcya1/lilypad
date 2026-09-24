@@ -28,7 +28,7 @@ const emit = defineEmits<{ select: [id: string]; close: [] }>()
           <button
             v-for="item in toc"
             :key="item.id"
-            class="flex min-h-11 w-full items-center rounded-lg px-2 text-left text-sm active:bg-surface-elevated"
+            class="flex min-h-11 w-full cursor-pointer items-center rounded-lg px-2 text-left text-sm transition-colors hover:bg-surface-elevated active:bg-surface-overlay"
             :class="item.depth === 1 ? 'font-medium text-text-primary' : 'text-text-secondary'"
             :style="{ paddingLeft: (item.depth - 1) * 16 + 8 + 'px' }"
             @click="emit('select', item.id)"

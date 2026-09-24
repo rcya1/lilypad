@@ -6,8 +6,8 @@
  * automatically.
  *
  * NOT here (they stay scoped in MarkdownPreview.vue): the editor-sync interaction styles
- * (.preview-hover / .preview-selected / .li-text display), the `.markdown-body` card box-shadow,
- * and the web-doc `.lily-ref` chips — none of which the reader has. */
+ * (.preview-hover / .preview-selected / .li-text display) and the `.markdown-body` card box-shadow
+ * — none of which the reader has. */
 
 /* Headings */
 .markdown-body h1,
@@ -278,4 +278,35 @@
 .markdown-body .admonition-theorem .admonition-title,
 .markdown-body .admonition-proposition .admonition-title {
   color: var(--accent);
+}
+
+/* Highlight-reference chips (web documents): [text](lily:hl-3). The active/flash states are toggled
+   by whichever view links the chips to the captured page (desktop preview or the reader). */
+.markdown-body .lily-ref {
+  display: inline;
+  cursor: pointer;
+  color: var(--text-primary);
+  background: var(--accent-subtle);
+  border-radius: 4px;
+  padding: 0.02em 0.3em;
+  text-decoration: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background-color 100ms ease;
+}
+.markdown-body .lily-ref:hover,
+.markdown-body .lily-ref.lily-ref-active {
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg));
+}
+.markdown-body .lily-ref.lily-ref-flash {
+  animation: lily-ref-flash 1.2s ease;
+}
+@keyframes lily-ref-flash {
+  0%,
+  40% {
+    background: color-mix(in srgb, var(--accent) 30%, var(--bg));
+  }
+  100% {
+    background: var(--accent-subtle);
+  }
 }

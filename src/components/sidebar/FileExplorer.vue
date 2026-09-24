@@ -1,6 +1,6 @@
 <!-- Root of the sidebar file tree: toolbar for creating files/folders/web captures, drag-drop to root, and bulk-expand controls. -->
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, useTemplateRef } from 'vue'
 import { FilePlus, FolderPlus, Globe, ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
 import FileExplorerNode from './FileExplorerNode.vue'
 import PendingInputRow from './PendingInputRow.vue'
@@ -9,6 +9,7 @@ import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import { draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 import { useToastStore } from '@/stores/toast'
+import { useUiStore } from '@/stores/ui'
 import type { EntryRow } from '@/types/database'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
@@ -16,6 +17,18 @@ import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 const files = useFilesStore()
 const editorStore = useEditorStore()
 const toast = useToastStore()
+const uiStore = useUiStore()
+const growActionsIn = uiStore.arrivedViaModeSwitch('to-edit')
+
+// The tree's scroll position is shared with the reader's sidebar, so flipping between modes with
+// the Read/Edit switch keeps the same rows on screen.
+const scroller = useTemplateRef<HTMLDivElement>('scroller')
+function onScroll() {
+  if (scroller.value) uiStore.sidebarScrollTop = scroller.value.scrollTop
+}
+onMounted(() => {
+  if (scroller.value) scroller.value.scrollTop = uiStore.sidebarScrollTop
+})
 
 // anyExpanded drives the collapse-all / expand-all toggle button label.
 const totalFolderCount = computed(() => files.entries.filter((e) => e.kind === 'directory').length)
@@ -259,7 +272,9 @@ function onPendingDragEnd() {
 
 <template>
   <div
+    ref="scroller"
     class="flex-1 flex flex-col overflow-y-auto"
+    @scroll.passive="onScroll"
     @click.self="deselectAll"
     @contextmenu="onEmptyAreaContextMenu"
   >
@@ -275,27 +290,40 @@ function onPendingDragEnd() {
           <ChevronsDownUp v-if="anyExpanded" :size="16" />
           <ChevronsUpDown v-else :size="16" />
         </button>
-        <button
-          class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-          :title="files.selectedFolderId ? 'New file in selected folder' : 'New file'"
-          @click="startNewFile"
+        <!-- Editor-only actions. Flipping in from the reader, they grow in (the reader shrinks a
+             copy of them away on the way out), so "collapse all" slides rather than jumps. -->
+        <span
+          class="flex items-center gap-0.5 overflow-hidden"
+          :class="{ 'animate-actions-in': growActionsIn }"
         >
-          <FilePlus :size="16" />
-        </button>
-        <button
-          class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-          :title="files.selectedFolderId ? 'New folder in selected folder' : 'New folder'"
-          @click="startNewFolder"
-        >
-          <FolderPlus :size="16" />
-        </button>
-        <button
-          class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-          :title="files.selectedFolderId ? 'New web page in selected folder' : 'New web page'"
-          @click="startNewWebPage"
-        >
-          <Globe :size="16" />
-        </button>
+          <button
+            :class="{ 'animate-icon-pop': growActionsIn }"
+            style="animation-delay: 0ms"
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+            :title="files.selectedFolderId ? 'New file in selected folder' : 'New file'"
+            @click="startNewFile"
+          >
+            <FilePlus :size="16" />
+          </button>
+          <button
+            :class="{ 'animate-icon-pop': growActionsIn }"
+            style="animation-delay: 40ms"
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+            :title="files.selectedFolderId ? 'New folder in selected folder' : 'New folder'"
+            @click="startNewFolder"
+          >
+            <FolderPlus :size="16" />
+          </button>
+          <button
+            :class="{ 'animate-icon-pop': growActionsIn }"
+            style="animation-delay: 80ms"
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
+            :title="files.selectedFolderId ? 'New web page in selected folder' : 'New web page'"
+            @click="startNewWebPage"
+          >
+            <Globe :size="16" />
+          </button>
+        </span>
       </div>
     </div>
 

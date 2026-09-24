@@ -138,9 +138,9 @@ function snippetParts(r: SearchResult) {
     <header
       class="shrink-0 border-b border-border-subtle bg-surface px-2 pt-[env(safe-area-inset-top)]"
     >
-      <div class="flex h-14 items-center gap-1">
+      <div class="flex h-14 items-center gap-1 pointer-fine:h-12">
         <button
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated"
+          class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary active:bg-surface-overlay pointer-fine:h-9 pointer-fine:w-9"
           aria-label="Close search"
           @click="close"
         >
@@ -173,7 +173,7 @@ function snippetParts(r: SearchResult) {
         </div>
         <button
           v-if="searchStore.query"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text-secondary active:bg-surface-elevated"
+          class="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary active:bg-surface-overlay pointer-fine:h-9 pointer-fine:w-9"
           aria-label="Clear search"
           @click="clearQuery"
         >
@@ -184,7 +184,7 @@ function snippetParts(r: SearchResult) {
 
     <div class="min-h-0 flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
       <!-- Empty query -->
-      <div v-if="!trimmedQuery" class="flex flex-col items-center gap-2 px-6 py-20 text-center">
+      <div v-if="!trimmedQuery" class="flex flex-col items-center gap-2 px-6 py-16 text-center">
         <Search :size="32" class="text-text-muted" />
         <h2 class="font-display text-xl text-text-secondary">Search your notes</h2>
         <p class="text-sm text-text-muted">Find notes by title or by anything written in them.</p>
@@ -193,7 +193,7 @@ function snippetParts(r: SearchResult) {
       <!-- No results (only once the debounced search has actually run) -->
       <div
         v-else-if="!hasResults && !pending"
-        class="flex flex-col items-center gap-2 px-6 py-20 text-center"
+        class="flex flex-col items-center gap-2 px-6 py-16 text-center"
       >
         <h2 class="font-display text-xl text-text-secondary">No matches</h2>
         <p class="break-all text-sm text-text-muted">
@@ -209,8 +209,8 @@ function snippetParts(r: SearchResult) {
           <button
             v-for="hit in titleHits"
             :key="hit.id"
-            class="flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left active:bg-surface-elevated"
-            :class="hit.type === 'pdf' || hit.type === 'web' ? 'opacity-50' : ''"
+            class="flex min-h-11 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-surface-elevated active:bg-surface-overlay pointer-fine:min-h-9 pointer-fine:py-1.5"
+            :class="hit.type === 'pdf' ? 'opacity-50' : ''"
             @click="open(hit.id)"
           >
             <component
@@ -237,7 +237,7 @@ function snippetParts(r: SearchResult) {
           <button
             v-for="{ first, count } in contentHits"
             :key="first.fileId"
-            class="flex min-h-11 w-full items-start gap-3 px-4 py-2.5 text-left active:bg-surface-elevated"
+            class="flex min-h-11 w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-elevated active:bg-surface-overlay pointer-fine:py-2"
             @click="open(first.fileId)"
           >
             <FileText :size="18" class="mt-0.5 shrink-0 text-text-secondary" />

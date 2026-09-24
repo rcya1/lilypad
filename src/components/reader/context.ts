@@ -10,8 +10,10 @@ export interface ReaderContext {
   title: string
   /** Headings of the current note; drives the TOC button + sheet. Empty when none. */
   toc: TocItem[]
-  /** True when the current route resolves to a real document (drives the Edit button). */
+  /** True when the current route resolves to a real document (the Edit switch opens it). */
   editable: boolean
+  /** True while the note tree is on screen in the docked sidebar (wide screens, not collapsed). */
+  sidebarVisible: boolean
   /** Scrolls the document view to a heading id. No-op until a document is mounted. */
   scrollToHeading: (id: string) => void
 }

@@ -1,6 +1,7 @@
 <!-- One rendered note (the /read/:entryId view). Read-only: reuses parseMarkdownWithToc + the shared
      markdown-body typography so it matches the desktop preview exactly. md renders fully; image
-     shows full-width; pdf/web get a "view on desktop" placeholder. -->
+     shows full-width; web shows the captured page + notes (ReaderWebDocument); pdf gets a "view on
+     desktop" placeholder. -->
 <script setup lang="ts">
 import { ref, watch, inject, onBeforeUnmount, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
@@ -9,6 +10,7 @@ import { useFilesStore } from '@/stores/files'
 import { parseMarkdownWithToc, type TocItem } from '@/lib/markdown'
 import { readerKey, ensureEntriesLoaded } from './context'
 import ReaderTocRail from './ReaderTocRail.vue'
+import ReaderWebDocument from './ReaderWebDocument.vue'
 import 'katex/dist/katex.min.css'
 import '@/assets/markdown-body.css'
 
@@ -17,11 +19,10 @@ const filesStore = useFilesStore()
 const router = useRouter()
 const reader = inject(readerKey)
 
-type Status = 'loading' | 'md' | 'image' | 'placeholder' | 'notfound'
+type Status = 'loading' | 'md' | 'image' | 'web' | 'placeholder' | 'notfound'
 const status = ref<Status>('loading')
 const html = ref('')
 const wordCount = ref(0)
-const placeholderKind = ref<'pdf' | 'web'>('pdf')
 const toc = ref<TocItem[]>([])
 // Heading currently at the top of the viewport, highlighted in the wide-screen TOC rail.
 const activeHeadingId = ref<string | null>(null)
@@ -90,8 +91,12 @@ async function load() {
   // The view is reused across /read/a → /read/b; start each note at the top.
   if (scrollContainer.value) scrollContainer.value.scrollTop = 0
 
-  await ensureEntriesLoaded()
-  if (token !== loadToken) return
+  // Only await when the tree isn't loaded yet: with entries + cached content already in memory
+  // (e.g. arriving from the editor) the note renders synchronously, with no skeleton frame.
+  if (filesStore.entries.length === 0) {
+    await ensureEntriesLoaded()
+    if (token !== loadToken) return
+  }
 
   const entry = filesStore.getEntry(props.entryId)
   // Folder ids are valid entries but not readable notes — treat them as not found.
@@ -127,8 +132,9 @@ async function load() {
     status.value = 'md'
   } else if (entry.document_type === 'image') {
     status.value = 'image'
+  } else if (entry.document_type === 'web') {
+    status.value = 'web'
   } else {
-    placeholderKind.value = entry.document_type === 'web' ? 'web' : 'pdf'
     status.value = 'placeholder'
   }
 }
@@ -146,7 +152,7 @@ onBeforeUnmount(() => {
 <template>
   <div ref="scrollContainer" class="min-h-0 flex-1 overflow-y-auto bg-bg" @scroll="onScroll">
     <!-- Loading skeleton -->
-    <div v-if="status === 'loading'" class="mx-auto max-w-[70ch] px-5 py-6">
+    <div v-if="status === 'loading'" class="mx-auto max-w-[70ch] px-4 py-4">
       <div class="animate-pulse space-y-3">
         <div class="h-7 w-2/3 rounded bg-surface-elevated" />
         <div class="h-4 w-full rounded bg-surface-elevated" />
@@ -156,38 +162,46 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Rendered markdown -->
-    <!-- Wide screens: three columns with the note centred and the TOC rail in the left margin.
+    <!-- Once the main column is ≥ 60rem (container query on ReaderShell's main column — the same
+         threshold the shell uses to hide its TOC button): three columns, note in the middle, TOC
+         rail in the left margin. The rail column has a floor so it never squeezes to nothing.
          font-preview on the grid so the 70ch middle column matches the article's own 70ch. -->
     <div
       v-else-if="status === 'md'"
-      class="font-preview text-[16px] xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,70ch)_minmax(0,1fr)]"
+      class="font-preview text-[16px] @min-[60rem]:grid @min-[60rem]:grid-cols-[minmax(14rem,1fr)_minmax(0,70ch)_minmax(0,1fr)]"
     >
-      <aside v-if="toc.length" class="hidden font-ui xl:block">
+      <aside
+        v-if="toc.length"
+        class="hidden font-ui @min-[60rem]:col-start-1 @min-[60rem]:row-start-1 @min-[60rem]:block"
+      >
         <ReaderTocRail
           :toc="toc"
           :active-id="activeHeadingId"
-          class="sticky top-0 ml-auto max-h-[calc(100dvh-3.5rem)] w-60 overflow-y-auto pr-10"
+          class="sticky top-0 max-h-[calc(100dvh-1.75rem)] ml-auto w-56 overflow-y-auto pr-8 pl-4"
           @select="scrollToHeading"
         />
       </aside>
-      <div class="xl:col-start-2">
+      <div class="@min-[60rem]:col-start-2 @min-[60rem]:row-start-1">
         <!-- scroll-mt on headings: the scroll container already starts below the app bar, so this
              is just breathing room so a TOC jump doesn't pin the heading flush to the bar's edge. -->
         <article
-          class="markdown-body mx-auto max-w-[70ch] px-5 py-6 font-preview text-[16px] leading-[1.7] text-text-primary [&_:is(h1,h2,h3,h4,h5,h6)]:scroll-mt-4"
+          class="markdown-body mx-auto max-w-[70ch] px-4 py-4 font-preview motion-safe:animate-fade-in text-[16px] leading-[1.7] text-text-primary [&_:is(h1,h2,h3,h4,h5,h6)]:scroll-mt-4"
           v-html="html"
         />
         <div
           v-if="wordCount > 0"
-          class="mx-auto max-w-[70ch] px-5 pb-[calc(env(safe-area-inset-bottom)+2rem)] text-right font-ui text-xs text-text-muted"
+          class="mx-auto max-w-[70ch] px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] text-right font-ui text-xs text-text-muted"
         >
           {{ wordCount.toLocaleString() }} words
         </div>
       </div>
     </div>
 
+    <!-- Captured web page + notes -->
+    <ReaderWebDocument v-else-if="status === 'web'" :key="entryId" :entry-id="entryId" />
+
     <!-- Image -->
-    <div v-else-if="status === 'image'" class="px-4 py-6">
+    <div v-else-if="status === 'image'" class="px-4 py-4 motion-safe:animate-fade-up">
       <img
         :src="filesStore.getImageUrl(entryId) ?? undefined"
         :alt="reader?.title ?? ''"
@@ -195,21 +209,15 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <!-- pdf / web placeholder -->
+    <!-- pdf placeholder -->
     <div
       v-else-if="status === 'placeholder'"
-      class="flex flex-col items-center gap-3 px-6 py-24 text-center"
+      class="flex flex-col items-center gap-3 px-6 py-16 text-center motion-safe:animate-fade-up"
     >
       <Monitor :size="40" class="text-text-muted" />
-      <p class="text-sm text-text-secondary">
-        {{
-          placeholderKind === 'web'
-            ? 'Web pages open in the desktop app'
-            : 'PDFs open in the desktop app'
-        }}
-      </p>
+      <p class="text-sm text-text-secondary">PDFs open in the desktop app</p>
       <button
-        class="min-h-11 rounded-lg px-4 text-sm text-accent active:bg-surface-elevated"
+        class="min-h-11 rounded-lg px-4 text-sm text-accent transition-colors hover:bg-surface-elevated active:bg-surface-overlay pointer-fine:min-h-9"
         @click="backToNotes"
       >
         Back to notes
@@ -217,11 +225,14 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Not found -->
-    <div v-else class="flex flex-col items-center gap-3 px-6 py-24 text-center">
+    <div
+      v-else
+      class="flex flex-col items-center gap-3 px-6 py-16 text-center motion-safe:animate-fade-up"
+    >
       <FileWarning :size="40" class="text-text-muted" />
       <p class="text-sm text-text-secondary">Note not found</p>
       <button
-        class="min-h-11 rounded-lg px-4 text-sm text-accent active:bg-surface-elevated"
+        class="min-h-11 rounded-lg px-4 text-sm text-accent transition-colors hover:bg-surface-elevated active:bg-surface-overlay pointer-fine:min-h-9"
         @click="backToNotes"
       >
         Back to notes

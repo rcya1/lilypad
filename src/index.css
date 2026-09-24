@@ -57,6 +57,71 @@
   --font-family-display: 'Lora', Georgia, serif;
   --font-family-mono: ui-monospace, 'SFMono-Regular', 'Menlo', monospace;
   --font-family-preview: 'Open Sans', system-ui, sans-serif;
+
+  /* Content settling in after it loads (reader notes, lists). fade-in has no movement, for content
+     that should appear in place (a note opened by flipping Read/Edit). */
+  --animate-fade-up: fade-up 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-fade-in: fade-in 160ms ease-out both;
+  /* The editor tab bar (h-10) leaving / arriving when flipping Read/Edit. */
+  --animate-bar-collapse: bar-collapse 420ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  --animate-bar-expand: bar-expand 420ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  /* The editor-only file actions (new file/folder/web page) next to "Files" when flipping. */
+  --animate-actions-in: actions-in 260ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  --animate-actions-out: actions-out 220ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  --animate-icon-pop: icon-pop 260ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  @keyframes actions-in {
+    from {
+      max-width: 0;
+      opacity: 0;
+    }
+    to {
+      max-width: 4.5rem;
+      opacity: 1;
+    }
+  }
+  @keyframes actions-out {
+    from {
+      max-width: 4.5rem;
+      opacity: 1;
+    }
+    to {
+      max-width: 0;
+      opacity: 0;
+    }
+  }
+  @keyframes icon-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+  }
+  @keyframes bar-collapse {
+    from {
+      height: 2.5rem;
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes bar-expand {
+    from {
+      height: 0;
+    }
+    to {
+      height: 2.5rem;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
 }
 
 html,

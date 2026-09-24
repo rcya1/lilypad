@@ -39,11 +39,42 @@ function clampFontSize(n: number): number {
 
 export type SidebarTab = 'files' | 'images'
 
+export type ModeSwitchDirection = 'to-read' | 'to-edit'
+// How long after a Read/Edit flip the arriving screen still counts as "just switched".
+const MODE_SWITCH_WINDOW_MS = 1000
+
 export const useUiStore = defineStore('ui', () => {
   // ── Ephemeral UI state (not persisted) ──────────────────────────────────────
   const sidebarTab = ref<SidebarTab>('files')
   const highlightedImageId = ref<string | null>(null)
   const quickSwitcherOpen = ref(false)
+  // Sidebar geometry, shared by the editor sidebar and the reader sidebar so flipping between
+  // modes with the Read/Edit switch doesn't move or resize it (or reset the tree's scroll).
+  const sidebarWidth = ref(250)
+  const sidebarMinimized = ref(false)
+  const sidebarScrollTop = ref(0)
+  // True while the sidebar's edge is being dragged (SidebarResizeHandle).
+  const sidebarResizing = ref(false)
+  // Recorded by the Read/Edit switch just before navigating. Components on the screen being
+  // switched to check it during setup to play their entry animations (the tab bar sliding in/out,
+  // the file actions growing/shrinking). Timestamped rather than cleared-on-read so several
+  // components can each see it; it goes stale on its own.
+  const modeSwitch = ref<{ direction: ModeSwitchDirection; at: number } | null>(null)
+
+  function markModeSwitch(direction: ModeSwitchDirection) {
+    modeSwitch.value = { direction, at: performance.now() }
+  }
+
+  /** True when this screen was reached via the switch in `direction` just now (and motion is OK). */
+  function arrivedViaModeSwitch(direction: ModeSwitchDirection): boolean {
+    const flip = modeSwitch.value
+    return (
+      !!flip &&
+      flip.direction === direction &&
+      performance.now() - flip.at < MODE_SWITCH_WINDOW_MS &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    )
+  }
 
   /**
    * Switches the sidebar to the Images tab and briefly highlights the given image entry.
@@ -314,6 +345,12 @@ export const useUiStore = defineStore('ui', () => {
 
   return {
     sidebarTab,
+    sidebarWidth,
+    sidebarMinimized,
+    sidebarScrollTop,
+    sidebarResizing,
+    markModeSwitch,
+    arrivedViaModeSwitch,
     highlightedImageId,
     navigateToImage,
     quickSwitcherOpen,
