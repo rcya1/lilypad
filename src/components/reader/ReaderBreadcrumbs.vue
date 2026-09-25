@@ -10,7 +10,7 @@ const emit = defineEmits<{ folder: [id: string] }>()
   <nav aria-label="Breadcrumb" class="flex min-w-0 items-center gap-1">
     <template v-for="folder in ancestors" :key="folder.id">
       <button
-        class="max-w-[120px] shrink-0 cursor-pointer truncate font-ui text-xs text-text-muted transition-colors duration-75 hover:text-text-secondary"
+        class="max-w-[120px] shrink-0 cursor-pointer truncate font-ui text-xs text-text-muted transition-colors duration-75 hover:text-text-secondary wco:app-no-drag"
         :title="folder.name"
         @click="emit('folder', folder.id)"
       >

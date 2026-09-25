@@ -1,6 +1,8 @@
 <!-- Root: global shortcuts (Ctrl/Cmd+P, Ctrl/Cmd+N), unsaved-changes guard, route view. -->
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+import { isInstalledApp } from '@/lib/viewport'
 import { useAuthStore } from '@/stores/auth'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
@@ -14,8 +16,45 @@ const auth = useAuthStore()
 const filesStore = useFilesStore()
 const editorStore = useEditorStore()
 const uiStore = useUiStore()
+const route = useRoute()
+
+/**
+ * VS Code-style tab shortcuts. Only in the installed app's editor: in a browser tab the browser keeps
+ * these for itself.
+ */
+function onTabShortcut(e: KeyboardEvent): boolean {
+  if (!isInstalledApp() || route.name !== 'app') return false
+  const mod = e.ctrlKey || e.metaKey
+  const key = e.key.toLowerCase()
+
+  if (mod && !e.shiftKey && key === 'w') {
+    // Even with no tab open, so it never closes the window.
+    const id = editorStore.activeDocumentId
+    if (id) void editorStore.closeDocument(id)
+  } else if (mod && e.shiftKey && key === 't') {
+    editorStore.reopenClosedTab()
+  } else if (e.ctrlKey && key === 'tab') {
+    editorStore.cycleTab(e.shiftKey ? -1 : 1)
+  } else if (mod && (e.key === 'PageDown' || e.key === 'PageUp')) {
+    editorStore.cycleTab(e.key === 'PageDown' ? 1 : -1)
+  } else if (e.altKey && !mod && /^Digit[1-9]$/.test(e.code)) {
+    // e.code, since Alt+digit types other characters on macOS. 9 is the last tab.
+    const n = Number(e.code.slice(5))
+    const tabs = editorStore.tabOrder
+    const id = n === 9 ? tabs[tabs.length - 1] : tabs[n - 1]
+    if (!id) return false
+    editorStore.setActiveDocument(id)
+  } else {
+    return false
+  }
+  e.preventDefault()
+  if (editorStore.activeDocumentId) filesStore.selectSingle(editorStore.activeDocumentId)
+  return true
+}
 
 function onKeyDown(e: KeyboardEvent) {
+  if (onTabShortcut(e)) return
+
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
     e.preventDefault()
     if (uiStore.quickSwitcherOpen) uiStore.closeQuickSwitcher()
@@ -50,7 +89,7 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
 }
 
 onMounted(() => {
-  // capture: so these win over CodeMirror's own Ctrl+P/Ctrl+N.
+  // capture: so these win over CodeMirror's own bindings (Ctrl+P, Ctrl+N, Vim's Ctrl+W).
   window.addEventListener('keydown', onKeyDown, { capture: true })
   window.addEventListener('beforeunload', onBeforeUnload)
 })

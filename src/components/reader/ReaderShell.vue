@@ -45,7 +45,7 @@ provide(readerKey, reader)
 
 // Top-bar icon buttons: 44px touch targets, tighter on mouse/trackpad screens.
 const iconButton =
-  'flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary active:bg-surface-overlay pointer-fine:h-7 pointer-fine:w-7'
+  'flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-elevated hover:text-text-primary active:bg-surface-overlay pointer-fine:h-7 pointer-fine:w-7 wco:app-no-drag'
 
 const isDocument = computed(() => route.name === 'reader-document')
 const isSearch = computed(() => route.name === 'reader-search')
@@ -201,8 +201,16 @@ onBeforeUnmount(() => {
       <!-- The search view renders its own bar (back + input). -->
       <header v-if="!isSearch" class="shrink-0 bg-surface pt-[env(safe-area-inset-top)]">
         <ReaderTabGhost v-if="showTabGhost" @done="showTabGhost = false" />
+        <!-- The note list has no bar, so with the overlay on it gets an empty drag strip -->
+        <div
+          v-if="isWide && !isDocument"
+          class="hidden h-[env(titlebar-area-height,0px)] wco:block wco:app-drag"
+        />
         <!-- Narrow screens only: drawer button, logo, switch, search, TOC -->
-        <div v-if="!isWide" class="flex h-14 items-center gap-1 border-b border-border-subtle px-2">
+        <div
+          v-if="!isWide"
+          class="flex h-14 items-center gap-1 border-b border-border-subtle px-2 wco:app-drag wco:titlebar-inset-r"
+        >
           <button :class="iconButton" aria-label="Open sidebar" @click="toggleSidebar">
             <PanelLeft :size="16" />
           </button>
@@ -227,10 +235,10 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <!-- Same height/fill as the editor's BreadcrumbBar. -->
+        <!-- Same height/fill as the editor's BreadcrumbBar (at least the title bar's, as the overlay) -->
         <div
           v-if="isDocument"
-          class="flex h-9 items-center gap-2 border-b border-border-subtle px-3 pointer-fine:h-7"
+          class="flex h-9 items-center gap-2 border-b border-border-subtle px-3 pointer-fine:h-7 wco:min-h-[env(titlebar-area-height,0px)] wco:app-drag wco:titlebar-inset-r"
         >
           <ReaderBreadcrumbs
             class="min-w-0 flex-1 overflow-x-auto"
@@ -241,7 +249,7 @@ onBeforeUnmount(() => {
           <!-- For when the note area is too narrow for the margin TOC -->
           <button
             v-if="isWide && showTocButton"
-            class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-text-muted transition-colors duration-100 hover:bg-surface-elevated hover:text-text-primary"
+            class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-text-muted transition-colors duration-100 hover:bg-surface-elevated hover:text-text-primary wco:app-no-drag"
             title="Table of contents"
             aria-label="Table of contents"
             @click="tocOpen = true"

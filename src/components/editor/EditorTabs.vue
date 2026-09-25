@@ -163,9 +163,11 @@ function onTabMouseDown(e: MouseEvent, id: string) {
       class="w-0.5 bg-accent shrink-0 self-stretch"
     />
 
-    <div class="flex-1" @dragover="onDragOverEnd" @drop="onDrop" />
+    <div class="flex-1 wco:app-drag" @dragover="onDragOverEnd" @drop="onDrop" />
 
-    <div class="flex items-center gap-0.5 px-2 shrink-0 border-l border-border-subtle">
+    <div
+      class="flex items-center gap-0.5 px-2 shrink-0 border-l border-border-subtle wco:titlebar-inset-r"
+    >
       <template v-if="store.activeDocument?.type === 'md'">
         <button
           class="flex items-center justify-center w-7 h-7 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"

@@ -1,5 +1,28 @@
 @import 'tailwindcss';
 
+/*
+ * Installed app with the title bar hidden (Window Controls Overlay): our top strips become the
+ * window's drag handle and must keep clear of the window buttons, which float over the top corner
+ * (right on Windows/Linux, left on macOS). `wco:` applies only while the overlay is on.
+ */
+@custom-variant wco (@media (display-mode: window-controls-overlay));
+
+@utility app-drag {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+@utility app-no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+/* Room for the window buttons: the titlebar area is the free part of the strip. */
+@utility titlebar-inset-r {
+  padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 0.5rem);
+}
+@utility titlebar-inset-l {
+  padding-left: max(1rem, env(titlebar-area-x, 0px));
+}
+
 :root {
   --bg: #f4f8f4;
   --surface: #e5eee5;

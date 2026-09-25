@@ -44,7 +44,7 @@ function flip() {
     :aria-checked="shown === 'edit'"
     aria-label="Edit mode"
     :title="shown === 'read' ? 'Switch to editing' : 'Switch to reading'"
-    class="group relative grid h-7 w-15 shrink-0 cursor-pointer grid-cols-2 rounded-full bg-surface-elevated p-0.5 pointer-coarse:h-9 pointer-coarse:w-19"
+    class="group relative grid h-7 w-15 shrink-0 cursor-pointer grid-cols-2 rounded-full bg-surface-elevated p-0.5 pointer-coarse:h-9 pointer-coarse:w-19 wco:app-no-drag"
     @click="flip"
   >
     <span

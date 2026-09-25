@@ -18,7 +18,7 @@ const WORDMARK_MIN_WIDTH = 236
 </script>
 
 <template>
-  <div class="flex flex-row items-center p-4">
+  <div class="flex flex-row items-center p-4 wco:app-drag wco:titlebar-inset-l">
     <LilypadIcon class="w-8 h-8 shrink-0" :class="{ 'mr-2': !minimized }" />
     <template v-if="!minimized">
       <h1
@@ -30,7 +30,7 @@ const WORDMARK_MIN_WIDTH = 236
       <ModeSwitch :mode="mode" @change="emit('switch')" />
       <span class="flex-1" />
       <button
-        class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0 pointer-coarse:w-11 pointer-coarse:h-11"
+        class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer shrink-0 pointer-coarse:w-11 pointer-coarse:h-11 wco:app-no-drag"
         title="Search (Ctrl+Shift+F)"
         aria-label="Search"
         @click="emit('search')"

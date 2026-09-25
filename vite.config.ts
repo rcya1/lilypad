@@ -62,6 +62,8 @@ function pwaPlugin() {
       start_url: '/',
       scope: '/',
       display: 'standalone',
+      // Lets the app hide the title bar and draw into it (users toggle it from the title bar).
+      display_override: ['window-controls-overlay'],
       background_color: '#f4f8f4',
       theme_color: '#e5eee5',
       icons: [

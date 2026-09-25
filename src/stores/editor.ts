@@ -62,6 +62,10 @@ export const useEditorStore = defineStore('editor', () => {
   /** Restored when switching back to a tab. Not reactive; nothing watches it. */
   const previewScrollTop = new Map<string, number>()
 
+  // Most recent last, for reopening closed tabs.
+  const closedTabs: string[] = []
+  const MAX_CLOSED_TABS = 20
+
   function requestScrollToLine(documentId: string, line: number) {
     scrollToLineRequest.value = { documentId, line }
   }
@@ -244,6 +248,12 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     if (previewDocumentId.value === id) previewDocumentId.value = null
+    if (openDocuments.value.has(id)) {
+      const previous = closedTabs.indexOf(id)
+      if (previous !== -1) closedTabs.splice(previous, 1)
+      closedTabs.push(id)
+      if (closedTabs.length > MAX_CLOSED_TABS) closedTabs.shift()
+    }
     openDocuments.value.delete(id)
     dirtyIds.value.delete(id)
     editorCursorLine.value.delete(id)
@@ -256,6 +266,26 @@ export const useEditorStore = defineStore('editor', () => {
       const nextId: string | null = tabOrder.value[Math.max(0, idx - 1)] ?? null
       activeDocumentId.value = nextId
     }
+  }
+
+  /** Reopens the most recently closed tab whose entry still exists. */
+  function reopenClosedTab() {
+    const files = useFilesStore()
+    while (closedTabs.length > 0) {
+      const id = closedTabs.pop()!
+      if (files.getEntry(id)) {
+        void openEntry(id)
+        return
+      }
+    }
+  }
+
+  /** Activates the tab `step` places away from the active one, wrapping around. */
+  function cycleTab(step: number) {
+    const count = tabOrder.value.length
+    if (count === 0) return
+    const current = activeDocumentId.value ? tabOrder.value.indexOf(activeDocumentId.value) : -1
+    setActiveDocument(tabOrder.value[(((current + step) % count) + count) % count]!)
   }
 
   /** Stays dirty if anything was typed during the upload, so the next idle timer saves again. */
@@ -314,6 +344,8 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   return {
+    reopenClosedTab,
+    cycleTab,
     openDocuments,
     tabOrder,
     activeDocumentId,

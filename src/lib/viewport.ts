@@ -5,3 +5,12 @@ export const MOBILE_BREAKPOINT = 768
 export function isSmallViewport(): boolean {
   return window.innerWidth < MOBILE_BREAKPOINT
 }
+
+/**
+ * Running as an installed app in its own window. There the browser passes shortcuts like Ctrl+W and
+ * Ctrl+Tab to the page instead of acting on them.
+ */
+export function isInstalledApp(): boolean {
+  return window.matchMedia('(display-mode: standalone), (display-mode: window-controls-overlay)')
+    .matches
+}
