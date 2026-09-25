@@ -1,4 +1,4 @@
-<!-- Split-pane editor area: manages the resizable divider, layout/swap toggles, and per-panel font-size controls. -->
+<!-- Editor area: tab bar, editor/preview split with a draggable divider, font size controls. -->
 <script setup lang="ts">
 import { ref, computed, useTemplateRef, onBeforeUnmount } from 'vue'
 import { AArrowDown, AArrowUp } from 'lucide-vue-next'
@@ -16,32 +16,23 @@ const store = useEditorStore()
 const uiStore = useUiStore()
 const hasTabs = computed(() => store.tabOrder.length > 0)
 
-// Arriving from the reader via the Read/Edit switch: the tab bar grows down into place instead of
-// snapping in (the reader collapses its copy of it upward on the way out).
+// Arriving via the Read/Edit switch, the tab bar grows into place (the reader mirrors this).
 const slideTabsIn = ref(uiStore.arrivedViaModeSwitch('to-edit'))
 const activeId = computed(() => store.activeDocumentId)
 const activeDocType = computed(() => store.activeDocument?.type)
 
 const splitPane = useTemplateRef<HTMLDivElement[]>('splitPane')
-// Percentage of the container occupied by the first panel (editor or preview, depending on swap).
+// Share of the container taken by the first panel (editor or preview, depending on swap).
 const splitPct = ref(50)
-// Hard stops: prevent either panel from collapsing so small it becomes unusable.
 const MIN_PCT = 20
 const MAX_PCT = 80
 
 const isVertical = ref(false)
 const isSwapped = ref(false)
-// Tracks rotation icon direction; flips each time the user toggles layout.
 const rotationClockwise = ref(true)
 const isDragging = ref(false)
 
-/**
- * Compute absolute-positioned style for one of the two split panels.
- * Both panels are `position: absolute` inside a `position: relative` container so
- * their dimensions can be transitioned with CSS rather than forcing reflows.
- *
- * @param inFirst - true for the "first" slot (left or top), false for the second.
- */
+/** Absolutely positioned so size changes can be CSS transitions. `inFirst` = left/top slot. */
 function slotStyle(inFirst: boolean) {
   if (!isVertical.value) {
     return inFirst
@@ -54,17 +45,12 @@ function slotStyle(inFirst: boolean) {
   }
 }
 
-// When preview is hidden, expand the editor to fill the full container.
 const editorPanelStyle = computed(() => {
   if (!uiStore.previewVisible) return { left: '0', top: '0', width: '100%', height: '100%' }
   return slotStyle(!isSwapped.value)
 })
 
-/**
- * When preview is hidden we collapse it to 0 width/height but keep it mounted so
- * CodeMirror and the preview renderer don't lose state. The position offsets ensure
- * the collapsed panel stays out of the visible area regardless of the swap state.
- */
+/** A hidden preview collapses to zero size but stays mounted, so neither pane loses state. */
 const previewPanelStyle = computed(() => {
   if (!uiStore.previewVisible) {
     if (isVertical.value) {
@@ -78,8 +64,7 @@ const previewPanelStyle = computed(() => {
   return slotStyle(isSwapped.value)
 })
 
-// The hit zone is 12px wide/tall centred on the split line, giving a comfortable grab area
-// without requiring pixel-perfect cursor placement.
+// A 12px grab area centred on the split line.
 const dividerHitZoneStyle = computed(() => {
   if (!isVertical.value) {
     return { left: `calc(${splitPct.value}% - 6px)`, top: '0', width: '12px', height: '100%' }
@@ -88,7 +73,6 @@ const dividerHitZoneStyle = computed(() => {
   }
 })
 
-// Thicken and accent the divider line while dragging for visual feedback.
 const dividerLineClass = computed(() => {
   if (isDragging.value) {
     return isVertical.value
@@ -102,26 +86,21 @@ const dividerLineClass = computed(() => {
 
 const showPreviewFontControls = computed(() => uiStore.previewVisible)
 
-// Anchor editor font controls to the right edge of the editor panel.
-// In single-pane or vertical mode they sit flush with the container right edge.
+// Right edge of the editor panel (or of the container, in single-pane or vertical mode).
 const editorFontControlsStyle = computed(() => {
   if (!uiStore.previewVisible || isVertical.value || isSwapped.value) return { right: '0' }
   return { right: `${100 - splitPct.value}%` }
 })
 
-// Anchor preview font controls to the right edge of the preview panel.
-// In vertical mode both control groups share the breadcrumb bar: preview controls sit
-// immediately left of the editor controls (62px = px-2 + w-5 + gap-1.5 + w-5 + px-2).
+// Right edge of the preview panel. Stacked vertically, both groups share the breadcrumb bar, so
+// these sit just left of the editor's (62px = px-2 + w-5 + gap-1.5 + w-5 + px-2).
 const previewFontControlsStyle = computed(() => {
   if (isVertical.value) return { right: '62px' }
   if (isSwapped.value) return { right: `${100 - splitPct.value}%` }
   return { right: '0' }
 })
 
-/**
- * Toggle between side-by-side (horizontal) and stacked (vertical) layouts.
- * Resets the split to 50/50 so neither panel starts in a cramped state after the transition.
- */
+/** Resets to 50/50 so neither panel starts cramped. */
 function toggleLayout() {
   isVertical.value = !isVertical.value
   rotationClockwise.value = !rotationClockwise.value
@@ -132,16 +111,11 @@ function toggleSwap() {
   isSwapped.value = !isSwapped.value
 }
 
-/**
- * Begin a drag-resize session.
- * Attaches window-level listeners so the drag keeps working even if the cursor
- * leaves the divider hit zone during fast movement.
- */
+/** Window listeners keep the drag going if the cursor outruns the divider. */
 function onDividerMouseDown(e: MouseEvent) {
   e.preventDefault()
   isDragging.value = true
   document.body.style.cursor = isVertical.value ? 'row-resize' : 'col-resize'
-  // Prevent text selection in other elements while dragging.
   document.body.style.userSelect = 'none'
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', onMouseUp)
@@ -168,7 +142,7 @@ function onMouseUp() {
   window.removeEventListener('mouseup', onMouseUp)
 }
 
-// Clean up window listeners if the component unmounts mid-drag (e.g. switching documents).
+// In case it unmounts mid-drag.
 onBeforeUnmount(() => {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', onMouseUp)
@@ -197,7 +171,6 @@ onBeforeUnmount(() => {
       <div class="relative shrink-0">
         <BreadcrumbBar />
 
-        <!-- Editor font size controls — anchored to right edge of editor panel -->
         <div
           v-if="activeDocType !== 'image' && activeDocType !== 'web'"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
@@ -221,8 +194,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <!-- Preview font size controls — anchored to far right of preview panel.
-             In vertical mode they sit left of the editor controls; border flips to right. -->
+        <!-- Preview font size controls (left of the editor's when stacked) -->
         <div
           v-if="showPreviewFontControls && activeDocType !== 'image' && activeDocType !== 'web'"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
@@ -250,10 +222,8 @@ onBeforeUnmount(() => {
 
       <template v-for="id in store.tabOrder" :key="id">
         <div v-if="id === activeId" class="flex-1 min-h-0 overflow-hidden">
-          <!-- Image detail pane -->
           <ImageDetailPane v-if="activeDocType === 'image'" :document-id="id" class="h-full" />
 
-          <!-- Captured web page + notes split -->
           <WebDocPane
             v-else-if="activeDocType === 'web'"
             :document-id="id"
@@ -263,7 +233,6 @@ onBeforeUnmount(() => {
             class="h-full"
           />
 
-          <!-- Markdown split pane -->
           <div v-else ref="splitPane" class="relative h-full bg-surface overflow-hidden">
             <div
               class="absolute overflow-hidden split-panel"
@@ -296,7 +265,6 @@ onBeforeUnmount(() => {
       </template>
     </template>
 
-    <!-- Empty state -->
     <template v-else>
       <div class="flex-1 flex items-center justify-center">
         <div class="flex flex-col items-center gap-3 text-center">

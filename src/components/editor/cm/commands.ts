@@ -3,9 +3,8 @@ import type { Command } from '@codemirror/view'
 import type { EditorState } from '@codemirror/state'
 
 /**
- * Returns the inclusive [startLine, endLine] line-number range that a selection range covers.
- * When the selection ends exactly at the start of a line (a trailing newline is included), that
- * line isn't really "in" the selection, so it's excluded — matching how editors indent blocks.
+ * Lines a selection covers, not counting a final line it only reaches at column 0 (as editors do
+ * when indenting a block).
  */
 function lineSpan(state: EditorState, from: number, to: number): [number, number] {
   const startLine = state.doc.lineAt(from).number
@@ -14,12 +13,7 @@ function lineSpan(state: EditorState, from: number, to: number): [number, number
   return [startLine, endLine]
 }
 
-/**
- * Tab key command: indent every markdown bullet line touched by the selection by 2 spaces.
- * Iterates all lines each selection range spans (not just the first) so a multi-line selection
- * indents together. Non-bullet lines are skipped; returns false (deferring to default Tab) only
- * when the selection touches no bullet lines at all. seenLines dedups overlapping multi-cursor ranges.
- */
+/** Indents each bullet line the selection touches by 2 spaces; false (default Tab) if none. */
 export const indentBullet: Command = (editorView) => {
   const { state } = editorView
   const seenLines = new Set<number>()
@@ -39,11 +33,7 @@ export const indentBullet: Command = (editorView) => {
   return true
 }
 
-/**
- * Shift+Tab command: dedent every markdown bullet line touched by the selection by 2 spaces.
- * Skips lines that aren't bullets or have fewer than 2 leading spaces; returns false (deferring to
- * default Shift+Tab) only when no line in the selection can be dedented.
- */
+/** Dedents by 2 spaces; false (default Shift+Tab) if no line can be dedented. */
 export const dedentBullet: Command = (editorView) => {
   const { state } = editorView
   const seenLines = new Set<number>()

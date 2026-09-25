@@ -1,9 +1,8 @@
 // Trigram index for client-side full-text search.
 
-/** The inverted index: trigram → set of file IDs that contain it. */
+/** trigram → ids of the files containing it. */
 export type TrigramIndex = Map<string, Set<string>>
 
-/** Extract all 3-character substrings from lowercased text. */
 export function extractTrigrams(text: string): Set<string> {
   const lower = text.toLowerCase()
   const trigrams = new Set<string>()
@@ -13,7 +12,6 @@ export function extractTrigrams(text: string): Set<string> {
   return trigrams
 }
 
-/** Build the full trigram index from a content map. */
 export function buildTrigramIndex(contentMap: Map<string, string>): TrigramIndex {
   const index: TrigramIndex = new Map()
   for (const [fileId, content] of contentMap) {
@@ -29,7 +27,6 @@ export function buildTrigramIndex(contentMap: Map<string, string>): TrigramIndex
   return index
 }
 
-/** Remove a single file from the index. */
 export function removeFileFromIndex(index: TrigramIndex, fileId: string): void {
   for (const [tri, set] of index) {
     set.delete(fileId)
@@ -37,7 +34,6 @@ export function removeFileFromIndex(index: TrigramIndex, fileId: string): void {
   }
 }
 
-/** Re-index a single file (remove old trigrams, add new ones). */
 export function updateTrigramsForFile(index: TrigramIndex, fileId: string, content: string): void {
   removeFileFromIndex(index, fileId)
   for (const tri of extractTrigrams(content)) {
@@ -50,10 +46,7 @@ export function updateTrigramsForFile(index: TrigramIndex, fileId: string, conte
   }
 }
 
-/**
- * Find candidate file IDs for a literal (non-regex) query using the trigram
- * index.  Returns null if the query is too short for trigram filtering.
- */
+/** Null if the query is too short to filter by trigrams. */
 export function findLiteralCandidates(index: TrigramIndex, query: string): Set<string> | null {
   const trigrams = extractTrigrams(query)
   if (trigrams.size === 0) return null // query < 3 chars
@@ -73,10 +66,7 @@ export function findLiteralCandidates(index: TrigramIndex, query: string): Set<s
   return candidates ?? new Set()
 }
 
-/**
- * Extract maximal runs of literal characters from a regex pattern string.
- * Only runs of length ≥ 3 are returned (shorter runs can't form trigrams).
- */
+/** Runs of 3+ literal characters (anything shorter can't form a trigram). */
 export function extractLiteralRuns(pattern: string): string[] {
   const literals: string[] = []
   let current = ''
@@ -147,10 +137,7 @@ export function splitOnTopLevelPipe(pattern: string): string[] {
   return branches
 }
 
-/**
- * Find candidate file IDs for a regex pattern using trigram filtering.
- * Returns null when filtering can't help (full scan required).
- */
+/** Null when filtering can't help (full scan). */
 export function findRegexCandidates(index: TrigramIndex, pattern: string): Set<string> | null {
   const branches = splitOnTopLevelPipe(pattern)
   const branchCandidates: Set<string>[] = []

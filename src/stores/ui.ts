@@ -1,4 +1,4 @@
-// Pinia store for UI settings (dark mode, font sizes, Vim config) persisted to localStorage and synced to Supabase.
+// Pinia store for UI state and settings (theme, font sizes, Vim), saved locally and to Supabase.
 import { defineStore } from 'pinia'
 import { ref, watch, type Ref } from 'vue'
 import { supabase } from '@/lib/supabase'
@@ -13,23 +13,19 @@ import {
   jsonCodec,
 } from '@/lib/storage'
 
-// Font size bounds applied both on set and on hydrate from the cloud,
-// so out-of-range values from old storage are silently clamped.
+// Applied when setting and when loading from the cloud, so old out-of-range values are clamped.
 const FONT_SIZE_MIN = 12
 const FONT_SIZE_MAX = 24
-// How long to wait after the last setting change before flushing to Supabase.
-// Avoids a network round-trip on every slider tick.
+// Batches setting changes (e.g. slider drags) into one upsert.
 const REMOTE_SAVE_DEBOUNCE_MS = 1000
 
-/** A single user-defined Vim key mapping (e.g. jk → <Esc> in insert mode). */
+/** e.g. jk → <Esc> in insert mode. */
 export interface VimMapping {
   id: string
-  /** Left-hand side: the key sequence to remap. */
   lhs: string
-  /** Right-hand side: the keys to execute. */
   rhs: string
   mode: 'normal' | 'insert' | 'visual'
-  /** When true, the mapping is non-recursive (noremap / nnoremap / etc.). */
+  /** Non-recursive (noremap). */
   noremap: boolean
 }
 
@@ -40,32 +36,30 @@ function clampFontSize(n: number): number {
 export type SidebarTab = 'files' | 'images'
 
 export type ModeSwitchDirection = 'to-read' | 'to-edit'
-// How long after a Read/Edit flip the arriving screen still counts as "just switched".
+// How long after a Read/Edit flip the arriving screen counts as "just switched".
 const MODE_SWITCH_WINDOW_MS = 1000
 
 export const useUiStore = defineStore('ui', () => {
-  // ── Ephemeral UI state (not persisted) ──────────────────────────────────────
+  // Not persisted:
   const sidebarTab = ref<SidebarTab>('files')
   const highlightedImageId = ref<string | null>(null)
   const quickSwitcherOpen = ref(false)
-  // Sidebar geometry, shared by the editor sidebar and the reader sidebar so flipping between
-  // modes with the Read/Edit switch doesn't move or resize it (or reset the tree's scroll).
+  // Shared by the editor and reader sidebars so flipping Read/Edit doesn't move or resize them, or
+  // reset the tree's scroll.
   const sidebarWidth = ref(250)
   const sidebarMinimized = ref(false)
   const sidebarScrollTop = ref(0)
-  // True while the sidebar's edge is being dragged (SidebarResizeHandle).
   const sidebarResizing = ref(false)
-  // Recorded by the Read/Edit switch just before navigating. Components on the screen being
-  // switched to check it during setup to play their entry animations (the tab bar sliding in/out,
-  // the file actions growing/shrinking). Timestamped rather than cleared-on-read so several
-  // components can each see it; it goes stale on its own.
+  // Set by the Read/Edit switch before navigating; components on the arriving screen check it in
+  // setup to play their entry animations. Timestamped rather than cleared on read so several
+  // components can see it.
   const modeSwitch = ref<{ direction: ModeSwitchDirection; at: number } | null>(null)
 
   function markModeSwitch(direction: ModeSwitchDirection) {
     modeSwitch.value = { direction, at: performance.now() }
   }
 
-  /** True when this screen was reached via the switch in `direction` just now (and motion is OK). */
+  /** Also false when the user prefers reduced motion. */
   function arrivedViaModeSwitch(direction: ModeSwitchDirection): boolean {
     const flip = modeSwitch.value
     return (
@@ -76,10 +70,7 @@ export const useUiStore = defineStore('ui', () => {
     )
   }
 
-  /**
-   * Switches the sidebar to the Images tab and briefly highlights the given image entry.
-   * The highlight is cleared after 1.5 s (long enough for a CSS flash animation).
-   */
+  /** Opens the Images tab with the image highlighted for 1.5s (the flash animation). */
   function navigateToImage(entryId: string) {
     sidebarTab.value = 'images'
     highlightedImageId.value = entryId
@@ -96,10 +87,8 @@ export const useUiStore = defineStore('ui', () => {
     quickSwitcherOpen.value = false
   }
 
-  // ── Persisted settings ──────────────────────────────────────────────────────
-  // Each `persisted()` call creates a Vue ref that is pre-hydrated from localStorage
-  // and written back automatically on every change. Cloud sync is wired up separately
-  // via `syncRemote` below — the two layers are independent.
+  // Persisted: each `persisted()` ref hydrates from localStorage and writes back on change. Cloud
+  // sync is separate (syncRemote below).
   const isDarkMode = persisted(STORAGE_KEYS.theme, false, themeCodec)
   const previewVisible = persisted(STORAGE_KEYS.previewVisible, true, boolCodec)
   const previewFontSize = persisted(
@@ -122,35 +111,19 @@ export const useUiStore = defineStore('ui', () => {
   const highlightOnYank = persisted(STORAGE_KEYS.highlightOnYank, true, boolCodec)
   const vimClipboardSync = persisted(STORAGE_KEYS.vimClipboardSync, true, boolCodec)
 
-  // Apply dark mode to <html class="dark"> whenever the setting changes, including
-  // the initial load (immediate: true) and after cloud hydration overwrites the value.
   watch(isDarkMode, (v) => document.documentElement.classList.toggle('dark', v), {
     immediate: true,
   })
 
-  // ── Supabase sync ───────────────────────────────────────────────────────────
-  /**
-   * Descriptor for a setting that participates in Supabase cloud sync.
-   * `encode` serialises the current value for upsert; `decode` applies a remote value
-   * (returning undefined signals an invalid/missing value that should be skipped).
-   */
   interface RemoteSetting {
     key: string
     encode: () => unknown
     decode: (raw: unknown) => void
   }
 
-  // Registry of all settings that should be round-tripped with Supabase.
   const remoteSettings: RemoteSetting[] = []
 
-  /**
-   * Registers a setting ref for Supabase sync.
-   *
-   * @param state   - The reactive ref to keep in sync.
-   * @param key     - Column key inside the `user_settings.settings` JSONB object.
-   * @param decode  - Validates and converts the raw cloud value. Return `undefined` to skip.
-   * @param encode  - Converts the ref value to a JSON-serialisable form (identity by default).
-   */
+  /** `key` is the field in `user_settings.settings`; `decode` returns undefined to skip a value. */
   function syncRemote<T>(
     state: Ref<T>,
     key: string,
@@ -167,7 +140,6 @@ export const useUiStore = defineStore('ui', () => {
     })
   }
 
-  // Register every persisted setting for cloud sync.
   syncRemote(
     isDarkMode,
     'theme',
@@ -195,22 +167,15 @@ export const useUiStore = defineStore('ui', () => {
     typeof raw === 'boolean' ? raw : undefined,
   )
 
-  /** Serialises every registered remote setting into a plain object for upsert. */
   function serializeSettings(): Record<string, unknown> {
     return Object.fromEntries(remoteSettings.map((s) => [s.key, s.encode()]))
   }
 
   let saveTimer: ReturnType<typeof setTimeout> | undefined
-  // True while loadSettings() is applying cloud values — used to suppress echo-saves
-  // that would otherwise fire because the watchers below see the hydration writes.
+  // Set while loadSettings() applies cloud values, so those writes don't echo back as saves.
   let hydrating = false
 
-  /**
-   * Debounces a Supabase upsert of all current settings.
-   * Guards are in place so this is a no-op when:
-   *   - The user is not logged in (no userId).
-   *   - We are currently hydrating from the cloud (prevents echo-save loops).
-   */
+  /** Debounced upsert of every setting. */
   function scheduleSave() {
     if (hydrating) return
     const userId = useAuthStore().user?.id
@@ -230,10 +195,7 @@ export const useUiStore = defineStore('ui', () => {
     }, REMOTE_SAVE_DEBOUNCE_MS)
   }
 
-  // Watch all persisted settings and schedule a Supabase save on any change.
-  // `flush: 'sync'` ensures the `hydrating` flag is still set when these watchers
-  // fire during loadSettings() — using the default 'pre' flush would defer the
-  // watcher to the next microtask, after `hydrating` has already been cleared.
+  // flush: 'sync' so these run while `hydrating` is still set during loadSettings().
   watch(
     [
       isDarkMode,
@@ -250,15 +212,7 @@ export const useUiStore = defineStore('ui', () => {
     { flush: 'sync' },
   )
 
-  /**
-   * Fetches the user's settings from Supabase and applies them over localStorage values.
-   * Cloud values win on conflict (last-write on any device wins).
-   *
-   * On first login (no row exists yet), the current local values are persisted to Supabase
-   * so subsequent logins on other devices pick up the defaults the user has already configured.
-   *
-   * @param userId - The authenticated Supabase user ID.
-   */
+  /** Cloud values win over local ones. On first login (no row yet), this device's are uploaded. */
   async function loadSettings(userId: string) {
     const { data, error } = await supabase
       .from('user_settings')
@@ -266,16 +220,14 @@ export const useUiStore = defineStore('ui', () => {
       .eq('user_id', userId)
       .single()
 
-    // PGRST116 = zero rows for .single() — the only case that means "first login".
-    // Any other error is transient/unknown: bail without seeding, so a network blip
-    // can't overwrite the user's cloud settings with this device's local values.
+    // PGRST116 (no row) is the only "first login" case. Bail on anything else, so a network blip
+    // can't overwrite the cloud settings with this device's.
     if (error && error.code !== 'PGRST116') {
       console.error('loadSettings failed:', error)
       return
     }
 
     if (!data) {
-      // First login — seed Supabase with whatever is already in localStorage.
       await supabase
         .from('user_settings')
         .upsert({ user_id: userId, settings: serializeSettings() })
@@ -283,15 +235,10 @@ export const useUiStore = defineStore('ui', () => {
     }
 
     const remote = data.settings as Record<string, unknown>
-    // The `hydrating` flag suppresses the scheduleSave watcher during this block.
     hydrating = true
     for (const setting of remoteSettings) setting.decode(remote[setting.key])
     hydrating = false
   }
-
-  // ── Setters ─────────────────────────────────────────────────────────────────
-  // Mutating the refs is all that's needed — localStorage sync is handled by
-  // `persisted()` and Supabase sync is handled by the watcher above.
 
   function toggleDarkMode() {
     isDarkMode.value = !isDarkMode.value
@@ -325,20 +272,14 @@ export const useUiStore = defineStore('ui', () => {
     vimClipboardSync.value = val
   }
 
-  /**
-   * Appends a new Vim key mapping. Replaces the array (rather than mutating in place)
-   * so Vue's reactivity system detects the change.
-   */
   function addVimMapping(m: Omit<VimMapping, 'id'>) {
     vimMappings.value = [...vimMappings.value, { ...m, id: crypto.randomUUID() }]
   }
 
-  /** Removes the mapping with the given ID. */
   function removeVimMapping(id: string) {
     vimMappings.value = vimMappings.value.filter((m) => m.id !== id)
   }
 
-  /** Applies a partial update to an existing mapping, identified by ID. */
   function updateVimMapping(id: string, patch: Partial<Omit<VimMapping, 'id'>>) {
     vimMappings.value = vimMappings.value.map((m) => (m.id === id ? { ...m, ...patch } : m))
   }

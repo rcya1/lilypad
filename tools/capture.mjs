@@ -1,12 +1,6 @@
-// Headless-Chromium page capture — the dev/server side of the Web Annotations feature.
-//
-// Ported from experiments/web-capture-spike/capture.mjs (Phase 0, validated). Loads a URL,
-// inlines external stylesheets (url()/@import rewritten to absolute), injects a <base href> so
-// images/fonts still resolve, strips all scripts, and returns a single inert HTML string.
-//
-// Lives outside src/ so the client bundle never imports Playwright. Consumed by the Vite dev
-// middleware (devCapturePlugin in vite.config.ts) and the Vercel serverless function
-// (api/capture.ts).
+// Headless-Chromium page capture: loads a URL, inlines stylesheets (url()/@import made absolute),
+// injects a <base href> so images and fonts resolve, strips scripts, and returns one inert HTML
+// string. Outside src/ so the client bundle never imports Playwright.
 
 import { isIP } from 'node:net'
 import { lookup } from 'node:dns/promises'
@@ -33,12 +27,10 @@ function isBlockedAddress(address, family) {
 }
 
 /**
- * Rejects capture targets that aren't public http(s) URLs, including ones that resolve (via
- * DNS) to a loopback/private/link-local address — defends the capture endpoint against SSRF,
- * such as reaching cloud metadata services (169.254.169.254) from inside the capture sandbox.
+ * Rejects anything but public http(s) URLs, including hosts that resolve to private or link-local
+ * addresses (SSRF, e.g. cloud metadata at 169.254.169.254).
  *
  * @param {string} rawUrl
- * @throws {Error} with a user-facing message if the URL is disallowed
  */
 export async function assertCapturableUrl(rawUrl) {
   let parsed
@@ -73,9 +65,8 @@ const CHALLENGE_TITLE_PATTERN =
   /^(just a moment|attention required|access denied|are you a robot|please verify you are a human|checking your browser)/i
 
 /**
- * Throws if the just-navigated page looks like an anti-bot interstitial rather than the real
- * page — e.g. Cloudflare's "Just a moment..." challenge, which a headless browser fails
- * automatically and can't solve from this capture path.
+ * Throws if the page is an anti-bot interstitial (e.g. Cloudflare's "Just a moment..."), which
+ * headless capture can't get past.
  *
  * @param {import('playwright-core').Page} page
  * @param {import('playwright-core').Response | null} response
@@ -91,15 +82,11 @@ async function assertNotChallengePage(page, response) {
 }
 
 /**
- * Navigates `page` to `url` and waits for a stable render. `waitUntil: 'load'` is the
- * load-bearing wait — it must succeed. The `networkidle` wait afterward is a short, best-effort
- * grace period for late-loading content: many real sites (ad/analytics/beacon-heavy — e.g. most
- * Fandom wikis) never go network-idle at all, so it's given a much shorter budget than the
- * overall navigation and its failure doesn't reject the capture.
+ * `load` must succeed; the shorter `networkidle` wait after it is best-effort, since many sites
+ * (ads, analytics, beacons) never go idle.
  *
  * @param {import('playwright-core').Page} page
  * @param {string} url
- * @throws {Error} if navigation fails or the page is an anti-bot challenge/interstitial
  */
 export async function navigateForCapture(page, url) {
   const response = await page.goto(url, { waitUntil: 'load', timeout: 60_000 })
@@ -128,9 +115,8 @@ function absolutizeCss(css, sheetUrl) {
 }
 
 /**
- * Serialize an already-navigated Playwright page into one inert, self-contained HTML string.
- * Env-agnostic: the caller is responsible for launching/closing the browser, so this works
- * with both `playwright` (dev) and `playwright-core` + `@sparticuz/chromium` (prod).
+ * Serializes an already-navigated page. The caller launches and closes the browser, so this works
+ * with `playwright` (dev) and `playwright-core` + `@sparticuz/chromium` (production).
  *
  * @returns {Promise<{ html: string, title: string, finalUrl: string }>}
  */
@@ -182,8 +168,7 @@ export async function serializeSnapshot(page) {
 }
 
 /**
- * Dev-path capture: launches bundled Playwright Chromium, captures, returns the snapshot.
- * (Prod will use playwright-core + @sparticuz/chromium with the same `serializeSnapshot`.)
+ * Dev capture with Playwright's bundled Chromium.
  *
  * @param {string} url
  * @returns {Promise<{ html: string, title: string, finalUrl: string }>}

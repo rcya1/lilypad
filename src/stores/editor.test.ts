@@ -1,8 +1,7 @@
-// Unit tests for the editor store: tab lifecycle, preview semantics, dirty tracking, auto-save.
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
-// The editor store imports these stores inside saveDocument; mock them at module level.
+// saveDocument uses these stores.
 const uploadContent = vi.fn(async () => true)
 vi.mock('@/stores/files', () => ({
   useFilesStore: () => ({ uploadContent }),

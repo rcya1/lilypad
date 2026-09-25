@@ -1,6 +1,5 @@
-<!-- Top of both sidebars (editor and reader): logo, wordmark, Read/Edit switch and search. Shared so
-     the two modes render it pixel-identically and nothing jumps when you flip between them. The
-     default slot goes after the search button (the editor puts its saving spinner there). -->
+<!-- Top of both sidebars: logo, wordmark, Read/Edit switch, search. Shared so both modes render it
+     identically. The slot goes after search (the editor's saving spinner). -->
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next'
 import LilypadIcon from '@/assets/icon.svg'
@@ -8,14 +7,13 @@ import ModeSwitch, { type AppMode } from '@/components/ModeSwitch.vue'
 
 defineProps<{
   mode: AppMode
-  /** Icon-only rail: just the logo. */
+  /** Logo only. */
   minimized: boolean
-  /** Current sidebar width in px; the wordmark drops out when there isn't room for it. */
+  /** In px; the wordmark drops out when there isn't room. */
   width: number
 }>()
 const emit = defineEmits<{ switch: []; search: [] }>()
 
-// Below this width the header can't fit logo + wordmark + mode switch + search.
 const WORDMARK_MIN_WIDTH = 236
 </script>
 

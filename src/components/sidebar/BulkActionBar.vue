@@ -1,4 +1,4 @@
-<!-- Sticky toolbar shown at the bottom of the sidebar when ≥2 entries are selected; provides bulk delete and move actions. -->
+<!-- Bar at the bottom of the sidebar while 2+ entries are selected: bulk delete and move. -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Trash2, FolderInput } from 'lucide-vue-next'
@@ -17,10 +17,8 @@ const showMoveModal = ref(false)
 const count = computed(() => filesStore.selectedIds.size)
 
 /**
- * Bulk-deletes all selected entries after confirmation.
- * Snapshots the ID set before the async confirm call because the set can
- * change if the user clicks elsewhere while the dialog is open.
- * Closes editor tabs for each entry first to avoid dangling open documents.
+ * The selection is copied before the confirm dialog, since it can change while the dialog is open.
+ * Open tabs are closed first.
  */
 async function handleDelete() {
   const ids = [...filesStore.selectedIds]
@@ -40,12 +38,6 @@ async function handleDelete() {
   if (!success) toast.addToast('Failed to delete some files.', 'error')
 }
 
-/**
- * Moves all selected entries to `targetFolderId` (null = workspace root).
- * Called by FolderPickerModal's confirm event.
- *
- * @param targetFolderId - Destination folder ID, or null for root.
- */
 async function handleMove(targetFolderId: string | null) {
   showMoveModal.value = false
   const ids = [...filesStore.selectedIds]

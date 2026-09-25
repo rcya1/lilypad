@@ -1,9 +1,8 @@
-// CodeMirror StateEffect/StateField pairs for the search-result line flash and yank flash.
+// Line flash (from search results) and yank flash decorations.
 import { StateEffect, StateField } from '@codemirror/state'
 import { Decoration, type DecorationSet, EditorView } from '@codemirror/view'
 
-// StateEffect/StateField pair for the line-flash highlight triggered by search result navigation.
-// The effect carries the 1-based line number to highlight, or null to clear.
+// Carries the 1-based line to flash, or null to clear.
 export const highlightLineEffect = StateEffect.define<number | null>()
 
 export const highlightLineField = StateField.define<DecorationSet>({
@@ -21,16 +20,12 @@ export const highlightLineField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 })
 
-// StateEffect/StateField pair for the yank flash (brief highlight of the yanked range).
-// value.map(tr.changes) keeps the range valid as the document is edited — without this,
-// a document change could make stored positions point to the wrong characters.
 export const yankFlashEffect = StateEffect.define<{ from: number; to: number } | null>()
 
 export const yankFlashField = StateField.define<DecorationSet>({
   create: () => Decoration.none,
   update(value, tr) {
-    // Remap positions against document changes so the flash decoration stays accurate
-    // if the user types while the flash is still visible.
+    // Keep the range on the right text if the user types during the flash.
     value = value.map(tr.changes)
     for (const effect of tr.effects) {
       if (effect.is(yankFlashEffect)) {

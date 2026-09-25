@@ -1,6 +1,5 @@
-// Vercel serverless function serving `POST /api/capture` in production. Dev instead uses the
-// Vite middleware (devCapturePlugin in vite.config.ts). Both wrap the same env-agnostic
-// serializeSnapshot() from tools/capture.mjs — this file only supplies the prod Chromium launch.
+// Vercel function for `POST /api/capture` in production (dev uses the Vite middleware). Only the
+// Chromium launch differs; the capture itself is tools/capture.mjs.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import chromium from '@sparticuz/chromium'

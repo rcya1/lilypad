@@ -1,21 +1,18 @@
-// TypeScript types for the Supabase database schema, hand-maintained to match the actual schema.
+// Hand-maintained types for the Supabase schema.
 /** Stored in `entries.metadata` for `document_type = 'web'` documents. */
 export interface WebDocMeta {
-  /** Original URL the snapshot was captured from. */
   url: string
-  /** ISO timestamp of capture. */
+  /** ISO timestamp. */
   capturedAt: string
   /** Page <title> at capture time. */
   title: string
 }
 
-/** Fixed palette of highlight colours; the client maps each to a paint style. */
 export type HighlightColor = 'amber' | 'green' | 'blue' | 'rose'
 
 /**
- * Text anchors for a highlight, stored in `annotations.selectors`.
- * Because the captured snapshot is immutable, `position` (character offsets into the
- * snapshot body's text) resolves exactly; `quote` is kept for robustness / future re-capture.
+ * Stored in `annotations.selectors`. The snapshot never changes, so `position` resolves exactly;
+ * `quote` is kept for robustness.
  */
 export interface HighlightSelectors {
   quote: { exact: string; prefix: string; suffix: string }
@@ -34,19 +31,19 @@ export interface Database {
           /** Null for directories. */
           document_type: 'pdf' | 'md' | 'image' | 'web' | null
           parent_id: string | null
-          /** Supabase Storage object path for image and web documents; null for md/pdf. */
+          /** For image and web documents. */
           storage_path: string | null
-          /** Inline text content for md documents; null for all other types. */
+          /** Note text, for md and web documents. */
           content: string | null
-          /** Structured metadata; currently only used for web snapshots (WebDocMeta). */
+          /** Web documents only. */
           metadata: WebDocMeta | null
-          /** Fractional ordering within a parent folder; siblings are sorted by this value. */
+          /** Siblings are ordered by this (fractional). */
           sort_order: number
           created_at: string
           updated_at: string
           /**
-           * Bumped by a trigger on every update; the offline-sync compare-and-swap checks it (see
-           * docs/features/offline-sync.md). Absent until that migration is applied.
+           * Bumped on every update, for sync's compare-and-swap. Absent until that migration is
+           * applied (docs/features/offline-sync.md).
            */
           version?: number
         }
@@ -89,7 +86,6 @@ export interface Database {
           local_id: string
           color: HighlightColor
           selectors: HighlightSelectors
-          /** Optional inline markdown note; null when the highlight has no note. */
           note: string | null
           created_at: string
           updated_at: string
@@ -140,9 +136,8 @@ export interface Database {
     Views: Record<string, never>
     Functions: {
       /**
-       * Compare-and-swap save of a note's text: writes only if the row is still at
-       * `p_expected_version`. Returns the new version on success, else the server's current version
-       * and content (both null when the row no longer exists).
+       * Compare-and-swap save of a note's text. On a mismatch, returns the server's version and
+       * content (both null if the row is gone).
        */
       save_entry_content: {
         Args: { p_id: string; p_content: string; p_expected_version: number }
@@ -154,7 +149,6 @@ export interface Database {
   }
 }
 
-/** Convenience aliases used throughout the files store instead of the long generic path. */
 export type EntryRow = Database['public']['Tables']['entries']['Row']
 export type EntryInsert = Database['public']['Tables']['entries']['Insert']
 export type AnnotationRow = Database['public']['Tables']['annotations']['Row']

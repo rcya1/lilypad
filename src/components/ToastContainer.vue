@@ -1,4 +1,4 @@
-<!-- Fixed bottom-right toast stack; progress bar animation is in sync with the 5s auto-dismiss in the toast store. -->
+<!-- Bottom-right toast stack; the progress bar matches the store's auto-dismiss time. -->
 <script setup lang="ts">
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-vue-next'
 import { useToastStore } from '@/stores/toast'
@@ -19,7 +19,6 @@ const toast = useToastStore()
             'border-border': t.type !== 'error',
           }"
         >
-          <!-- Icon -->
           <AlertCircle v-if="t.type === 'error'" :size="16" class="text-red-500 shrink-0 mt-px" />
           <CheckCircle2
             v-else-if="t.type === 'success'"
@@ -28,10 +27,8 @@ const toast = useToastStore()
           />
           <Info v-else :size="16" class="text-text-muted shrink-0 mt-px" />
 
-          <!-- Message -->
           <p class="flex-1 text-sm text-text-primary font-ui leading-snug">{{ t.message }}</p>
 
-          <!-- Dismiss button -->
           <button
             class="shrink-0 text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             @click="toast.removeToast(t.id)"
@@ -39,7 +36,6 @@ const toast = useToastStore()
             <X :size="15" />
           </button>
 
-          <!-- Progress bar -->
           <div
             class="absolute bottom-0 left-0 h-0.5 toast-progress"
             :class="{

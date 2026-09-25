@@ -1,9 +1,7 @@
-<!-- Renders a captured web snapshot in a sandboxed iframe and hosts the highlight layer:
-     paints highlights with the CSS Custom Highlight API (no DOM mutation), detects hover/click on
-     them via a caret hit-test (the API is paint-only, so highlights receive no pointer events),
-     shows a selection toolbar for creating highlights and an inline-note popover for editing them,
-     and links to the notes pane (click a highlight → jump to its reference; notes chip → scroll
-     the page here). Also intercepts in-frame link clicks so the frozen snapshot never navigates. -->
+<!-- A captured page in a sandboxed iframe with its highlights: painted with the CSS Custom
+     Highlight
+     API, a selection toolbar to create them, a note popover, and links to the notes pane. Link clicks
+     inside the page are intercepted so the snapshot never navigates. -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { StickyNote, Pencil, Trash2, Link2, Check, Loader2 } from 'lucide-vue-next'
@@ -31,29 +29,27 @@ const frame = ref<HTMLIFrameElement | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-// The live snapshot document/window, set once the iframe loads. Both are same-origin (blob: URL).
+// Set once the iframe loads; same-origin because it's a blob: URL.
 let frameDoc: Document | null = null
 let frameWin: (Window & typeof globalThis) | null = null
-// Blob URL backing the iframe; revoked before loading the next snapshot to avoid leaks.
+// Revoked before the next snapshot loads.
 let blobUrl: string | null = null
-// Resolved DOM Ranges per highlight id, rebuilt on every repaint (drives painting + hit-testing).
+// Rebuilt on every repaint; used for painting and hit-testing.
 const resolvedRanges = new Map<string, Range>()
 
 const highlights = computed(() => anno.highlightsFor(props.documentId))
 
 const DEFAULT_COLOR: HighlightColor = 'amber'
 
-// ── Selection toolbar + note popover (positioned in this component, over the iframe) ──────────
 const toolbar = ref<{ x: number; y: number } | null>(null)
 const popover = ref<{ id: string; x: number; y: number; editing: boolean } | null>(null)
 const toolbarEl = ref<HTMLDivElement | null>(null)
 const popoverEl = ref<HTMLDivElement | null>(null)
 const noteDraft = ref('')
 
-// Save shortcut is ⌘↵ on macOS, Ctrl+↵ elsewhere — label it to match the platform.
 const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform)
 const saveHint = isMac ? '⌘↵ to save' : 'Ctrl+↵ to save'
-// The selection range captured at mouseup, held until the user picks a colour.
+// Captured on mouseup, held until a colour is picked.
 let pendingRange: Range | null = null
 
 const popoverHighlight = computed(() =>
@@ -71,9 +67,8 @@ function revoke() {
 }
 
 /**
- * Download the captured HTML and load it into the iframe as a blob: URL, which keeps the frame
- * same-origin so the parent can script into it (paint highlights, read selection/scroll). The
- * iframe is sandboxed WITHOUT allow-scripts, so the captured page's own JS never runs.
+ * Loaded as a blob: URL so the frame is same-origin and scriptable. The iframe is sandboxed without
+ * allow-scripts, so the page's own JS never runs.
  */
 async function load(id: string) {
   loading.value = true
@@ -87,12 +82,10 @@ async function load(id: string) {
     return
   }
   blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
-  // Leave `loading` true here: the iframe hasn't parsed/painted the blob yet, so clearing it now
-  // would flash a blank white frame. onFrameLoad clears it once the snapshot is actually up.
+  // `loading` stays true until onFrameLoad, or a blank frame would flash.
   if (frame.value) frame.value.src = blobUrl
 }
 
-/** Wire up the loaded snapshot: grab its document, attach listeners, load + paint highlights. */
 async function onFrameLoad() {
   frameDoc = frame.value?.contentDocument ?? null
   frameWin = (frame.value?.contentWindow as (Window & typeof globalThis) | null) ?? null
@@ -111,13 +104,7 @@ async function onFrameLoad() {
   loading.value = false
 }
 
-// ── Coordinate mapping ────────────────────────────────────────────────────────────────────────
-/**
- * Convert a rect expressed in the iframe's own viewport coordinates into coordinates relative to
- * this component's container (which the toolbar/popover are absolutely positioned within). The
- * iframe's content viewport starts at the iframe's top-left in the page, so we add that offset and
- * subtract the container's own offset.
- */
+/** Iframe-viewport coordinates → this container's (where the overlays are positioned). */
 function toContainer(left: number, top: number): { x: number; y: number } {
   const fr = frame.value?.getBoundingClientRect()
   const cr = container.value?.getBoundingClientRect()
@@ -125,12 +112,7 @@ function toContainer(left: number, top: number): { x: number; y: number } {
   return { x: fr.left - cr.left + left, y: fr.top - cr.top + top }
 }
 
-/**
- * Nudge an already-positioned overlay (toolbar/popover) back inside the pane if it spills past an
- * edge — the anchor is derived from a selection/highlight rect that can sit anywhere, so near the
- * edges the centred toolbar or the drop-down popover would otherwise clip. Runs after the DOM
- * updates so the element's real measured size is known, then adjusts the stored x/y in place.
- */
+/** Nudges an overlay back inside the pane once it has rendered and can be measured. */
 async function clampOverlay(
   getEl: () => HTMLElement | null,
   pos: { x: number; y: number } | null,
@@ -146,8 +128,7 @@ async function clampOverlay(
   else if (r.bottom > cont.bottom - margin) pos.y += cont.bottom - margin - r.bottom
 }
 
-// ── Painting (CSS Custom Highlight API) ─────────────────────────────────────────────────────────
-/** Rebuild the resolved-range cache from stored selectors (exact — the snapshot is immutable). */
+/** Exact, since the snapshot never changes. */
 function rebuildRanges() {
   resolvedRanges.clear()
   if (!frameDoc?.body) return
@@ -157,7 +138,6 @@ function rebuildRanges() {
   }
 }
 
-/** Inject/refresh the `::highlight()` style rules inside the snapshot document. */
 function writeStyles() {
   if (!frameDoc) return
   let styleEl = frameDoc.getElementById('lily-hl-style') as HTMLStyleElement | null
@@ -184,7 +164,6 @@ function writeStyles() {
   styleEl.textContent = rules.join('\n')
 }
 
-/** Repaint everything: rebuild ranges, register CSS highlights, refresh styles. */
 function repaint() {
   rebuildRanges()
   writeStyles()
@@ -196,7 +175,6 @@ function repaint() {
 
   cssHighlights.clear()
 
-  // Base layer: one Highlight per colour.
   for (const key of HIGHLIGHT_COLOR_KEYS) {
     const ranges = highlights.value
       .filter((h) => h.color === key)
@@ -205,7 +183,7 @@ function repaint() {
     if (ranges.length) cssHighlights.set(`lily-${key}`, new HighlightCtor(...ranges))
   }
 
-  // Emphasis layers (higher priority so they win where they overlap the base paint).
+  // Emphasis layers win where they overlap the base colours.
   const hoverRange = anno.hoveredHighlightId ? resolvedRanges.get(anno.hoveredHighlightId) : null
   if (hoverRange) {
     const hl = new HighlightCtor(hoverRange)
@@ -220,13 +198,9 @@ function repaint() {
   }
 }
 
-// ── Rect hit-testing (find the highlight under a point) ─────────────────────────────────────────
 /**
- * The highlight whose *painted* box contains the point (x, y) in iframe viewport coords, if any.
- * We test the range's own client rects rather than a caret hit-test: `caretPositionFromPoint`
- * clamps a point past the end of a line to the nearest caret, so hovering the empty space to the
- * right of the last word would otherwise land on a highlight that ends there. The client rects are
- * the exact glyph boxes, so hovering only triggers over the actual highlighted text.
+ * Tests the range's glyph boxes, not a caret hit-test: `caretPositionFromPoint` snaps a point past
+ * the end of a line to the nearest caret, so the space after a highlight would count.
  */
 function highlightAtPoint(x: number, y: number): Highlight | null {
   for (const h of highlights.value) {
@@ -239,7 +213,6 @@ function highlightAtPoint(x: number, y: number): Highlight | null {
   return null
 }
 
-// ── Iframe event handlers ─────────────────────────────────────────────────────────────────────
 let hoverRaf = 0
 
 function onFrameMouseMove(e: MouseEvent) {
@@ -273,14 +246,13 @@ function onFrameMouseUp() {
 }
 
 function onFrameClick(e: MouseEvent) {
-  // 1. Link clicks: keep the frozen snapshot stable (see below) — handle before hit-testing.
   const anchor = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
   if (anchor) {
     handleAnchorClick(e, anchor)
     return
   }
 
-  // 2. Highlight clicks: focus it, open its note popover, and jump the notes to its reference.
+  // A highlight: focus it, open its popover and scroll the notes to its reference.
   const h = highlightAtPoint(e.clientX, e.clientY)
   if (h) {
     anno.setActiveHighlight(h.id)
@@ -290,7 +262,6 @@ function onFrameClick(e: MouseEvent) {
     return
   }
 
-  // 3. Empty space: clear focus and close the popover.
   if (anno.activeHighlightId) {
     anno.setActiveHighlight(null)
     repaint()
@@ -299,8 +270,7 @@ function onFrameClick(e: MouseEvent) {
 }
 
 function onFrameScroll() {
-  // Selection toolbar anchors to a now-moving rect — hide it. Keep the popover pinned to its
-  // highlight by recomputing its position.
+  // The toolbar's anchor is moving, so hide it; keep the popover pinned to its highlight.
   toolbar.value = null
   if (popover.value) {
     const r = resolvedRanges.get(popover.value.id)
@@ -314,9 +284,8 @@ function onFrameScroll() {
 }
 
 /**
- * A captured page keeps its live <a href> elements, and the injected <base href> resolves them to
- * the original site — so a click would navigate the iframe away from the snapshot. Intercept:
- * in-page #fragment links scroll within the snapshot; external links open in a new browser tab.
+ * Captured links resolve to the original site (via the injected <base>), so a click would navigate
+ * away from the snapshot. #fragments scroll within it; external links open in a new tab.
  */
 function handleAnchorClick(e: MouseEvent, anchor: HTMLAnchorElement) {
   const raw = anchor.getAttribute('href') ?? ''
@@ -335,7 +304,6 @@ function handleAnchorClick(e: MouseEvent, anchor: HTMLAnchorElement) {
   }
 }
 
-// ── Highlight creation / editing ────────────────────────────────────────────────────────────────
 async function createFromSelection(color: HighlightColor): Promise<Highlight | null> {
   if (!pendingRange || !frameDoc?.body) return null
   const selectors = serializeRange(frameDoc.body, pendingRange)
@@ -348,7 +316,7 @@ async function createFromSelection(color: HighlightColor): Promise<Highlight | n
   return h
 }
 
-/** Toolbar "add note": create a highlight (default colour) and open its popover in edit mode. */
+/** Toolbar "add note": highlight in the default colour and open the popover in edit mode. */
 async function createAndAnnotate() {
   const h = await createFromSelection(DEFAULT_COLOR)
   if (h) {
@@ -380,7 +348,6 @@ async function saveNote() {
   popover.value = { ...popover.value, editing: false }
 }
 
-/** Escape out of note editing: drop the draft and return to the rendered view. */
 function cancelEditNote() {
   if (!popover.value) return
   noteDraft.value = popoverHighlight.value?.note ?? ''
@@ -400,7 +367,7 @@ async function deletePopoverHighlight() {
   repaint()
 }
 
-/** Insert `[quote](lily:hl-x)` at the notes cursor and flip the notes pane to code mode. */
+/** Inserts `[quote](lily:hl-x)` at the notes cursor; the notes pane switches to code mode. */
 function insertReference() {
   const h = popoverHighlight.value
   if (!h) return
@@ -416,8 +383,7 @@ function closeOverlays() {
   pendingRange = null
 }
 
-// Escape dismisses whichever overlay is open (popover first). Note-editing Escape is handled on the
-// textarea itself with `.stop`, so it cancels the edit before this window handler ever sees it.
+// Escape closes the popover, else the toolbar. (While editing a note, the textarea handles it.)
 function onWindowKeyDown(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
   if (popover.value) {
@@ -431,9 +397,8 @@ function onWindowKeyDown(e: KeyboardEvent) {
   }
 }
 
-// Click-away: a mousedown anywhere in the parent document that lands outside the overlays closes
-// them. Clicks *inside* the snapshot iframe never reach here (they don't cross the frame boundary),
-// so opening a popover by clicking a highlight isn't immediately undone by this handler.
+// A mousedown outside the overlays closes them. Clicks inside the iframe never reach this, so
+// clicking a highlight to open its popover isn't undone.
 function onWindowMouseDown(e: MouseEvent) {
   const t = e.target as Node
   if (toolbar.value && !toolbarEl.value?.contains(t)) toolbar.value = null
@@ -446,8 +411,7 @@ function onWindowMouseDown(e: MouseEvent) {
   }
 }
 
-// ── React to cross-pane requests ────────────────────────────────────────────────────────────────
-// A notes chip was clicked → scroll the page to the highlight and focus it.
+// A notes chip was clicked: scroll to the highlight and focus it.
 watch(
   () => anno.scrollToHighlightRequest,
   (id) => {
@@ -456,7 +420,6 @@ watch(
     const h = anno.getById(id)
     if (!h || h.entryId !== props.documentId) return
     anno.setActiveHighlight(id)
-    // Ensure the range is resolved before measuring/scrolling.
     if (!resolvedRanges.has(id)) rebuildRanges()
     const r = resolvedRanges.get(id)
     const el =
@@ -468,14 +431,12 @@ watch(
   },
 )
 
-// Repaint when highlights change (create/delete/colour) or focus changes from the notes side.
 watch(highlights, () => repaint(), { deep: true })
 watch(
   () => [anno.activeHighlightId, anno.hoveredHighlightId],
   () => repaint(),
 )
 
-// Reload whenever the displayed document changes. immediate: true covers the initial mount.
 watch(
   () => props.documentId,
   (id) => {
@@ -485,10 +446,10 @@ watch(
   { immediate: true },
 )
 
-// ── Geometry for the leader line (WebDocPane draws it across both panes) ─────────────────────────
-/** Rect of a highlight in the main page's viewport coordinates, plus the iframe's visible band
- *  (so the caller can clamp the line's endpoint when the highlight is scrolled off-screen).
- *  Returns null if the highlight can't be resolved or has no box. */
+/**
+ * For WebDocPane's leader line: the highlight's rect in page coordinates, plus the iframe's visible
+ * band so the line can be clamped when the highlight is scrolled out of view.
+ */
 function highlightViewportRect(id: string): {
   left: number
   top: number
@@ -546,7 +507,7 @@ onBeforeUnmount(() => {
       @load="onFrameLoad"
     />
 
-    <!-- Selection toolbar: colour swatches + add-note, anchored above the selection. -->
+    <!-- Selection toolbar, above the selection -->
     <div
       v-if="toolbar"
       ref="toolbarEl"
@@ -571,14 +532,12 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <!-- Inline note popover for the active highlight. -->
     <div
       v-if="popover"
       ref="popoverEl"
       class="overlay-pop absolute z-30 w-72 max-w-[90%] rounded-lg bg-surface border border-border shadow-xl -translate-x-1/2"
       :style="{ left: popover.x + 'px', top: popover.y + 'px' }"
     >
-      <!-- Colour row + actions -->
       <div class="flex items-center justify-between px-2.5 py-1.5 border-b border-border-subtle">
         <div class="flex items-center gap-1">
           <button
@@ -617,7 +576,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Note body: rendered view or editor -->
       <div class="p-2.5">
         <template v-if="popover.editing">
           <textarea
@@ -669,9 +627,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Overlays (selection toolbar, note popover) fade in so they don't pop abruptly. Only opacity is
-   animated — the elements rely on translate utilities for positioning, which a transform-based
-   animation would fight. */
+/* Fade only: the overlays are positioned with translate utilities, which a transform animation
+   would fight. */
 .overlay-pop {
   animation: overlay-in 120ms ease-out;
 }

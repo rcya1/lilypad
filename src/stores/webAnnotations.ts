@@ -1,9 +1,5 @@
-// Pinia store for web-document highlights (annotations): loads/creates/updates/deletes rows in the
-// `annotations` table and carries the cross-pane intent state (active/hovered highlight, and
-// scroll requests in both directions) that links the captured page (WebView) with the notes pane.
-//
-// Offline-first like notes: changes apply locally, are cached on the device per web page, and are
-// queued in the sync store. Loading falls back to the on-device copy when offline.
+// Pinia store for web-page highlights, plus the cross-pane state (active/hovered highlight, scroll
+// requests) linking the captured page with its notes. Offline-first, like notes.
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
@@ -13,11 +9,11 @@ import { useToastStore } from './toast'
 import { useSyncStore } from './sync'
 import type { AnnotationRow, HighlightColor, HighlightSelectors } from '@/types/database'
 
-/** Client-side view model for a highlight. `note` is normalised to '' (never null). */
+/** `note` is '' rather than null. */
 export interface Highlight {
   id: string
   entryId: string
-  /** Short per-document reference id (e.g. "hl-3") used in `lily:` note links. */
+  /** Per-document short id ("hl-3") used in `lily:` links. */
   localId: string
   color: HighlightColor
   selectors: HighlightSelectors
@@ -25,7 +21,7 @@ export interface Highlight {
   createdAt: string
 }
 
-/** Paint styles for each colour, applied inside the snapshot iframe via the Custom Highlight API. */
+/** Applied inside the page iframe via the Custom Highlight API. */
 export const HIGHLIGHT_COLORS: Record<
   HighlightColor,
   { base: string; active: string; swatch: string }
@@ -80,7 +76,6 @@ function rowToHighlight(row: AnnotationRow): Highlight {
   }
 }
 
-/** Next per-document short id: max existing "hl-<n>" + 1 (starting at 1). */
 function nextLocalId(existing: Highlight[]): string {
   let max = 0
   for (const h of existing) {
@@ -95,23 +90,20 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
   const toast = useToastStore()
   const sync = useSyncStore()
 
-  /** All highlights loaded so far, across any entries opened this session. */
   const highlights = ref<Highlight[]>([])
 
-  /** Entry ids whose highlights have been fetched (so we don't refetch on every open). */
+  /** Entries already fetched this session. */
   const loadedEntries = ref(new Set<string>())
 
-  // ── Cross-pane intent ───────────────────────────────────────────────────────
-  /** Highlight the user is focused on (clicked). Painted with the stronger `active` style. */
+  /** Clicked; painted with the stronger `active` tone. */
   const activeHighlightId = ref<string | null>(null)
-  /** Highlight currently under the pointer (in page or notes). Emphasised on both sides. */
+  /** Under the pointer, in the page or the notes. */
   const hoveredHighlightId = ref<string | null>(null)
-  /** Request for the WebView to scroll the captured page to a highlight and pulse it. */
+  /** For WebView: scroll the page to this highlight. */
   const scrollToHighlightRequest = ref<string | null>(null)
-  /** Request for the notes pane to scroll to the first `lily:` reference of a highlight. */
+  /** For the notes: scroll to the highlight's first reference. */
   const scrollToNoteRequest = ref<{ entryId: string; localId: string } | null>(null)
 
-  /** Reactive accessor: highlights belonging to one entry, newest-anchored order preserved. */
   function highlightsFor(entryId: string): Highlight[] {
     return highlights.value.filter((h) => h.entryId === entryId)
   }
@@ -128,7 +120,6 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return highlights.value.find((h) => h.entryId === entryId && h.localId === localId)
   }
 
-  /** Saves one web page's highlights on the device. */
   function persist(entryId: string) {
     if (!auth.user) return
     const uid = auth.user.id
@@ -136,10 +127,7 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     void saveAnnotations(uid, entryId, JSON.parse(JSON.stringify(rows)))
   }
 
-  /**
-   * Layers this device's unsynced highlight changes over rows fetched from the server (a fetch
-   * can land while creates/edits/deletes are still queued).
-   */
+  /** Queued local changes over freshly fetched rows (a fetch can land before they sync). */
   function withPendingChanges(entryId: string, rows: AnnotationRow[]): AnnotationRow[] {
     let result = [...rows]
     for (const op of sync.queue as SyncOp[]) {
@@ -154,10 +142,7 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return result
   }
 
-  /**
-   * Load highlights for an entry (once per session unless `force`): from the server, falling back
-   * to the on-device copy when offline. Replaces any stale copies for this entry.
-   */
+  /** Once per session unless `force`; from the device when offline. */
   async function loadForEntry(entryId: string, force = false): Promise<void> {
     if (!auth.user) return
     if (loadedEntries.value.has(entryId) && !force) return
@@ -182,17 +167,13 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
       rows = withPendingChanges(entryId, data)
     }
 
-    // Drop any existing rows for this entry, then insert the fresh set.
     highlights.value = highlights.value.filter((h) => h.entryId !== entryId)
     highlights.value.push(...rows.map(rowToHighlight))
     loadedEntries.value = new Set(loadedEntries.value).add(entryId)
     persist(entryId)
   }
 
-  /**
-   * Create a highlight from serialized selectors. Assigns the next short `local_id`, adds it
-   * locally, and queues it for sync (works offline). Returns the new highlight.
-   */
+  /** Like the updates below: local at once, then synced (works offline). */
   async function createHighlight(
     entryId: string,
     selectors: HighlightSelectors,
@@ -218,7 +199,6 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return highlights.value[highlights.value.length - 1]!
   }
 
-  /** Update the inline markdown note for a highlight (local at once, then synced). */
   async function updateNote(id: string, note: string): Promise<boolean> {
     const h = getById(id)
     if (!h) return false
@@ -228,7 +208,6 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return true
   }
 
-  /** Update a highlight's colour (local at once so the repaint is instant, then synced). */
   async function updateColor(id: string, color: HighlightColor): Promise<boolean> {
     const h = getById(id)
     if (!h) return false
@@ -238,7 +217,6 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return true
   }
 
-  /** Delete a highlight (local at once, then synced). */
   async function deleteHighlight(id: string): Promise<boolean> {
     const h = getById(id)
     if (!h) return false
@@ -250,18 +228,15 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return true
   }
 
-  // ── Cross-pane setters ──────────────────────────────────────────────────────
   function setActiveHighlight(id: string | null) {
     activeHighlightId.value = id
   }
   function setHoveredHighlight(id: string | null) {
     hoveredHighlightId.value = id
   }
-  /** Ask the WebView to scroll the captured page to this highlight and pulse it. */
   function requestScrollToHighlight(id: string) {
     scrollToHighlightRequest.value = id
   }
-  /** Ask the notes pane to scroll to the first reference of this highlight. */
   function requestScrollToNote(entryId: string, localId: string) {
     scrollToNoteRequest.value = { entryId, localId }
   }

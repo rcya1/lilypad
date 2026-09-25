@@ -1,18 +1,13 @@
-// CodeMirror support for merge conflicts left by offline sync (VS Code style): tints the two sides
-// of each `<<<<<<<` … `=======` … `>>>>>>>` block, and puts "Accept mine · Accept theirs · Accept
-// both" links above it. The markers are plain text, so editing them by hand works too.
-// Also: the annotation that marks edits coming from outside the editor (sync), not the user.
+// Merge conflicts in the editor (VS Code style): tints both sides of each conflict block and adds
+// "Accept mine · Accept theirs · Accept both" links. The markers are plain text, so hand edits work
+// too. Also marks sync-driven edits so they don't count as typing.
 import { Annotation, StateField, type EditorState, type Range } from '@codemirror/state'
 import { Decoration, type DecorationSet, EditorView, WidgetType } from '@codemirror/view'
 import { findConflicts, resolveConflict, type ConflictChoice } from '@/lib/merge'
 
-/** Marks a transaction as a change from outside the editor (not the user's typing). */
 export const externalEdit = Annotation.define<boolean>()
 
-/**
- * Replaces the document with `next` by changing only the differing middle section, so the
- * cursor and scroll position survive when the edit is elsewhere.
- */
+/** Changes only the differing middle, so the cursor and scroll survive edits elsewhere. */
 export function replaceDocMinimally(view: EditorView, next: string) {
   const current = view.state.doc.toString()
   if (current === next) return
@@ -110,7 +105,7 @@ function buildDecorations(state: EditorState): DecorationSet {
   return Decoration.set(decorations, true)
 }
 
-/** Decorations for conflict blocks (block widgets must come from a state field). */
+/** A state field, since block widgets can't come from a view plugin. */
 export const conflictMarkers = StateField.define<DecorationSet>({
   create: buildDecorations,
   update(value, tr) {

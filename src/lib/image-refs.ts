@@ -1,4 +1,4 @@
-// Single definition of the ![alt](img:<uuid>){size?} reference syntax used in notes.
+// The `![alt](img:<uuid>){size?}` image reference syntax.
 
 export interface ImageRefMatch {
   entryId: string
@@ -6,10 +6,7 @@ export interface ImageRefMatch {
   to: number
 }
 
-/**
- * Finds all image references in `text`. A fresh regex is created per call so no
- * lastIndex state leaks between callers (module-level /g regexes are stateful).
- */
+/** Fresh regex per call, so no shared `lastIndex` state. */
 export function findImageRefs(text: string): ImageRefMatch[] {
   const pattern = /!\[[^\]]*\]\(img:([a-f0-9-]+)\)(?:\{[^}]*\})?/g
   const results: ImageRefMatch[] = []

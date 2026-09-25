@@ -1,32 +1,29 @@
-// Provide/inject bridge between the reader shell (owns the app bar) and the document view (parses
-// the note). Keeps preview mode free of a new Pinia store — the shell provides a reactive context
-// that ReaderDocument fills in with the current note's title, TOC, and a scroll callback.
+// Provide/inject between the reader shell and its child views (instead of a Pinia store): the note
+// view fills in the title and TOC, and registers how to scroll to a heading.
 import type { InjectionKey } from 'vue'
 import type { TocItem } from '@/lib/markdown'
 import { useFilesStore } from '@/stores/files'
 
 export interface ReaderContext {
-  /** Display title shown in the app bar (note name, or a not-found label). */
+  /** Note name, or a not-found label. */
   title: string
-  /** Headings of the current note; drives the TOC button + sheet. Empty when none. */
+  /** Empty when the note has no headings. */
   toc: TocItem[]
-  /** True when the current route resolves to a real document (the Edit switch opens it). */
+  /** The route is a real document (so the Edit switch can open it). */
   editable: boolean
-  /** True while the note tree is on screen in the docked sidebar (wide screens, not collapsed). */
+  /** The docked sidebar is showing the tree. */
   sidebarVisible: boolean
-  /** Scrolls the document view to a heading id. No-op until a document is mounted. */
+  /** No-op until a note is mounted. */
   scrollToHeading: (id: string) => void
 }
 
 export const readerKey: InjectionKey<ReaderContext> = Symbol('reader')
 
-// Shared in-flight fetch so the browser and document views never double-fetch the tree (e.g. the
-// document view mounting while the browser's initial fetch is still pending).
+// Shared so the note list and the note view never fetch the tree twice.
 let entriesInflight: Promise<void> | null = null
 
 /**
- * Loads the file tree if it hasn't been loaded yet this session (the desktop shell may already
- * have done so). Concurrent callers share one request.
+ * No-op if the tree is already loaded (e.g. by the editor). Concurrent callers share one request.
  */
 export function ensureEntriesLoaded(): Promise<void> {
   const files = useFilesStore()

@@ -1,4 +1,4 @@
-// Pinia store for authentication state; manages OAuth sign-in/out and the Supabase session lifecycle.
+// Pinia store for the Supabase session and OAuth sign-in/out.
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User, Session } from '@supabase/supabase-js'
@@ -9,10 +9,10 @@ import { useUiStore } from './ui'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const session = ref<Session | null>(null)
-  // True until the initial getSession() resolves; the app shell waits on this before rendering.
+  // Until the first getSession() resolves; the app waits on this before rendering.
   const loading = ref(true)
-  // True when running offline as the last signed-in user because the session couldn't be
-  // refreshed without a connection. Supabase refreshes it (and this clears) once back online.
+  // Running offline as the last signed-in user because the session can't be refreshed. Clears once
+  // Supabase refreshes it back online.
   const offlineUser = ref(false)
 
   function setSession(next: Session | null) {
@@ -23,14 +23,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Hydrates auth state from any existing Supabase session (e.g. after a page reload) and
-   * registers an onAuthStateChange listener for future sign-in / sign-out events.
-   *
-   * Must be called exactly once at app startup (see main.ts). All subsequent auth transitions
-   * (OAuth callback, sign-out, token refresh) are handled automatically by the listener.
-   *
-   * Side effect: triggers `ui.loadSettings` whenever a logged-in user is detected, so that
-   * cloud-persisted preferences are applied before the UI is displayed.
+   * Call once at startup (main.ts). Restores the session and listens for later changes; loads cloud
+   * settings when signed in.
    */
   async function initialize() {
     const {
@@ -38,8 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
     } = await supabase.auth.getSession()
     setSession(currentSession)
 
-    // Offline with a session that needs refreshing: carry on as the last signed-in user so the
-    // on-device copy of their notes is usable. (Only ever their own data — it's keyed by user id.)
+    // Offline with a session that needs refreshing: carry on as the last signed-in user.
     if (!currentSession && !navigator.onLine) {
       const cached = recallUser()
       if (cached) {
@@ -66,10 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  /**
-   * Initiates Google OAuth flow; redirects to the current origin on completion.
-   * The resulting session is picked up by the onAuthStateChange listener in initialize().
-   */
+  /** Redirects back to this origin; the auth listener picks up the session. */
   async function signInWithGoogle() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -77,10 +67,6 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  /**
-   * Initiates GitHub OAuth flow; redirects to the current origin on completion.
-   * The resulting session is picked up by the onAuthStateChange listener in initialize().
-   */
   async function signInWithGitHub() {
     await supabase.auth.signInWithOAuth({
       provider: 'github',
@@ -88,10 +74,6 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  /**
-   * Signs out the current user from Supabase and clears local auth state.
-   * The app shell reacts to `user` becoming null to redirect to the login page.
-   */
   async function signOut() {
     await supabase.auth.signOut()
     forgetUser()

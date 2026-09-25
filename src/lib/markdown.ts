@@ -1,13 +1,11 @@
-// Custom marked renderer: KaTeX math, admonitions (||type Title … ||), image sizing, and source-line annotation for editor-preview sync.
+// Markdown → HTML: KaTeX math, admonitions (`||type Title … ||`), image sizing, heading ids/TOC,
+// and data-source-line attributes for editor ↔ preview sync.
 import { Marked } from 'marked'
 import type { Token, Tokens, RendererObject } from 'marked'
 import markedKatex from 'marked-katex-extension'
 import katex from 'katex'
 
-/**
- * KaTeX macro shortcuts passed to both the marked-katex-extension and the
- * blockKatex renderer so inline and display math share the same definitions.
- */
+/** Shared by inline and display math. */
 const macros = {
   '\\integers': '\\mathbb{Z}',
   '\\naturals': '\\mathbb{N}',
@@ -46,7 +44,7 @@ const macros = {
   '\\t': '\\text{#1}',
 }
 
-/** Inline SVG icons keyed by admonition type — only types listed here get an icon. */
+/** Only these admonition types get an icon. */
 const admonitionIcons: Record<string, string> = {
   info: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
   definition:
@@ -67,16 +65,8 @@ interface AdmonitionToken {
 }
 
 /**
- * Custom marked block extension for admonitions.
- *
- * Syntax:
- * ```
- * ||type Optional Title
- * Body text here.
- * ||
- * ```
- * `type` maps to a CSS class (`admonition-${type}`) and optionally to an icon in `admonitionIcons`.
- * The body is recursively parsed as markdown so nested formatting works.
+ * Admonitions: `||type Optional Title` … `||`. `type` becomes the `admonition-${type}` class; the
+ * body is parsed as markdown.
  */
 const admonition = {
   name: 'admonition',
@@ -134,24 +124,15 @@ const escapeMap: Record<string, string> = {
   "'": '&#39;',
 }
 
-/**
- * Escape HTML special characters.
- * @param encode - When true, also escapes `&` unconditionally (for attribute values).
- *                 When false, skips already-encoded entities (for text content).
- */
+/** `encode` also escapes existing entities (for attributes); otherwise they're left intact. */
 function escapeHtml(s: string, encode = false): string {
   if (encode) return s.replace(/[&<>"']/g, (ch) => escapeMap[ch] ?? ch)
   return s.replace(/&(?!#?\w+;)|[<>"']/g, (ch) => escapeMap[ch] ?? ch)
 }
 
 /**
- * Render a math expression to HTML with a visible diagnostic on failure.
- *
- * KaTeX's `throwOnError: false` silently paints only the broken tokens red and buries the
- * reason in a `title` tooltip. Instead we render once strictly (`throwOnError: true`); on
- * success we return that HTML, and on a `ParseError` we still show the best-effort partial
- * render (so the good part of the equation is visible) followed by the exact error message
- * (e.g. "KaTeX parse error: Undefined control sequence: \foo at position 3: …").
+ * KaTeX's `throwOnError: false` only paints the broken tokens red and hides the reason in a
+ * tooltip. On a parse error, show the best-effort render followed by the actual message.
  */
 function renderMath(text: string, displayMode: boolean): string {
   try {
@@ -163,20 +144,13 @@ function renderMath(text: string, displayMode: boolean): string {
   }
 }
 
-/**
- * Mutates each token in `tokens` to add a `_sourceLine` property indicating which
- * 1-indexed source line the token starts on. Used by the renderer to emit
- * `data-source-line` attributes, which the preview uses to sync click-to-line with the editor.
- *
- * @param lineOffset - Number of lines already consumed before this token list (0 for top-level).
- */
+/** Stamps each token with its 1-based source line (`_sourceLine`), for `data-source-line`. */
 function annotateSourceLines(tokens: Token[], lineOffset: number) {
   let currentLine = 1
   for (const token of tokens) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(token as any)._sourceLine = lineOffset + currentLine
 
-    // Annotate individual list items and recurse into nested lists
     if (token.type === 'list') {
       annotateListItems((token as Tokens.List).items, lineOffset + currentLine - 1)
     }
@@ -187,25 +161,18 @@ function annotateSourceLines(tokens: Token[], lineOffset: number) {
   }
 }
 
-/**
- * Recursively annotates list items with source lines.
- * Lists are special because marked's token model nests items inside the list token rather than
- * flattening them, so a separate traversal is required.
- *
- * @param lineOffset - Line number of the line immediately before the first item.
- */
+/** marked nests list items inside the list token, so they need their own pass. */
 function annotateListItems(items: Tokens.ListItem[], lineOffset: number) {
   let itemLine = 1
   for (const item of items) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(item as any)._sourceLine = lineOffset + itemLine
 
-    // Recurse into child tokens to find nested lists.
-    // Count newlines in preceding sibling tokens to determine where the nested list starts.
+    // A nested list starts on the line after the text before it.
     let childNewlines = 0
     for (const child of item.tokens) {
       if (child.type === 'list') {
-        const linesBeforeNested = childNewlines + 1 // +1 because nested list starts on next line
+        const linesBeforeNested = childNewlines + 1
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(child as any)._sourceLine = lineOffset + itemLine + linesBeforeNested - 1
         annotateListItems(
@@ -224,11 +191,6 @@ function annotateListItems(items: Tokens.ListItem[], lineOffset: number) {
   }
 }
 
-/**
- * Reads `_sourceLine` from a token (set by `annotateSourceLines`) and returns
- * the `data-source-line` attribute string, or an empty string if absent.
- * Called inside every renderer method to stamp the HTML with source positions.
- */
 function attr(token: Tokens.Generic): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const line = (token as any)._sourceLine
@@ -236,14 +198,11 @@ function attr(token: Tokens.Generic): string {
 }
 
 /**
- * Overrides for each block-level marked renderer method to inject `data-source-line`
- * attributes. Only block elements are annotated — inline elements (strong, em, etc.)
- * are not, since the preview sync only needs one anchor per block.
+ * Stamps block elements with `data-source-line` (one anchor per block is all the preview needs).
  */
 const sourceLineRenderer: RendererObject = {
   heading(token: Tokens.Heading) {
-    // Slug is pre-assigned per top-level heading in parseMarkdownWithToc so the id here and the
-    // TOC entry share one slugger pass (see slugify). Nested headings carry no slug → no id.
+    // Slugged in parseMarkdownWithToc so the id matches the TOC entry. Nested headings get none.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const slug = (token as any)._slug as string | undefined
     const idAttr = slug ? ` id="${escapeHtml(slug, true)}"` : ''
@@ -262,9 +221,8 @@ const sourceLineRenderer: RendererObject = {
     return `<a href="${escapeHtml(href)}"${titleAttr}>${text}</a>`
   },
   paragraph(token: Tokens.Paragraph) {
-    // If the paragraph contains only an image, render the <figure> as a
-    // block element directly (a <figure> inside a <p> is invalid HTML and
-    // browsers break them apart, losing the data-source-line attribute).
+    // An image-only paragraph renders as a bare <figure>: <figure> inside <p> is invalid, and the
+    // browser splits them apart, losing data-source-line.
     const inlineTokens = token.tokens.filter((t) => t.type !== 'text' || t.raw.trim() !== '')
     if (inlineTokens.length === 1 && inlineTokens[0]!.type === 'image') {
       const html = this.parser.parseInline(token.tokens)
@@ -289,17 +247,13 @@ const sourceLineRenderer: RendererObject = {
     const startAttr = token.ordered && token.start !== 1 ? ` start="${token.start}"` : ''
     let body = ''
     for (const item of token.items) {
-      // Separate inline text tokens from nested list tokens so we can wrap only
-      // the text portion in a span. This lets CSS highlight just the hovered text
-      // without the background bleeding into child list items.
+      // Wrap just the item's own text so a hover highlight doesn't bleed into nested lists.
       const textTokens = item.tokens.filter((t) => t.type !== 'list' && t.type !== 'space')
       const nestedListTokens = item.tokens.filter((t) => t.type === 'list')
       let content = ''
       if (textTokens.length > 0) {
         const textHtml = this.parser.parse(textTokens)
-        // For tight lists the inline text has no <p> wrapper — safe to put in a span.
-        // For loose lists parse() emits <p>…</p> blocks which are invalid inside a span,
-        // so we leave them bare and CSS targets li.preview-hover > p instead.
+        // Loose lists emit <p> blocks, which can't go in a span; CSS targets `li > p` instead.
         content += item.loose ? textHtml : `<span class="li-text">${textHtml.trim()}</span>`
       }
       if (nestedListTokens.length > 0) {
@@ -335,11 +289,7 @@ const sourceLineRenderer: RendererObject = {
   },
 }
 
-/**
- * Converts an image size modifier string (e.g. `w-1/2`, `h-200`) to an inline CSS string.
- * Mirrors a subset of Tailwind class names to avoid importing Tailwind inside the renderer.
- * Unknown values fall back to `width: 100%`.
- */
+/** Tailwind-style size hints (`w-1/2`, `h-200`, …) as inline CSS; unknown values → full width. */
 function parseSizeToCSS(attr: string | null): string {
   if (!attr) return 'width: 100%;'
 
@@ -358,15 +308,7 @@ function parseSizeToCSS(attr: string | null): string {
   return 'width: 100%;'
 }
 
-/**
- * Creates a marked inline extension that adds optional size modifiers to image syntax.
- *
- * Extended syntax: `![alt](src){w-1/2}` where the `{...}` block is a Tailwind-style size hint.
- * Also handles `img:<uuid>` hrefs by resolving them to real URLs via `imageResolver`.
- *
- * @param imageResolver - Optional callback that maps an image UUID to a public URL.
- *                        If omitted (e.g. in tests), `img:` hrefs are left as-is.
- */
+/** `![alt](src){w-1/2}` size hints, and `img:<uuid>` hrefs resolved via `imageResolver`. */
 function createImageSizeExtension(imageResolver?: (imageId: string) => string | null) {
   return {
     name: 'image',
@@ -406,24 +348,7 @@ function createImageSizeExtension(imageResolver?: (imageId: string) => string | 
   }
 }
 
-/**
- * Parse markdown content to HTML with all Lilypad extensions applied.
- *
- * Extensions (in application order):
- * 1. `marked-katex-extension` — inline (`$…$`) and display (`$$…$$`) math via KaTeX
- * 2. `admonition` — custom block callouts (`||type Title … ||`)
- * 3. `sourceLineRenderer` — stamps every block element with `data-source-line`
- * 4. `blockKatex` renderer override — wraps block math in a `<div>` with source-line annotation
- * 5. `createImageSizeExtension` — `{w-*}` / `{h-*}` size modifiers on images
- *
- * @param content       - Raw markdown string to parse.
- * @param imageResolver - Optional callback to resolve `img:<uuid>` hrefs to URLs.
- *                        Pass the files store's `getImageUrl` when rendering in the app;
- *                        omit in tests where image resolution isn't needed.
- * @returns             The rendered HTML string.
- */
-// The image extension reads this at render time so one shared Marked instance can serve
-// every caller; parseMarkdown sets it before each parse.
+// Read by the image extension at render time, so one Marked instance serves every caller.
 let activeImageResolver: ((imageId: string) => string | null) | undefined
 
 const sharedMarked = new Marked()
@@ -441,9 +366,7 @@ sharedMarked.use({
         return `<div${a} class="katex-block">${renderMath(token.text as string, token.displayMode as boolean)}</div>\n`
       },
     },
-    // Override marked-katex's inline renderer so inline `$…$` errors surface a diagnostic too.
-    // A block error message would break the inline flow, so on failure we render the raw source
-    // in red with the full KaTeX message in a hover tooltip (`title`).
+    // Inline math can't show a block message: errors show the source in red, message as tooltip.
     {
       name: 'inlineKatex',
       renderer(token: Tokens.Generic) {
@@ -459,13 +382,10 @@ sharedMarked.use({
         }
       },
     },
-    // marked-katex-extension only recognises *block* display math when the `$$` delimiters sit
-    // on their own lines (`$$\n…\n$$`); a one-line `$$…$$` falls through to the inline rule and
-    // gets absorbed into a preceding paragraph, sharing its source line and rendering inline.
-    // This extension (a) registers a `start` so any `$$` opener at the head of a line interrupts
-    // the current paragraph, and (b) tokenizes a one-line `$$…$$` as its own block-level
-    // `blockKatex` token. Multi-line `$$\n…\n$$` still falls through to marked-katex's own
-    // block tokenizer (the `(?!\n)` guard rejects it here).
+    // marked-katex only treats `$$` as block math on lines of its own; a one-line `$$…$$` is parsed
+    // inline and swallowed into the paragraph before it. This lets a line-initial `$$` end the
+    // paragraph, and tokenizes one-line `$$…$$` as a block. Multi-line blocks still go through
+    // marked-katex (the no-newline lookahead).
     {
       name: 'blockKatexBreak',
       level: 'block' as const,
@@ -490,12 +410,9 @@ sharedMarked.use({
 sharedMarked.use({
   extensions: [createImageSizeExtension((id) => activeImageResolver?.(id) ?? null)],
 })
-// Soften Setext (underline) headings: a line of text followed by a single `-`
-// underline normally becomes an <h2>, which mangles ordinary text the moment you
-// start an empty bullet list on the next line. Require at least two dashes (`--`)
-// before treating a `-` underline as a heading; `=` underlines are unchanged.
-// Returning `undefined` tells marked "no heading here" (falls through to paragraph);
-// returning `false` defers to marked's built-in lheading behavior.
+// A text line followed by a single `-` would become a Setext <h2>, which mangles text as soon as
+// you start an empty bullet on the next line. Require `--` for that; `=` is unchanged.
+// (`undefined` = not a heading; `false` = marked's default handling.)
 sharedMarked.use({
   tokenizer: {
     lheading(src: string) {
@@ -506,32 +423,24 @@ sharedMarked.use({
   },
 })
 
-/** A single entry in a document's table of contents, one per top-level heading. */
 export interface TocItem {
-  /** Heading level, 1–6. */
   depth: number
-  /** Plain heading text for display (inline markdown flattened; the slug uses the raw text). */
+  /** Inline markdown flattened for display (the slug uses the raw text). */
   text: string
-  /** GitHub-style slug; matches the `id` rendered onto the heading. */
+  /** Matches the heading's rendered `id`. */
   id: string
 }
 
-// Per-parse slug state, cleared at the top of each parse (same lifecycle as activeImageResolver)
-// so slugs never leak between documents. `slugCounts` tracks repeats of each base slug;
-// `usedSlugs` holds every slug already emitted so a suffixed slug can't collide with a heading
-// whose own text slugs to the same thing (e.g. `## A`, `## A`, `## A-1`).
+// Cleared per parse so slugs don't leak between documents. `usedSlugs` stops a suffixed slug from
+// colliding with a heading whose own text slugs to it (`## A`, `## A`, `## A-1`).
 const slugCounts = new Map<string, number>()
 const usedSlugs = new Set<string>()
 
-// Base slug for headings with no [a-z0-9-_] characters at all (pure punctuation, non-Latin
-// script) — an empty id can't be anchored, and `querySelector('#')` throws.
+// For headings with no slug-able characters (punctuation, non-Latin script): an empty id can't
+// be targeted, and `querySelector('#')` throws.
 const EMPTY_SLUG_FALLBACK = 'section'
 
-/**
- * GitHub-style heading slug: lowercase, spaces→hyphens, strip anything but [a-z0-9-_].
- * Repeats within one document get `-1`, `-2`, … suffixes. Relies on the slug state being cleared
- * once per parse; every heading must be slugged exactly once so the counter stays accurate.
- */
+/** GitHub-style; repeats get `-1`, `-2`, …. Call exactly once per heading per parse. */
 function slugify(text: string): string {
   const base =
     text
@@ -550,10 +459,7 @@ function slugify(text: string): string {
   return slug
 }
 
-/**
- * Flattens a heading's inline tokens to display text for the TOC, so `## **Bold** \`code\``
- * shows as "Bold code" rather than raw markdown. Raw HTML tags are dropped; math keeps its TeX.
- */
+/** TOC display text: inline markdown flattened (HTML dropped, math keeps its TeX). */
 function inlinePlainText(tokens: Token[] | undefined): string {
   if (!tokens) return ''
   let out = ''
@@ -566,13 +472,8 @@ function inlinePlainText(tokens: Token[] | undefined): string {
 }
 
 /**
- * Parse markdown to HTML and, in the same pass, collect a table of contents from the top-level
- * headings. Each heading is slugged once here and the slug is stashed on the token so the renderer
- * emits the identical `id` — the TOC ids and the rendered ids can never drift.
- *
- * @param content       - Raw markdown string to parse.
- * @param imageResolver - Optional callback to resolve `img:<uuid>` hrefs to URLs.
- * @returns             The rendered HTML and the ordered list of heading TOC items.
+ * Renders and collects a TOC of the top-level headings in one pass. Each slug is stored on its
+ * token so the rendered id and the TOC id can't drift.
  */
 export function parseMarkdownWithToc(
   content: string,
@@ -602,7 +503,6 @@ export function parseMarkdownWithToc(
   return { html, toc }
 }
 
-/** Parse markdown to HTML. Thin wrapper over parseMarkdownWithToc that discards the TOC. */
 export function parseMarkdown(
   content: string,
   imageResolver?: (imageId: string) => string | null,

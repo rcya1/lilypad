@@ -1,66 +1,47 @@
-// Pinia store for full-text search: debounced query dispatch, trigram-based candidate filtering, and snippet extraction.
+// Pinia store for full-text search: trigram candidate filtering, then a line scan for snippets.
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useFilesStore } from './files'
 import { useEditorStore } from './editor'
 import { findLiteralCandidates, findRegexCandidates } from '@/lib/trigram'
 
-/** A single search hit with enough context to render a result row and navigate to it. */
 export interface SearchResult {
   fileId: string
   fileName: string
   folderPath: string
   lineNumber: number
-  /** Truncated line text centred around the match, with leading/trailing '…' if clipped. */
+  /** Line text around the match, with '…' where clipped. */
   snippet: string
-  /** Character offset of the match start within `snippet` (for highlight rendering). */
+  /** Offset of the match within `snippet`. */
   matchStart: number
   matchLength: number
 }
 
-// How long to wait after the last keystroke before executing a search.
-// Short enough to feel responsive, long enough not to spam on fast typists.
 const DEBOUNCE_MS = 200
-// Hard cap on total results across all files — prevents the UI from rendering
-// hundreds of rows for very common search terms.
+// Across all files, so very common terms don't render hundreds of rows.
 const MAX_RESULTS = 50
-// Max hits shown per file — keeps results spread across more files.
+// Spreads results across more files.
 const MAX_PER_FILE = 3
-// Characters to show on each side of the match centre in a snippet.
+// Characters shown on each side of the match.
 const SNIPPET_RADIUS = 40
 
-/**
- * Extracts a short snippet centred around a match within a line of text.
- *
- * @param line       - Full source line containing the match.
- * @param matchIndex - Character offset of the match start within `line`.
- * @param matchLen   - Length of the matched text.
- * @returns The truncated snippet string and the adjusted offset of the match within it.
- */
 function makeSnippet(
   line: string,
   matchIndex: number,
   matchLen: number,
 ): { snippet: string; matchStart: number } {
   const lineLen = line.length
-  // Centre the window on the middle of the match so both sides are visible.
   const center = matchIndex + Math.floor(matchLen / 2)
   const start = Math.max(0, center - SNIPPET_RADIUS)
   const end = Math.min(lineLen, center + SNIPPET_RADIUS)
   const snippet = (start > 0 ? '…' : '') + line.slice(start, end) + (end < lineLen ? '…' : '')
-  // The ellipsis character is 1 char and shifts the match start when prepended.
+  // Account for the leading '…'.
   const prefixLen = start > 0 ? 1 : 0
   const matchStart = Math.max(0, matchIndex - start + prefixLen)
   return { snippet, matchStart }
 }
 
-/**
- * Finds up to MAX_PER_FILE literal matches in a single file's content.
- * Only returns the first match per line (uncommon to need multiple on one line).
- *
- * @param caseSensitive - When false, both haystack and needle are lowercased before comparison,
- *                        but `snippet` is always returned in original case.
- */
+/** First match per line, up to MAX_PER_FILE lines. */
 function searchLiteral(
   content: string,
   query: string,
@@ -94,15 +75,7 @@ function searchLiteral(
   return results
 }
 
-/**
- * Finds up to MAX_PER_FILE regex matches in a single file's content.
- * Only the first match per line is recorded (same reasoning as searchLiteral).
- *
- * Precondition: `regex` must have the `g` flag set; callers must reset `lastIndex`
- * between files to avoid cross-file contamination from the stateful regex engine.
- *
- * @param regex - Compiled regex; caller controls the `i` flag for case sensitivity.
- */
+/** Like searchLiteral. `regex` has the `g` flag, so reset `lastIndex` between files. */
 function searchRegex(
   content: string,
   regex: RegExp,
@@ -117,7 +90,7 @@ function searchRegex(
     const line = lines[lineIdx]!
     const match = regex.exec(line)
     if (match) {
-      // Treat zero-length matches (e.g. lookaheads, `$`) as length 1 to keep the UI highlight visible.
+      // Zero-length matches (lookaheads, `$`) highlight one character so they stay visible.
       const matchLen = match[0].length || 1
       const { snippet, matchStart } = makeSnippet(line, match.index, matchLen)
       results.push({
@@ -161,22 +134,17 @@ export const useSearchStore = defineStore('search', () => {
     isOpen.value = !isOpen.value
   }
 
-  /** Toggles regex mode and immediately re-runs the current query if non-empty. */
   function toggleRegex() {
     isRegex.value = !isRegex.value
     if (query.value) runSearch(query.value)
   }
 
-  /** Toggles case sensitivity and immediately re-runs the current query if non-empty. */
   function toggleCaseSensitive() {
     isCaseSensitive.value = !isCaseSensitive.value
     if (query.value) runSearch(query.value)
   }
 
-  /**
-   * Returns the most up-to-date content for a file.
-   * Prefers the live editor buffer (which may have unsaved edits) over the persisted content map.
-   */
+  /** The editor buffer if it's open (may have unsaved edits), else the saved text. */
   function getFileContent(fileId: string): string | null {
     const openDoc = editorStore.openDocuments.get(fileId)
     if (openDoc) return openDoc.content
@@ -184,18 +152,9 @@ export const useSearchStore = defineStore('search', () => {
   }
 
   /**
-   * Executes a search synchronously against the in-memory content map.
-   *
-   * Strategy:
-   *  1. Use the trigram index to narrow candidates to files likely containing `q`.
-   *     Falls back to a full scan when `q` is fewer than 3 characters (too short for trigrams).
-   *  2. Also include all currently open editor buffers in case they have unsaved edits
-   *     not yet reflected in the trigram index.
-   *  3. Linear scan each candidate file, collecting up to MAX_PER_FILE hits per file
-   *     and stopping globally at MAX_RESULTS.
-   *
-   * Only searches markdown (`.md`) documents — PDFs, images, and web snapshots have
-   * no indexable text content.
+   * Narrows candidates with the trigram index (a full scan when the query is too short or has no
+   * literals), adds open editor buffers (unsaved edits aren't indexed), then scans each one.
+   * Markdown notes only.
    */
   function runSearch(q: string) {
     isSearching.value = false
@@ -220,12 +179,10 @@ export const useSearchStore = defineStore('search', () => {
         return
       }
 
-      // Trigram filtering for regex: extract literal prefix characters from the pattern.
-      // Returns null when no literals can be extracted → full scan.
       const candidates = findRegexCandidates(trigramIdx, q)
       const candidateIds = candidates ? candidates : new Set(contentMap.keys())
 
-      // Open editor buffers may have content not yet in the trigram index (unsaved edits).
+      // Unsaved edits in open buffers aren't in the index.
       const openDocIds = new Set(editorStore.openDocuments.keys())
       const allIds = new Set([...candidateIds, ...openDocIds])
 
@@ -238,7 +195,7 @@ export const useSearchStore = defineStore('search', () => {
         const entryRow = filesStore.getEntry(fileId)
         if (!entryRow || entryRow.kind !== 'document' || entryRow.document_type !== 'md') continue
 
-        // Reset lastIndex between files — the `g` flag makes exec() stateful.
+        // The `g` flag makes exec() stateful.
         regex.lastIndex = 0
 
         const fileResults = searchRegex(
@@ -252,7 +209,7 @@ export const useSearchStore = defineStore('search', () => {
         found.push(...fileResults.slice(0, remaining))
       }
     } else {
-      // Trigram literal search: lower-case the key to match how the index was built.
+      // The index is built from lowercased text.
       const candidates = findLiteralCandidates(
         trigramIdx,
         isCaseSensitive.value ? q : q.toLowerCase(),
@@ -287,12 +244,7 @@ export const useSearchStore = defineStore('search', () => {
     results.value = found
   }
 
-  /**
-   * Debounced entry point for search. Updates `query` immediately (so the input stays
-   * reactive) and schedules runSearch after DEBOUNCE_MS of inactivity.
-   *
-   * `isSearching` is set to true during the debounce window so the UI can show a spinner.
-   */
+  /** Debounced; `isSearching` covers the wait so the UI can show a spinner. */
   function search(q: string) {
     query.value = q
     if (debounceTimer !== null) clearTimeout(debounceTimer)
@@ -310,11 +262,6 @@ export const useSearchStore = defineStore('search', () => {
     }, DEBOUNCE_MS)
   }
 
-  /**
-   * Opens the file for a search result and scrolls the editor to the matched line.
-   * If the document is not already open, fetches its content first (optimistic tab open).
-   * Closes the search panel after navigating.
-   */
   async function openResult(result: SearchResult) {
     await editorStore.openEntry(result.fileId)
     editorStore.requestScrollToLine(result.fileId, result.lineNumber)

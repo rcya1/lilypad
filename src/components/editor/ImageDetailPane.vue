@@ -1,4 +1,4 @@
-<!-- Full-screen viewer for an image entry: shows metadata, inline rename, and a list of markdown documents that reference this image. -->
+<!-- Image viewer: details, rename, and the notes that reference the image. -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Pencil, FileText } from 'lucide-vue-next'
@@ -16,7 +16,6 @@ const imageUrl = computed(() => filesStore.getImageUrl(props.documentId))
 const entry = computed(() => filesStore.getEntry(props.documentId))
 const imageName = computed(() => entry.value?.name ?? 'Unknown')
 
-// Image dimensions (loaded from the img element)
 const naturalWidth = ref<number | null>(null)
 const naturalHeight = ref<number | null>(null)
 
@@ -26,7 +25,6 @@ function onImageLoad(e: Event) {
   naturalHeight.value = img.naturalHeight
 }
 
-// Rename
 const isRenaming = ref(false)
 const renameValue = ref('')
 
@@ -35,24 +33,18 @@ function startRename() {
   isRenaming.value = true
 }
 
-/**
- * Persist the rename and synchronise the open editor tab's displayed name.
- * The tab name is stored in editorStore separately from the files store entry,
- * so both must be updated together.
- */
+/** The editor tab keeps its own copy of the name, so update both. */
 async function submitRename() {
   const newName = renameValue.value.trim()
   if (newName && newName !== imageName.value) {
     await filesStore.renameEntry(props.documentId, newName)
-    // Mirror the rename into the editor tab so the tab bar stays in sync.
     const doc = editorStore.openDocuments.get(props.documentId)
     if (doc) doc.name = newName
   }
   isRenaming.value = false
 }
 
-// Scan every markdown document's cached content for `img:<id>` references to this image.
-// This is a simple substring scan of the in-memory content map — no DB round-trip needed.
+// Notes whose cached text mentions `img:<id>` (no DB query).
 const referencingDocs = computed(() => {
   const pattern = `img:${props.documentId}`
   const contentMap = filesStore.getContentMap()
@@ -70,13 +62,6 @@ const referencingDocs = computed(() => {
   return results
 })
 
-/**
- * Open a markdown document that references this image, switching to it if already open
- * or fetching its content from the cache / network if not.
- *
- * Uses an optimistic open (shows the document immediately with empty content) when
- * the content isn't cached, then fills it in once the download completes.
- */
 function openReferencingDoc(docId: string) {
   editorStore.openEntry(docId)
 }
@@ -84,10 +69,9 @@ function openReferencingDoc(docId: string) {
 
 <template>
   <div class="flex h-full bg-bg">
-    <!-- Left panel: metadata -->
+    <!-- Details -->
     <div class="w-72 shrink-0 border-r border-border-subtle bg-bg flex flex-col overflow-y-auto">
       <div class="p-4 space-y-4">
-        <!-- Title + rename -->
         <div>
           <div v-if="isRenaming" class="flex items-center gap-1">
             <input
@@ -113,7 +97,6 @@ function openReferencingDoc(docId: string) {
           </div>
         </div>
 
-        <!-- Dimensions -->
         <div v-if="naturalWidth !== null && naturalHeight !== null">
           <span class="text-xs font-medium text-text-muted uppercase tracking-widest"
             >Dimensions</span
@@ -123,7 +106,6 @@ function openReferencingDoc(docId: string) {
           </p>
         </div>
 
-        <!-- Referenced in -->
         <div>
           <span class="text-xs font-medium text-text-muted uppercase tracking-widest"
             >Referenced in</span
@@ -146,7 +128,7 @@ function openReferencingDoc(docId: string) {
       </div>
     </div>
 
-    <!-- Right panel: full image preview -->
+    <!-- Preview -->
     <div class="flex-1 overflow-auto bg-surface">
       <div
         class="m-2 rounded-md bg-bg border border-border-subtle image-card inline-flex items-center justify-center p-3"

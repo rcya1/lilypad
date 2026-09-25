@@ -1,4 +1,4 @@
-<!-- Shows the folder path for the active document; clicking a segment focuses that folder in the file explorer. -->
+<!-- Folder path of the active document; clicking a folder selects it in the tree. -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { FileText } from 'lucide-vue-next'
@@ -10,13 +10,11 @@ const filesStore = useFilesStore()
 
 const activeId = computed(() => editorStore.activeDocumentId)
 
-// Returns the chain of ancestor folders from root down to (but not including) the active document.
 const ancestors = computed(() => {
   if (!activeId.value) return []
   return filesStore.getAncestorPath(activeId.value)
 })
 
-// Strip the file extension for display — users see "My Note" not "My Note.md".
 const fileName = computed(() => {
   if (!activeId.value) return ''
   const entry = filesStore.getEntry(activeId.value)

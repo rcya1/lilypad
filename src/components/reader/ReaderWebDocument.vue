@@ -1,9 +1,7 @@
-<!-- Read-only view of a captured web document: the frozen snapshot (with its highlights painted) and
-     the rendered notes column. Side by side once the note area is ≥ 60rem wide (a container query,
-     so the docked sidebar counts); a Page / Notes toggle below that.
-     Tapping a highlight-reference chip in the notes jumps to that highlight on the page, and tapping
-     a highlight on the page jumps to its chip. No creating or editing highlights — that stays in the
-     desktop WebView. Mounted with a :key per entry, so each document gets a fresh instance. -->
+<!-- A read-only captured web page with its highlights, next to the rendered notes (side by side
+     once
+     the note area is ≥ 60rem, else a Page / Notes toggle). Highlights and their reference chips link to
+     each other. The parent keys it per entry. -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, useTemplateRef } from 'vue'
 import { ExternalLink, Loader2 } from 'lucide-vue-next'
@@ -25,7 +23,7 @@ const container = useTemplateRef<HTMLDivElement>('container')
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
 const notesPane = useTemplateRef<HTMLDivElement>('notesPane')
 
-// Which pane is showing on narrow screens (wide screens show both).
+// Narrow screens show one pane at a time.
 const pane = ref<'page' | 'notes'>('page')
 const pageLoading = ref(true)
 const pageError = ref(false)
@@ -44,8 +42,7 @@ const sourceHost = computed(() => {
 
 const highlights = computed(() => anno.highlightsFor(props.entryId))
 
-// Same-origin blob URL so we can script into the frame (paint highlights, hit-test clicks); the
-// frame is sandboxed without allow-scripts, so the captured page's own JS never runs.
+// A same-origin blob URL, so the frame is scriptable; sandboxed without allow-scripts.
 let blobUrl: string | null = null
 let frameDoc: Document | null = null
 let frameWin: (Window & typeof globalThis) | null = null
@@ -53,9 +50,8 @@ const resolvedRanges = new Map<string, Range>()
 // Highlight briefly emphasised after jumping to it from a notes chip.
 let focusedId: string | null = null
 let focusTimer = 0
-// Highlight under the pointer — hovered on the page, or via one of its chips in the notes. It's
-// emphasised on the page, its chips get `lily-ref-active`, and a leader line joins the two while
-// the page and notes are side by side (mirrors the desktop WebDocPane).
+// Under the pointer, on the page or via a chip: emphasised on the page, its chips marked, and a
+// leader line drawn between them when both panes are showing.
 const hoveredId = ref<string | null>(null)
 let hoverRaf = 0
 
@@ -96,7 +92,6 @@ async function onFrameLoad() {
   pageLoading.value = false
 }
 
-/** Resolve every highlight's range and paint them with the frame's Custom Highlight API. */
 function repaint() {
   resolvedRanges.clear()
   if (!frameDoc?.body || !frameWin) return
@@ -144,7 +139,7 @@ function repaint() {
   }
 }
 
-/** The highlight whose painted glyph boxes contain (x, y) in frame viewport coords, if any. */
+/** Tests the painted glyph boxes (frame viewport coordinates). */
 function highlightAtPoint(x: number, y: number): Highlight | null {
   for (const h of highlights.value) {
     const range = resolvedRanges.get(h.id)
@@ -156,7 +151,6 @@ function highlightAtPoint(x: number, y: number): Highlight | null {
   return null
 }
 
-// ── Hover + leader line ─────────────────────────────────────────────────────────────────────────
 function setHovered(id: string | null) {
   if (id === hoveredId.value) return
   hoveredId.value = id
@@ -195,7 +189,6 @@ function onNotesMouseOut(e: MouseEvent) {
   setHovered(null)
 }
 
-// Mark the hovered highlight's chips in the notes.
 watch(hoveredId, (id) => {
   const pane = notesPane.value
   if (!pane) return
@@ -207,9 +200,8 @@ watch(hoveredId, (id) => {
     .forEach((el) => el.classList.add('lily-ref-active'))
 })
 
-// A Bézier curve from the hovered highlight (right edge, in the page) to its chip (left edge, in
-// the notes), redrawn every frame while hovered so it tracks both panes' scrolling. Only drawn
-// when both ends exist and both panes are on screen (not in the narrow Page/Notes toggle view).
+// From the highlight (in the page) to its chip (in the notes), redrawn every frame while hovered so
+// it follows both panes' scrolling.
 const leader = ref<{ path: string; x1: number; y1: number; x2: number; y2: number } | null>(null)
 let lineRaf = 0
 
@@ -239,7 +231,7 @@ function drawLeader() {
   const cr = cont.getBoundingClientRect()
   const chipRect = chip.getBoundingClientRect()
   // The range rect is in the frame's own viewport coordinates; offset by the frame's position.
-  // Both ends are clamped to their pane's visible band so the line stays anchored when scrolled off.
+  // Both ends are clamped to their pane's visible band, so the line stays anchored off-screen.
   const x1 = Math.min(frameRect.left + rangeRect.right, frameRect.right) - cr.left
   const y1 =
     clamp(
@@ -276,9 +268,8 @@ function onFrameClick(e: MouseEvent) {
 }
 
 /**
- * Captured pages keep live links that resolve against the original site, so a click would navigate
- * the frame away from the snapshot. In-page #fragments scroll within it; external links open in a
- * new tab.
+ * Captured links resolve to the original site, so a click would navigate away from the snapshot.
+ * #fragments scroll within it; external links open in a new tab.
  */
 function handleAnchorClick(e: MouseEvent, anchor: HTMLAnchorElement) {
   e.preventDefault()
@@ -370,7 +361,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Captured page -->
     <section
       class="relative min-h-0 flex-1 @min-[60rem]:flex"
       :class="pane === 'page' ? 'flex' : 'hidden'"
@@ -393,7 +383,6 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- Notes column -->
     <section
       ref="notesPane"
       class="min-h-0 flex-1 flex-col overflow-y-auto @min-[60rem]:flex @min-[60rem]:w-[40%] @min-[60rem]:max-w-[34rem] @min-[60rem]:min-w-[20rem] @min-[60rem]:flex-none @min-[60rem]:border-l @min-[60rem]:border-border-subtle"
@@ -426,7 +415,7 @@ onBeforeUnmount(() => {
       </p>
     </section>
 
-    <!-- Leader line overlay (pointer-events-none so it never blocks either pane) -->
+    <!-- Leader line (pointer-events-none) -->
     <svg
       v-if="leader"
       class="pointer-events-none absolute inset-0 z-30 h-full w-full overflow-visible"

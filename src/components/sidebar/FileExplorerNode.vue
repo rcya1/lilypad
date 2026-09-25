@@ -1,4 +1,4 @@
-<!-- Individual file or folder row in the tree: handles click, double-click, drag-drop, rename, delete, and context menu. -->
+<!-- A file or folder row: open, multi-select, drag-drop, rename, delete, context menu. -->
 <script setup lang="ts">
 import { ref, computed, watch, type WritableComputedRef } from 'vue'
 import type { Entry } from '@/types/file-explorer'
@@ -35,8 +35,7 @@ const editorStore = useEditorStore()
 const filesStore = useFilesStore()
 const syncStore = useSyncStore()
 
-// Writable computed so useDragDrop can set isOpen.value = true (auto-expand on hover) while
-// the source of truth stays in the files store's collapsedFolderIds set.
+// Writable so useDragDrop can expand it on hover; the files store still owns the state.
 const isOpen: WritableComputedRef<boolean> = computed({
   get: () => !filesStore.isFolderCollapsed(props.entry.id),
   set: (val: boolean) => {
@@ -60,30 +59,26 @@ const entryRef = computed(() => props.entry)
 const { dropRegion, isInvalidTarget, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop } =
   useDragDrop(entryRef, isOpen, filesStore)
 
-// Active document receives accent-coloured icon in the tree.
 const isActive = computed(
   () => !isDirectory(props.entry) && editorStore.activeDocumentId === props.entry.id,
 )
 
-// Folders get a subtler "selected folder" highlight (not part of the multi-select set).
+// A subtler highlight than multi-select, which it isn't part of.
 const isSelectedFolder = computed(
   () => isDirectory(props.entry) && filesStore.selectedFolderId === props.entry.id,
 )
 
 const { isSelected, isCoveredBySelection, inSelectionMode } = useEntrySelection(entryRef)
 
-// True when this folder is the target of a pending child-creation operation.
 const showNewInput = computed(
   () => isDirectory(props.entry) && filesStore.pendingCreate?.parentId === props.entry.id,
 )
 
-// When a child pending input appears, auto-expand this folder so the input is
-// visible, and attach a click-away listener that cancels the creation.
+// Expand so a pending child input is visible, and cancel it on click-away.
 watch(showNewInput, (val, _old, onCleanup) => {
   if (val) {
     newChildName.value = ''
     isOpen.value = true
-    // Cancel when clicking outside the pending row
     const handler = (e: MouseEvent) => {
       if (!(e.target as Element)?.closest('[data-pending-input]')) {
         filesStore.clearPendingCreate()
@@ -95,15 +90,8 @@ watch(showNewInput, (val, _old, onCleanup) => {
 })
 
 /**
- * Handles all click variants on a file or folder row.
- *
- * Modifier keys:
- *   Ctrl/Cmd — toggle this entry in the multi-select set (or explode folder selection)
- *   Shift    — range-select from the last-clicked entry to this one
- *   Plain    — open/navigate (with preview tab for documents); toggle folder
- *
- * For documents, single click opens as a preview tab (replaced by the next
- * single-clicked file). Double-click promotes to a permanent tab.
+ * Ctrl/Cmd toggles multi-select, Shift selects a range. A plain click toggles a folder, or opens a
+ * document as a preview tab (double-click makes it permanent).
  */
 async function handleClick(e: MouseEvent) {
   if (isDirectory(props.entry)) {
@@ -115,14 +103,12 @@ async function handleClick(e: MouseEvent) {
       filesStore.rangeSelectTo(props.entry.id)
       return
     }
-    // Plain click: expand/collapse + navigate + select
     isOpen.value = !isOpen.value
     filesStore.selectFolder(props.entry.id)
     filesStore.selectSingle(props.entry.id)
     return
   }
 
-  // Document entry
   if (e.ctrlKey || e.metaKey) {
     filesStore.explodeAndToggle(props.entry.id)
     return
@@ -138,28 +124,20 @@ async function handleClick(e: MouseEvent) {
 
   filesStore.selectFolder(null)
   filesStore.selectSingle(props.entry.id)
-  // .md and web docs both carry their notes in the DB `content` column, so they open
-  // through the same preview flow (web docs load their snapshot separately, in WebView).
+  // md and web docs both keep their notes in `content`, so both open through the preview flow (a
+  // web doc's page loads separately, in WebView).
   if (props.entry.type === 'md' || props.entry.type === 'web') {
     await editorStore.openEntry(props.entry.id, { preview: true })
   }
 }
 
-/**
- * Double-click promotes a preview tab to a permanent tab so it won't be
- * replaced by the next single-clicked document.
- */
 function handleDblClick() {
   if (!isDirectory(props.entry) && (props.entry.type === 'md' || props.entry.type === 'web')) {
     editorStore.promotePreview(props.entry.id)
   }
 }
 
-/**
- * Returns the ID of the next sibling in sort order, used to determine the
- * "insert after" position when the context menu is triggered in the lower half
- * of the row.
- */
+/** For "insert after" when the context menu opens on the row's lower half. */
 function getNextSiblingId(): string | null {
   const parentId = props.entry.parentId
   const siblings = filesStore.entries
@@ -170,10 +148,6 @@ function getNextSiblingId(): string | null {
   return siblings[idx + 1]!.id
 }
 
-/**
- * Opens the context menu and resolves insert position based on where within the
- * row the right-click landed: top half → before this entry, bottom half → after.
- */
 function onContextMenu(e: MouseEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   const relY = e.clientY - rect.top
@@ -189,10 +163,7 @@ function startRename() {
   isRenaming.value = true
 }
 
-/**
- * Commits a rename if the new name is non-empty and different.
- * Called on Enter, blur, or clicking away from the rename input.
- */
+/** On Enter, blur or click-away. Ignores empty or unchanged names. */
 async function submitRename() {
   const newName = renameValue.value.trim()
   if (newName && newName !== props.entry.name) {
@@ -232,12 +203,7 @@ function startNewSiblingFolder() {
   filesStore.triggerCreate(props.entry.parentId, 'folder', contextMenuInsertBefore.value)
 }
 
-/**
- * Commits the pending child creation under this folder.
- * Auto-appends ".md" if omitted; clears pendingCreate state when done.
- *
- * Precondition: filesStore.pendingCreate is non-null and targets this folder.
- */
+/** Appends ".md" if it's missing. */
 async function submitNew() {
   const name = newChildName.value.trim()
   if (!name) {
@@ -261,15 +227,11 @@ function cancelNew() {
   newChildName.value = ''
 }
 
-/** Removes the file extension for display purposes (e.g. "notes.md" → "notes"). */
 function stripExtension(name: string) {
   return name.replace(/\.[^.]+$/, '')
 }
 
-/**
- * Marks the dragging entry as the PENDING_ID sentinel so drop zones know this
- * is a not-yet-committed entry being repositioned.
- */
+/** PENDING_ID marks a not-yet-created entry being repositioned. */
 function onPendingDragStart(e: DragEvent) {
   draggingEntry.value = {
     kind: 'document',
@@ -288,7 +250,6 @@ function onPendingDragEnd() {
 
 <template>
   <div>
-    <!-- Rename input -->
     <div v-if="isRenaming" class="py-0.5 px-2" :style="{ paddingLeft: depth * 24 + 12 + 'px' }">
       <input
         v-model="renameValue"
@@ -300,7 +261,6 @@ function onPendingDragEnd() {
       />
     </div>
 
-    <!-- Normal display -->
     <div
       v-else
       class="relative rounded-sm"
@@ -341,13 +301,11 @@ function onPendingDragEnd() {
           :style="{ left: (i - 1) * 24 + 22 + 'px' }"
         />
 
-        <!-- Before drop indicator -->
         <div
           v-if="dropRegion === 'before' && !isInvalidTarget"
           class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
         />
 
-        <!-- Icon -->
         <span class="flex items-center shrink-0">
           <template v-if="isDirectory(entry)">
             <FolderOpen v-if="isOpen" :size="17" class="text-amber" />
@@ -364,7 +322,6 @@ function onPendingDragEnd() {
           </template>
         </span>
 
-        <!-- Name -->
         <span class="truncate">
           {{ isDirectory(entry) || entry.type === 'web' ? entry.name : stripExtension(entry.name) }}
         </span>
@@ -376,14 +333,13 @@ function onPendingDragEnd() {
           <AlertTriangle :size="13" />
         </span>
 
-        <!-- After drop indicator -->
         <div
           v-if="dropRegion === 'after' && !isInvalidTarget"
           class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
         />
       </div>
 
-      <!-- Children (inside wrapper so the drop ring encompasses them) -->
+      <!-- Children inside the wrapper so the drop ring covers them -->
       <div
         v-if="isDirectory(entry)"
         class="grid transition-[grid-template-rows] duration-100 ease-in-out"
@@ -419,16 +375,14 @@ function onPendingDragEnd() {
       </div>
     </div>
 
-    <!-- Context menu -->
     <ContextMenu v-if="contextMenuVisible" :x="contextMenuPos.x" :y="contextMenuPos.y">
-      <!-- Multi-select mode: only Delete -->
+      <!-- Multi-select: only Delete -->
       <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
         <ContextMenuItem :icon="Trash2" danger @click="handleDelete">
           Delete {{ filesStore.selectedIds.size }} items
         </ContextMenuItem>
       </template>
 
-      <!-- Single-item menu -->
       <template v-else>
         <ContextMenuItem :icon="Pencil" @click="startRename">Rename</ContextMenuItem>
         <template v-if="isDirectory(entry)">

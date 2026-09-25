@@ -1,8 +1,8 @@
-// Unit tests for parseMarkdown — focused on source-line annotation correctness across block types.
+// parseMarkdown, mostly data-source-line correctness across block types.
 import { describe, it, expect } from 'vitest'
 import { parseMarkdown, parseMarkdownWithToc } from './markdown'
 
-/** Extract all data-source-line values from HTML in order of appearance */
+/** data-source-line values in document order. */
 function extractSourceLines(html: string): { tag: string; line: number }[] {
   const results: { tag: string; line: number }[] = []
   const re = /<(\w+)[^>]*\bdata-source-line="(\d+)"[^>]*>/g
@@ -13,19 +13,15 @@ function extractSourceLines(html: string): { tag: string; line: number }[] {
   return results
 }
 
-/** Shorthand: get just the line numbers */
 function lines(html: string): number[] {
   return extractSourceLines(html).map((r) => r.line)
 }
 
-/** Get source line for a specific tag (first match) */
 function lineFor(html: string, tag: string): number | undefined {
   return extractSourceLines(html).find((r) => r.tag === tag)?.line
 }
 
-// ---------------------------------------------------------------------------
 // Basic block elements
-// ---------------------------------------------------------------------------
 
 describe('source line annotation — basic blocks', () => {
   it('annotates headings', () => {
@@ -63,9 +59,7 @@ describe('source line annotation — basic blocks', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Heading ids + table of contents
-// ---------------------------------------------------------------------------
+// Heading ids and table of contents
 
 describe('heading ids', () => {
   it('renders GitHub-style id slugs on headings', () => {
@@ -136,9 +130,7 @@ describe('parseMarkdownWithToc', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Lists — flat
-// ---------------------------------------------------------------------------
+// Flat lists
 
 describe('source line annotation — flat lists', () => {
   it('annotates ul and each li', () => {
@@ -160,9 +152,7 @@ describe('source line annotation — flat lists', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Lists — nested
-// ---------------------------------------------------------------------------
+// Nested lists
 
 describe('source line annotation — nested lists', () => {
   it('annotates nested list items correctly', () => {
@@ -181,7 +171,6 @@ describe('source line annotation — nested lists', () => {
   })
 
   it('handles nested list with blank lines (loose list)', () => {
-    // This is the exact case from the bug report
     const html = parseMarkdown('# asd\n- asdlkjasd\n  - asd\n \n  - asd\n\n\n')
     const sl = extractSourceLines(html)
 
@@ -208,9 +197,7 @@ describe('source line annotation — nested lists', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Mixed content — sequential line accuracy
-// ---------------------------------------------------------------------------
+// Mixed content
 
 describe('source line annotation — mixed content', () => {
   it('tracks lines accurately through mixed block elements', () => {
@@ -283,9 +270,7 @@ describe('source line annotation — mixed content', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Extensions — admonitions and KaTeX
-// ---------------------------------------------------------------------------
+// Admonitions and KaTeX
 
 describe('source line annotation — extensions', () => {
   it('annotates admonitions', () => {
@@ -297,7 +282,6 @@ describe('source line annotation — extensions', () => {
   it('annotates display math (blockKatex)', () => {
     const content = 'text\n\n$$\nx^2 + y^2 = z^2\n$$\n\nafter\n'
     const html = parseMarkdown(content)
-    // The block katex should be annotated with a div
     const sl = extractSourceLines(html)
     const divLine = sl.find((r) => r.tag === 'div')
     expect(divLine).toBeDefined()
@@ -305,9 +289,7 @@ describe('source line annotation — extensions', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
 // Edge cases
-// ---------------------------------------------------------------------------
 
 describe('source line annotation — edge cases', () => {
   it('handles empty content', () => {

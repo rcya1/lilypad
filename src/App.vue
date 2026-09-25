@@ -1,4 +1,4 @@
-<!-- Root component: global keyboard shortcuts (Cmd+P, Cmd+N), beforeunload guard for unsaved docs, and auth-gated route rendering. -->
+<!-- Root: global shortcuts (Ctrl/Cmd+P, Ctrl/Cmd+N), unsaved-changes guard, route view. -->
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -16,7 +16,6 @@ const editorStore = useEditorStore()
 const uiStore = useUiStore()
 
 function onKeyDown(e: KeyboardEvent) {
-  // Ctrl/Cmd+P: toggle the quick switcher (works regardless of focus)
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
     e.preventDefault()
     if (uiStore.quickSwitcherOpen) uiStore.closeQuickSwitcher()
@@ -25,13 +24,13 @@ function onKeyDown(e: KeyboardEvent) {
   }
 
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-    // If a rename/input is already active, do nothing
+    // Not while typing in an input.
     const active = document.activeElement
     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return
 
     e.preventDefault()
 
-    // Resolve target folder: selectedFolderId → parent of active tab → root
+    // Selected folder, else the active tab's folder, else the top level.
     let targetFolderId: string | null = filesStore.selectedFolderId
     if (targetFolderId === null && editorStore.activeDocumentId) {
       targetFolderId = filesStore.getParentFolderId(editorStore.activeDocumentId)
@@ -46,13 +45,12 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
     e.preventDefault()
     e.returnValue = ''
   }
-  // Best-effort: these saves are async and the browser may kill them during unload.
-  // The preventDefault dialog above is the real safety net for dirty documents.
+  // Best-effort: the browser may kill these async saves. The prompt above is the real safety net.
   editorStore.saveAll()
 }
 
 onMounted(() => {
-  // capture: true ensures we intercept before the editor (CodeMirror) handles Ctrl+P/Ctrl+N.
+  // capture: so these win over CodeMirror's own Ctrl+P/Ctrl+N.
   window.addEventListener('keydown', onKeyDown, { capture: true })
   window.addEventListener('beforeunload', onBeforeUnload)
 })

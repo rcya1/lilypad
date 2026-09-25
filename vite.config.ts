@@ -8,9 +8,7 @@ import svgLoader from 'vite-svg-loader'
 import { VitePWA } from 'vite-plugin-pwa'
 
 /**
- * Dev-only `POST /api/capture` endpoint for the Web Annotations feature. Runs the headless
- * Chromium capture in the Vite dev process so `yarn dev` needs no second server. In production
- * this path is served by the Vercel serverless function in `api/capture.ts` instead.
+ * Dev-only `POST /api/capture`, so `yarn dev` needs no second server (production: api/capture.ts).
  */
 function devCapturePlugin(): Plugin {
   return {
@@ -50,10 +48,8 @@ function devCapturePlugin(): Plugin {
 }
 
 /**
- * Installable app (web manifest) + service worker. The app itself is precached so it opens with
- * no connection; note data lives in IndexedDB (src/lib/offline.ts), not here. Images and captured
- * web pages are cached the first time they're opened (sign-out deletes those caches, see
- * USER_MEDIA_CACHES). New versions wait for the user to click "Reload" (PwaUpdatePrompt.vue).
+ * Installable app + service worker. The app shell is precached; note data lives in IndexedDB
+ * (src/lib/offline.ts). Images and captured pages are cached once opened (sign-out deletes them).
  */
 function pwaPlugin() {
   return VitePWA({
@@ -128,7 +124,6 @@ function pwaPlugin() {
   })
 }
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [vue(), vueDevTools(), tailwindcss(), svgLoader(), devCapturePlugin(), pwaPlugin()],
   resolve: {

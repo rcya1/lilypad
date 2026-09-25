@@ -1,16 +1,11 @@
 // CodeMirror WidgetTypes for the editor: upload spinner, image ghost name, rename anchor.
 import { WidgetType } from '@codemirror/view'
 
-/**
- * A CodeMirror WidgetType that replaces an `<!--uploading:<uuid>-->` sentinel
- * comment with a visible spinner pill. contenteditable=false prevents the user
- * from placing the cursor inside the widget.
- */
+/** Stands in for an `<!--uploading:<uuid>-->` placeholder. */
 export class UploadSpinnerWidget extends WidgetType {
   toDOM() {
     const wrap = document.createElement('span')
     wrap.className = 'cm-upload-spinner'
-    // contenteditable=false ensures CM does not allow the cursor inside this widget.
     wrap.setAttribute('contenteditable', 'false')
     const spinner = document.createElement('span')
     spinner.className = 'cm-upload-spinner-icon'
@@ -27,12 +22,7 @@ export class UploadSpinnerWidget extends WidgetType {
   }
 }
 
-/**
- * Renders the human-readable filename of an image reference as ghost (muted italic)
- * text immediately after `![](img:<id>)` syntax in the editor.
- * eq() is implemented so CM can diff decorations and skip DOM updates when the name
- * hasn't changed.
- */
+/** The image's name, as muted text after `![](img:<id>)`. */
 export class GhostNameWidget extends WidgetType {
   constructor(private name: string) {
     super()
@@ -54,11 +44,7 @@ export class GhostNameWidget extends WidgetType {
   }
 }
 
-/**
- * Zero-width anchor widget injected in place of the ghost name while the user is
- * renaming an image. The rename input (in the Vue template) is positioned over this
- * anchor via getBoundingClientRect(), so it appears exactly where the ghost text would be.
- */
+/** Zero-width stand-in for the name while renaming; the rename input is positioned over it. */
 export class RenameAnchorWidget extends WidgetType {
   constructor(private id: string) {
     super()

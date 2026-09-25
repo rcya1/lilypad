@@ -1,5 +1,4 @@
-// Shared delete flow for tree rows (FileExplorerNode, ImageNode): multi-select-aware
-// confirm dialog, closing open tabs, then the store's bulkDelete/deleteEntry call.
+// Delete flow for tree rows, multi-select aware: confirm, close open tabs, delete.
 import type { ComputedRef, Ref } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
@@ -18,7 +17,7 @@ export function useEntryDelete(
   options: {
     noun: string
     closeContextMenu: () => void
-    /** Display name for the single-item confirm dialog; defaults to the raw entry name. */
+    /** For the confirm dialog; defaults to the entry's name. */
     label?: (entry: Entry) => string
   },
 ) {
@@ -26,12 +25,6 @@ export function useEntryDelete(
   const editorStore = useEditorStore()
   const { confirm } = useConfirm()
 
-  /**
-   * Deletes this entry (or the full multi-select set if active) after a confirm dialog.
-   *
-   * When operating in multi-select mode, closes all affected tabs before deleting
-   * to avoid dangling references in the editor store.
-   */
   async function handleDelete() {
     options.closeContextMenu()
 

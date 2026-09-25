@@ -1,6 +1,4 @@
-<!-- Wide-screen table of contents: a sticky list in the left margin beside the note, with the
-     heading currently in view highlighted. On narrow screens the shell's TOC button + bottom sheet
-     take over instead. -->
+<!-- Sticky margin TOC for wide screens, highlighting the heading in view. -->
 <script setup lang="ts">
 import type { TocItem } from '@/lib/markdown'
 

@@ -1,12 +1,9 @@
-<!-- Read / Edit switch: a compact pill with a book and a pen icon and a filled thumb that slides to
-     the active mode. Sits next to the Lilypad wordmark in both the editor sidebar and the reader so
-     it never moves when you flip. The parent decides where each mode navigates. -->
+<!-- Read/Edit switch: a pill with a sliding thumb. The parent handles the navigation. -->
 <script lang="ts">
 export type AppMode = 'read' | 'edit'
 
-// Flipping navigates to the other screen right away, which unmounts this switch before its thumb
-// could slide. So the flip is handed over: the switch that mounts on the next screen starts on the
-// old side and plays the slide there. Module-level, shared by every instance.
+// Flipping navigates at once, unmounting the switch before its thumb can slide, so the switch on
+// the next screen starts on the old side and plays the slide there.
 let arrivingMode: AppMode | null = null
 </script>
 
@@ -19,13 +16,12 @@ const emit = defineEmits<{ change: [mode: AppMode] }>()
 
 const other = (mode: AppMode): AppMode => (mode === 'read' ? 'edit' : 'read')
 
-// Arriving via a flip: render on the previous side first, then slide over once painted.
 const shown = ref<AppMode>(arrivingMode === props.mode ? other(props.mode) : props.mode)
 arrivingMode = null
 
 onMounted(() => {
   if (shown.value === props.mode) return
-  // Two frames: one to paint the starting side, the next to start the transition from it.
+  // Two frames: paint the starting side, then transition from it.
   requestAnimationFrame(() => requestAnimationFrame(() => (shown.value = props.mode)))
 })
 

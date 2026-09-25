@@ -1,9 +1,6 @@
-<!-- Split-pane layout for a captured web document: the frozen snapshot in one slot, the user's
-     notes in the other, separated by a draggable divider. Honours the same layout/swap toggles as
-     EditorPane's markdown split (driven by the tab-bar rotate/swap buttons): `isVertical` stacks the
-     panes, `isSwapped` exchanges which pane is primary. Owns the notes render/code mode (so the
-     page's "insert reference" can flip it to code, and Ctrl+E toggles it), and draws the hover
-     "leader line" that connects a highlight to its note reference across panes. -->
+<!-- A captured web page and its notes, split by a draggable divider. Follows the tab bar's
+     rotate/swap toggles like EditorPane, owns the notes' rendered/code mode, and draws the leader line
+     from a hovered highlight to its reference. -->
 <script setup lang="ts">
 import { ref, computed, watch, useTemplateRef, onMounted, onBeforeUnmount } from 'vue'
 import { useWebAnnotationsStore } from '@/stores/webAnnotations'
@@ -21,22 +18,19 @@ const anno = useWebAnnotationsStore()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const webView = useTemplateRef<InstanceType<typeof WebView>>('webView')
-// Percentage of the primary axis occupied by the first slot. Notes get the remainder.
-// Default 60/40 gives the page room to breathe while keeping the notes column usable.
+// Share of the primary axis for the first slot. 60/40 gives the page room and keeps notes usable.
 const DEFAULT_PCT = 60
 const splitPct = ref(DEFAULT_PCT)
 const MIN_PCT = 25
 const MAX_PCT = 80
 const isDragging = ref(false)
 
-// Notes render/code toggle, lifted here so WebView's "insert reference" can switch to code and the
-// Ctrl+E shortcut can flip it from anywhere in the pane.
+// Lifted here so WebView's "insert reference" and Ctrl+E can switch it.
 const notesMode = ref<'code' | 'rendered'>('code')
 function onInsertReference() {
   notesMode.value = 'code'
 }
 
-// ── Layout (mirrors EditorPane) ─────────────────────────────────────────────────────────────────
 /** Absolute-position style for one slot; `inFirst` is the left/top slot, else right/bottom. */
 function slotStyle(inFirst: boolean) {
   if (!props.isVertical) {
@@ -48,7 +42,6 @@ function slotStyle(inFirst: boolean) {
     ? { left: '0%', top: '0%', width: '100%', height: `${splitPct.value}%` }
     : { left: '0%', top: `${splitPct.value}%`, width: '100%', height: `${100 - splitPct.value}%` }
 }
-// The captured page is the primary slot unless swapped; the notes take the other.
 const pageStyle = computed(() => slotStyle(!props.isSwapped))
 const notesStyle = computed(() => slotStyle(props.isSwapped))
 
@@ -68,17 +61,14 @@ const dividerLineClass = computed(() => {
     : 'left-1/2 -translate-x-1/2 inset-y-0 w-px bg-border-subtle group-hover:bg-border'
 })
 
-// Reset to the default split when the orientation flips so neither pane starts cramped.
+// Reset when the orientation flips so neither pane starts cramped.
 watch(
   () => props.isVertical,
   () => (splitPct.value = DEFAULT_PCT),
 )
 
-// ── Leader line ─────────────────────────────────────────────────────────────────────────────────
-// A Bézier curve connecting the hovered highlight (in the page iframe) to its reference chip (in the
-// rendered notes). Redrawn every frame while a highlight is hovered so it tracks both scroll sources
-// (the iframe scrolls independently of the notes pane). Only drawn when both endpoints exist — i.e.
-// the highlight resolves AND the notes are in rendered mode with a chip that references it.
+// Leader line: from the hovered highlight to its reference chip, redrawn every frame while hovered
+// (the page and the notes scroll independently). Drawn only when both ends exist.
 const linePath = ref('')
 const endpoints = ref<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
 let lineRaf = 0
@@ -111,9 +101,8 @@ function tick() {
   const cr = cont.getBoundingClientRect()
   const chipRect = chipEl.getBoundingClientRect()
 
-  // Endpoints sit on whichever edge of each element faces the divider. The page endpoint's
-  // free-axis centre is clamped to the iframe's visible band so the line stays anchored to the pane
-  // edge when the highlight scrolls out of view.
+  // Each end sits on the edge facing the divider. The page end is clamped to the iframe's visible
+  // band so the line stays anchored when the highlight scrolls out of view.
   let x1: number, y1: number, x2: number, y2: number
   if (!props.isVertical) {
     // Horizontal split (vertical divider): connect left/right edges.
@@ -148,7 +137,7 @@ function tick() {
   lineRaf = requestAnimationFrame(tick)
 }
 
-// Start the redraw loop when a highlight becomes hovered; tick() stops itself when it clears.
+// tick() stops itself once the hover clears.
 watch(
   () => anno.hoveredHighlightId,
   (id) => {
@@ -156,11 +145,7 @@ watch(
   },
 )
 
-/**
- * Begin a divider drag. Window-level listeners keep the drag alive even if the cursor
- * outruns the 12px hit zone. A full-container overlay (see template) is shown during the
- * drag so mouse events are not swallowed by the snapshot iframe.
- */
+/** While dragging, an overlay stops the iframe from swallowing mousemove. */
 function onDividerMouseDown(e: MouseEvent) {
   e.preventDefault()
   isDragging.value = true
@@ -211,7 +196,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="container" class="relative h-full w-full overflow-hidden bg-surface">
-    <!-- Captured page + highlight layer -->
     <div
       class="absolute overflow-hidden web-slot"
       :class="{ 'no-transition': isDragging }"
@@ -225,7 +209,6 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <!-- Notes -->
     <div
       class="absolute overflow-hidden web-slot"
       :class="{ 'no-transition': isDragging }"
@@ -240,7 +223,7 @@ onBeforeUnmount(() => {
       />
     </div>
 
-    <!-- Leader line overlay (pointer-events-none so it never blocks the divider or panes) -->
+    <!-- Leader line (pointer-events-none) -->
     <svg
       v-if="linePath"
       class="pointer-events-none absolute inset-0 z-30 h-full w-full overflow-visible"
@@ -267,8 +250,7 @@ onBeforeUnmount(() => {
       <div :class="['absolute transition-all duration-150', dividerLineClass]" />
     </div>
 
-    <!-- Drag overlay: covers the whole pane (including the iframe) while dragging so the
-         snapshot iframe doesn't capture mousemove and stall the resize. -->
+    <!-- While dragging, so the iframe can't swallow mousemove -->
     <div
       v-if="isDragging"
       class="absolute inset-0 z-10"

@@ -1,5 +1,4 @@
-<!-- The reader's note tree with its loading and empty states. Shown in the reader sidebar (docked on
-     wide screens, a drawer on narrow ones) and as the /read home on narrow screens. -->
+<!-- The reader's note tree, with loading and empty states. -->
 <script setup lang="ts">
 import { useFilesStore } from '@/stores/files'
 import ReaderTreeNode from './ReaderTreeNode.vue'
@@ -7,8 +6,7 @@ import { ensureEntriesLoaded } from './context'
 
 const filesStore = useFilesStore()
 
-// Kick off the fetch during setup (not onMounted) so `loading` is already true on first render —
-// otherwise the empty state flashes for a frame. No-op if the entries are already loaded.
+// In setup rather than onMounted, so `loading` is true on first render (no empty-state flash).
 ensureEntriesLoaded()
 </script>
 

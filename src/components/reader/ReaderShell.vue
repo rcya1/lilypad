@@ -1,9 +1,6 @@
-<!-- Route component for /read, /read/search and /read/:entryId. Layout: the reader sidebar (logo,
-     Read/Edit switch, note tree) docked on the left on wide screens or as a drawer on narrow ones,
-     and a main column with a top bar + breadcrumb bar over the child route. The child route fills
-     in title/toc via the injected reader context. A separate tree from the desktop AppShell, but on
-     wide screens its sidebar and bars are built to the editor's geometry (shared width/minimized
-     state from the ui store, same bar heights) so flipping Read/Edit doesn't shift the layout. -->
+<!-- Reader layout for /read routes: sidebar (docked when wide, a drawer when narrow) and a main
+     column with the bars over the child route, which fills in the title/TOC via the reader context.
+     On wide screens it matches the editor's geometry so flipping Read/Edit doesn't shift anything. -->
 <script setup lang="ts">
 import {
   reactive,
@@ -56,9 +53,7 @@ const entryId = computed(() =>
   typeof route.params.entryId === 'string' ? route.params.entryId : null,
 )
 
-// ── Sidebar ─────────────────────────────────────────────────────────────────────────────────────
-// Wide screens dock the sidebar with the editor's width + minimized state (shared via the ui
-// store); narrow ones use a drawer instead.
+// Wide screens dock the sidebar (the editor's width and minimized state); narrow ones use a drawer.
 const WIDE_QUERY = '(min-width: 1024px)'
 // Matches LilypadSidebar's icon-only rail.
 const MINIMIZED_WIDTH = 64
@@ -70,11 +65,10 @@ const onWideChange = (e: MediaQueryListEvent) => (isWide.value = e.matches)
 const { sidebarWidth, sidebarMinimized, sidebarResizing } = storeToRefs(uiStore)
 const drawerOpen = ref(false)
 
-// The tree is on screen in the docked sidebar (so the note list doesn't need to repeat it).
+// The docked tree is on screen, so the note list doesn't repeat it.
 const sidebarVisible = computed(() => isWide.value && !sidebarMinimized.value)
 
-// Arriving from the editor via the Read/Edit switch on a wide screen: show a copy of its tab bar
-// and collapse it upward, so the tabs slide away rather than snap (the editor mirrors this).
+// Arriving from the editor via the switch: collapse a copy of its tab bar (the editor mirrors it).
 const showTabGhost = ref(
   uiStore.arrivedViaModeSwitch('to-read') && isWide.value && useEditorStore().tabOrder.length > 0,
 )
@@ -99,7 +93,6 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-// ── Breadcrumbs + tree reveal ───────────────────────────────────────────────────────────────────
 const ancestors = computed(() =>
   entryId.value && filesStore.getEntry(entryId.value)
     ? filesStore.getAncestorPath(entryId.value)
@@ -117,15 +110,14 @@ watch(
   { immediate: true },
 )
 
-/** Folder crumb → expand it (and its parents) in the tree and bring the sidebar up. */
+/** Expands the folder and its parents, and brings up the sidebar. */
 function revealFolder(id: string) {
   expandPath([...filesStore.getAncestorPath(id).map((a) => a.id), id])
   showSidebar()
 }
 
-// ── TOC ─────────────────────────────────────────────────────────────────────────────────────────
-// ReaderDocument shows the TOC as a margin rail once its container is ≥ 60rem wide (container
-// query); below that, the bar's TOC button opens the bottom sheet. Track the same width here.
+// Same threshold as ReaderDocument's margin TOC (a container query). Narrower, the bar's button
+// opens the sheet instead.
 const RAIL_MIN_WIDTH = 960
 const mainColumn = useTemplateRef<HTMLDivElement>('mainColumn')
 const mainWidth = ref(0)
@@ -151,7 +143,6 @@ watch(
   },
 )
 
-// ── Navigation ──────────────────────────────────────────────────────────────────────────────────
 // Read/Edit switch → the desktop editor, with this note open when there is one. `desktop=1` opts
 // out of the small-viewport redirect; AppShell's useOpenEntryFromQuery opens the entry and cleans
 // the URL.
@@ -188,8 +179,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex h-dvh bg-bg font-ui text-text-primary">
-    <!-- Docked sidebar (wide screens) — same shell, width transition and draggable edge as
-         LilypadSidebar (drag to resize, drag past the snap point to minimize). -->
+    <!-- Docked sidebar: same shell, width and draggable edge as LilypadSidebar -->
     <aside
       class="relative hidden shrink-0 border-r border-border-subtle bg-surface lg:block"
       :class="{ 'transition-[width] duration-200 ease-in-out': !sidebarResizing }"
@@ -211,8 +201,7 @@ onBeforeUnmount(() => {
       <!-- The search view renders its own bar (back + input). -->
       <header v-if="!isSearch" class="shrink-0 bg-surface pt-[env(safe-area-inset-top)]">
         <ReaderTabGhost v-if="showTabGhost" @done="showTabGhost = false" />
-        <!-- Narrow screens only: there's no docked sidebar, so this bar holds the drawer button,
-             logo, Read/Edit switch, search and TOC. Wide screens get just the breadcrumb bar. -->
+        <!-- Narrow screens only: drawer button, logo, switch, search, TOC -->
         <div v-if="!isWide" class="flex h-14 items-center gap-1 border-b border-border-subtle px-2">
           <button :class="iconButton" aria-label="Open sidebar" @click="toggleSidebar">
             <PanelLeft :size="16" />
@@ -249,7 +238,7 @@ onBeforeUnmount(() => {
             :current="reader.title"
             @folder="revealFolder"
           />
-          <!-- Wide screens: TOC button for when the note area is too narrow for the margin rail. -->
+          <!-- For when the note area is too narrow for the margin TOC -->
           <button
             v-if="isWide && showTocButton"
             class="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-text-muted transition-colors duration-100 hover:bg-surface-elevated hover:text-text-primary"

@@ -1,6 +1,5 @@
-<!-- A look-alike of the editor's tab bar, shown for a moment at the top of the reader right after the
-     Read/Edit switch flips to reading. It collapses upward (the content below slides up with it),
-     so the tabs visibly leave instead of snapping away. Display only; emits `done` when finished. -->
+<!-- A copy of the editor's tab bar that collapses upward right after flipping to Read, so the tabs
+     leave instead of snapping away. -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { File, FileText, X } from 'lucide-vue-next'
@@ -23,7 +22,7 @@ const tabs = computed(() =>
 </script>
 
 <template>
-  <!-- Bottom-aligned inside a shrinking box: the bar's top is clipped first, so it slides upward. -->
+  <!-- Bottom-aligned in a shrinking box, so the bar's top is clipped first and it slides up -->
   <div
     class="flex shrink-0 flex-col justify-end overflow-hidden animate-bar-collapse"
     aria-hidden="true"

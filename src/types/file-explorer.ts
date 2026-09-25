@@ -1,13 +1,8 @@
-// Frontend tree types for the file explorer — derived from DB rows in files store, not stored directly.
+// Tree nodes the files store builds from flat entry rows (view models, not stored).
 
-/**
- * Union type for any node in the file tree. Use `isDirectory()` to narrow.
- * These are in-memory view models built by the files store from flat DB rows;
- * they are NOT persisted to Supabase directly.
- */
+/** Narrow with `isDirectory()`. */
 export type Entry = Directory | Document
 
-/** A folder node; children are built recursively from entries with matching parent_id. */
 export interface Directory {
   kind: 'directory'
   id: string
@@ -18,7 +13,7 @@ export interface Directory {
 
 export type DocumentType = 'pdf' | 'md' | 'image' | 'web'
 
-/** A leaf document node; no children. `type` mirrors the DB `document_type` column. */
+/** `type` mirrors the DB `document_type`. */
 export interface Document {
   kind: 'document'
   id: string
@@ -27,7 +22,6 @@ export interface Document {
   type: DocumentType
 }
 
-/** Type guard that narrows Entry to Directory; use before accessing `.children`. */
 export function isDirectory(entry: Entry): entry is Directory {
   return entry.kind === 'directory'
 }

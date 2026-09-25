@@ -1,7 +1,5 @@
-<!-- Reader sidebar. Deliberately built to the editor sidebar's exact geometry — the same shared
-     header and footer, the same Files/Images tab row, the same "Files" section header and tree row
-     metrics, the same width from the ui store — so flipping between reading and editing with the
-     Read/Edit switch doesn't move anything. The tree itself is the read-only ReaderTree. -->
+<!-- Reader sidebar, built to the editor sidebar's exact geometry (shared header, footer and width,
+     same tab row, section header and row metrics) so flipping Read/Edit doesn't move anything. -->
 <script setup lang="ts">
 import { computed, onMounted, useTemplateRef } from 'vue'
 import { ref } from 'vue'
@@ -18,8 +16,8 @@ const emit = defineEmits<{ edit: []; search: []; images: [] }>()
 const filesStore = useFilesStore()
 const uiStore = useUiStore()
 
-// Flipping in from the editor: a copy of its new file/folder/web page buttons shrinks away so
-// "collapse all" slides into place instead of jumping.
+// Arriving from the editor, a copy of its new-file buttons shrinks away so "collapse all" slides
+// into place instead of jumping.
 const showActionsGhost = ref(uiStore.arrivedViaModeSwitch('to-read'))
 
 const totalFolderCount = computed(
@@ -32,7 +30,7 @@ function toggleAllFolders() {
   else filesStore.expandAll()
 }
 
-// Scroll position is shared with the editor's file tree (see FileExplorer).
+// Shared with the editor's file tree.
 const scroller = useTemplateRef<HTMLDivElement>('scroller')
 function onScroll() {
   if (scroller.value) uiStore.sidebarScrollTop = scroller.value.scrollTop
@@ -55,7 +53,7 @@ onMounted(() => {
 
     <template v-if="!minimized">
       <div class="relative flex flex-1 flex-col overflow-hidden">
-        <!-- Same tab row as the editor. Images live in the editor, so that tab flips over to it. -->
+        <!-- Images live in the editor, so that tab flips over to it -->
         <div class="flex shrink-0 border-b border-border-subtle">
           <button
             class="relative flex-1 cursor-pointer py-1.5 text-center text-xs font-medium text-text-primary"
@@ -73,7 +71,7 @@ onMounted(() => {
         </div>
 
         <div ref="scroller" class="flex flex-1 flex-col overflow-y-auto" @scroll.passive="onScroll">
-          <!-- h-9 matches the editor's header row, whose action buttons set its height. -->
+          <!-- h-9: the editor's row gets its height from its action buttons -->
           <div class="flex h-9 shrink-0 items-center justify-between px-3">
             <span class="text-xs font-medium tracking-widest text-text-muted uppercase">Files</span>
             <div class="flex items-center gap-0.5">

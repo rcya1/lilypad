@@ -13,10 +13,6 @@ import {
   type ViewUpdate,
 } from '@codemirror/view'
 
-// ---------------------------------------------------------------------------
-// Delimiter rules (pure — mirror src/lib/markdown.ts + marked-katex-extension)
-// ---------------------------------------------------------------------------
-
 /**
  * marked-katex-extension's standard (non-`nonStandard`) inline rule: `$…$` or `$$…$$` on one
  * line, non-empty, backslash escapes skip the next char, and the closer must be followed by
@@ -83,10 +79,6 @@ export function classifyBlockMathLine(text: string): BlockMathOpen {
 export function interruptsParagraph(text: string): boolean {
   return text.startsWith('$$') || text === '$'
 }
-
-// ---------------------------------------------------------------------------
-// LaTeX tokenizer (pure)
-// ---------------------------------------------------------------------------
 
 export type LatexTokenType =
   | 'MathCommand'
@@ -179,10 +171,6 @@ export function tokenizeLatex(text: string, offset = 0): LatexToken[] {
   return out
 }
 
-// ---------------------------------------------------------------------------
-// @lezer/markdown extension
-// ---------------------------------------------------------------------------
-
 /** Highlight tags for math nodes (no parents, so other highlight styles ignore them). */
 export const latexTags = {
   mark: Tag.define('mathMark'),
@@ -270,7 +258,6 @@ function parseInlineMath(cx: InlineContext, next: number, pos: number): number {
   )
 }
 
-/** Markdown extension: pass to `markdown({ extensions: [latexMath] })`. */
 export const latexMath: MarkdownConfig = {
   defineNodes: [
     { name: 'BlockMath', block: true },
@@ -298,10 +285,6 @@ export const latexMath: MarkdownConfig = {
   parseInline: [{ name: 'InlineMath', parse: parseInlineMath }],
 }
 
-// ---------------------------------------------------------------------------
-// Editor extensions: token classes + block-math line background
-// ---------------------------------------------------------------------------
-
 /** Maps math tags to `cm-math-*` classes; colours live in `lilypadTheme` (cm/theme.ts). */
 const latexHighlighter = tagHighlighter([
   { tag: latexTags.mark, class: 'cm-math-mark' },
@@ -316,7 +299,6 @@ const latexHighlighter = tagHighlighter([
 
 const blockLine = Decoration.line({ class: 'cm-math-block' })
 
-/** Line decorations for every visible line inside a `BlockMath` node. */
 function blockMathDecorations(view: EditorView): DecorationSet {
   const ranges: Range<Decoration>[] = []
   const tree = syntaxTree(view.state)
@@ -363,7 +345,6 @@ const blockMathBackground = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations },
 )
 
-/** Editor-side half of LaTeX support: token classes and the block-math background. */
 export const latexEditorExtensions: Extension = [
   syntaxHighlighting(latexHighlighter),
   blockMathBackground,

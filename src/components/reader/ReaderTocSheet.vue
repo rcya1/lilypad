@@ -1,5 +1,4 @@
-<!-- Bottom sheet listing the current note's headings. Tap an entry to scroll to it; the parent
-     closes the sheet. No gesture library — a plain slide-up transition + scrim tap-to-close. -->
+<!-- Bottom sheet of the note's headings; the parent scrolls and closes it. No gesture library. -->
 <script setup lang="ts">
 import type { TocItem } from '@/lib/markdown'
 
@@ -17,7 +16,6 @@ const emit = defineEmits<{ select: [id: string]; close: [] }>()
         v-if="open"
         class="fixed inset-x-0 bottom-0 z-50 max-h-[60dvh] overflow-y-auto rounded-t-2xl border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
       >
-        <!-- Drag handle (visual only) -->
         <div class="sticky top-0 flex flex-col items-center bg-surface pt-2 pb-1">
           <div class="h-1 w-10 rounded-full bg-border" />
           <span class="mt-2 text-xs font-medium uppercase tracking-widest text-text-muted">

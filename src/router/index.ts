@@ -1,5 +1,4 @@
-// Vue Router config: login + desktop app shell + mobile reader, with an auth guard that defers
-// while loading and a small-viewport redirect from the desktop app to the reader.
+// Routes: login, the desktop app and the reader, with an auth guard and a small-screen redirect.
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginPage from '@/components/auth/LoginPage.vue'
 import AppShell from '@/components/AppShell.vue'
@@ -39,23 +38,19 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
-  // While the Supabase session is still resolving (on first load), let the navigation proceed
-  // and trust that main.ts will redirect after initialize() resolves.
+  // Still resolving the session on first load: main.ts redirects once it's known.
   if (auth.loading) return true
 
-  // `user` rather than `session`: offline, the app runs on the last signed-in user even when the
-  // session can't be refreshed (see auth store).
+  // `user`, not `session`: offline, the app runs as the last signed-in user without a session.
   if (!auth.user && to.name !== 'login') {
     return { name: 'login' }
   }
 
-  // Redirect already-authed users away from the login page.
   if (auth.user && to.name === 'login') {
     return { name: 'app' }
   }
 
-  // Small viewports get the mobile reader instead of the desktop app. `?desktop=1` opts out.
-  // This is the entire "mobile detection" — no user-agent sniffing; /read stays reachable by URL.
+  // Small screens get the reader; `?desktop=1` opts out. No user-agent sniffing.
   if (to.name === 'app' && isSmallViewport() && to.query.desktop !== '1') {
     return { name: 'reader-browser' }
   }

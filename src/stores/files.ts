@@ -1,9 +1,6 @@
-// Pinia store for all file-system state: entry tree, CRUD, drag-drop ordering, in-memory content, trigram search index, image uploads, and web captures.
-//
-// Offline-first: every change is applied to local state immediately, persisted on the device
-// (IndexedDB snapshot), and handed to the sync store, which pushes it to Supabase when online and
-// merges note text that changed elsewhere meanwhile. Image uploads and web captures still need a
-// connection (they go through Storage / the capture server).
+// Pinia store for the file tree, note text, search index, image uploads and web captures.
+// Offline-first: changes apply locally, are saved on the device, and are pushed by the sync store.
+// Image uploads and web captures still need a connection.
 import { defineStore } from 'pinia'
 import { ref, computed, watch, toRaw } from 'vue'
 import { supabase } from '@/lib/supabase'
@@ -30,19 +27,8 @@ import {
   deduplicateName as entryTreeDeduplicateName,
 } from '@/lib/entry-tree'
 
-// ---------------------------------------------------------------------------
-// Module-level singletons shared across all store instances.
-// These live outside the store so they survive hot-reloads without a full
-// refetch, and so the search store can access them without going through Vue
-// reactivity (the Map is too large to make reactive).
-//
-// contentMap: id → full text of every .md and web-doc notes column.
-//   No eviction. Typical usage: 200 files × 5 KB ≈ 1 MB — well within budget.
-//   Populated on fetchEntries; kept in sync by uploadContent / deleteEntry.
-//
-// trigramIndex: 3-char substring → Set<fileId>. Rebuilt from contentMap on
-//   startup; incrementally updated by uploadContent / deleteEntry.
-// ---------------------------------------------------------------------------
+// Outside the store so they survive hot reloads, and so search can read them without reactivity
+// (too large to make reactive). contentMap holds the text of every md/web note.
 const contentMap = new Map<string, string>()
 const trigramIndex: TrigramIndex = new Map()
 
@@ -51,56 +37,37 @@ export const useFilesStore = defineStore('files', () => {
   const toast = useToastStore()
   const sync = useSyncStore()
 
-  // All entry rows for the authenticated user: the server's, plus local changes not yet synced.
+  // Server rows plus local changes not yet synced.
   const entries = ref<EntryRow[]>([])
   const loading = ref(false)
-  // True once this session has loaded the tree from the server at least once (vs. only the
-  // on-device copy) — gates first-run seeding so offline starts never create duplicates.
+  // Set by the first server load; gates first-run seeding so an offline start can't duplicate it.
   let serverLoaded = false
 
-  // The folder the user explicitly navigated into (used as default parent for new files).
+  // Default parent for new files.
   const selectedFolderId = ref<string | null>(null)
-
-  // IDs of folders whose children are hidden in the file explorer.
   const collapsedFolderIds = ref(new Set<string>())
-
-  // IDs of entries checked via multi-select (checkbox or Shift+click).
   const selectedIds = ref(new Set<string>())
-
-  // The most recently clicked entry — anchor for Shift+click range selection.
+  // Anchor for Shift+click range selection.
   const lastClickedId = ref<string | null>(null)
 
-  /**
-   * Pending inline-creation state. When non-null, the file explorer renders a
-   * PendingInputRow at the specified position so the user can type a name.
-   * `insertBefore: null` appends at the end of the parent's children.
-   */
+  /** When set, the explorer shows an inline name input here. `insertBefore: null` appends. */
   const pendingCreate = ref<{
     parentId: string | null
     type: 'file' | 'folder'
     insertBefore: string | null
   } | null>(null)
-
-  /** True once the trigram index has been built after the initial fetch. Blocks search until ready. */
   const indexReady = ref(false)
 
-  /** O(1) id → row lookup, recomputed whenever `entries` changes. */
   const entryById = computed(() => {
     const map = new Map<string, EntryRow>()
     for (const e of entries.value) map.set(e.id, e)
     return map
   })
 
-  // Derived file tree excluding image entries (images live in imageTree).
   const tree = computed<Entry[]>(() => buildTree(null))
-
-  // Parallel tree containing only images and the folders that contain them.
   const imageTree = computed<Entry[]>(() => buildImageTree(null))
 
-  /**
-   * Returns true if `name` already exists among siblings under `parentId`.
-   * Pass `excludeId` when renaming so the entry doesn't collide with itself.
-   */
+  /** Pass `excludeId` when renaming so the entry doesn't collide with itself. */
   function isDuplicateName(name: string, parentId: string | null, excludeId?: string): boolean {
     return entryTreeIsDuplicateName(entries.value, name, parentId, excludeId)
   }
@@ -109,10 +76,7 @@ export const useFilesStore = defineStore('files', () => {
     toast.addToast(msg, 'error')
   }
 
-  /**
-   * Recursively builds a tree rooted at `parentId`, including only rows accepted by `include`.
-   * Directories are always recursed into; `include` decides whether a row appears at all.
-   */
+  /** `include` filters rows; directories are always recursed into. */
   function buildTreeWith(parentId: string | null, include: (row: EntryRow) => boolean): Entry[] {
     return entries.value
       .filter((e) => e.parent_id === parentId)
@@ -137,12 +101,11 @@ export const useFilesStore = defineStore('files', () => {
       )
   }
 
-  // File tree: everything except images (images live in imageTree).
   function buildTree(parentId: string | null): Entry[] {
     return buildTreeWith(parentId, (row) => row.document_type !== 'image')
   }
 
-  // Images tab: image documents plus all directories (folders always shown for structure).
+  // Folders always show, so images keep their structure.
   function buildImageTree(parentId: string | null): Entry[] {
     return buildTreeWith(
       parentId,
@@ -150,23 +113,12 @@ export const useFilesStore = defineStore('files', () => {
     )
   }
 
-  /**
-   * Returns the next available sort_order for a new child of `parentId`.
-   * Uses 1000-step increments so there's ample room for midpoint insertions
-   * before renumbering is needed.
-   */
+  /** 1000-step gaps leave room for midpoint inserts before renumbering. */
   function getNextSortOrder(parentId: string | null): number {
     return entryTreeGetNextSortOrder(entries.value, parentId)
   }
 
-  /**
-   * Returns the sort_order to assign to the entry being created inline.
-   * When `insertBefore` is set, uses the midpoint between the preceding
-   * sibling's sort_order and the target's sort_order (fractional bisection).
-   * Falls back to appending at the end when no `insertBefore` is specified.
-   *
-   * Precondition: `pendingCreate.value` must be non-null.
-   */
+  /** Midpoint between `insertBefore` and its previous sibling (fractional), else append. */
   function getPendingSortOrder(): number {
     if (!pendingCreate.value) return 1000
     const { parentId, insertBefore } = pendingCreate.value
@@ -190,11 +142,7 @@ export const useFilesStore = defineStore('files', () => {
     return collapsedFolderIds.value.has(id)
   }
 
-  /**
-   * Replacing the Set rather than mutating in-place ensures Vue reactivity
-   * tracks the change (Vue 3 can detect Set.add/delete on reactive Sets, but
-   * creating a new Set guarantees watchers fire consistently).
-   */
+  // Replace the Set rather than mutate it so watchers fire reliably.
   function expandFolder(id: string) {
     const next = new Set(collapsedFolderIds.value)
     next.delete(id)
@@ -216,10 +164,7 @@ export const useFilesStore = defineStore('files', () => {
     collapsedFolderIds.value = new Set()
   }
 
-  /**
-   * Toggles the check state of a single entry.
-   * Always updates `lastClickedId` so a subsequent Shift+click can anchor from here.
-   */
+  /** Also moves the Shift+click anchor here. */
   function toggleSelection(id: string) {
     const next = new Set(selectedIds.value)
     if (next.has(id)) next.delete(id)
@@ -228,12 +173,10 @@ export const useFilesStore = defineStore('files', () => {
     lastClickedId.value = id
   }
 
-  /** Replaces the current selection with the given set of IDs (used after range selection). */
   function setSelection(ids: string[]) {
     selectedIds.value = new Set(ids)
   }
 
-  /** Selects exactly one entry and makes it the range anchor. */
   function selectSingle(id: string) {
     selectedIds.value = new Set([id])
     lastClickedId.value = id
@@ -248,11 +191,7 @@ export const useFilesStore = defineStore('files', () => {
     return selectedIds.value.has(id)
   }
 
-  /**
-   * Returns an ordered flat list of all visible entry IDs, respecting the
-   * current collapsed state of folders. Used as the ordered index for
-   * Shift+click range selection.
-   */
+  /** Visible entries in display order (skipping collapsed folders), for range selection. */
   function getFlatVisibleEntryIds(): string[] {
     const result: string[] = []
     function walk(nodes: Entry[]) {
@@ -267,11 +206,7 @@ export const useFilesStore = defineStore('files', () => {
     return result
   }
 
-  /**
-   * Shift+click: selects all entries between `lastClickedId` and `id` in
-   * visible order. Falls back to a plain toggle when `lastClickedId` is unset
-   * or either ID isn't currently visible (e.g. inside a collapsed folder).
-   */
+  /** Selects the visible range from the anchor to `id`; plain toggle if either isn't visible. */
   function rangeSelectTo(id: string) {
     const flat = getFlatVisibleEntryIds()
     const lastId = lastClickedId.value
@@ -289,12 +224,6 @@ export const useFilesStore = defineStore('files', () => {
     setSelection(flat.slice(from, to + 1))
   }
 
-  /**
-   * Walks up the ancestor chain of `id` and returns the first ancestor whose
-   * ID is in `selectedIds`, or null if none exists.
-   * Used by `explodeAndToggle` to detect when the user is clicking inside a
-   * selected folder.
-   */
   function findSelectedAncestor(id: string): string | null {
     let parentId = entryById.value.get(id)?.parent_id ?? null
     while (parentId) {
@@ -305,15 +234,8 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   /**
-   * Handles clicking a child of an already-selected folder.
-   *
-   * When a folder is selected and the user clicks one of its children, it's
-   * ambiguous whether they want to add the child to the selection or "enter"
-   * the folder and select individual children. This resolves it by "exploding"
-   * the folder: replace the folder selection with all its direct siblings
-   * (excluding the clicked item), then toggle the clicked item normally.
-   *
-   * If no selected ancestor is found, falls through to a plain toggle.
+   * Clicking a child of a selected folder "explodes" the folder: its selection is replaced by its
+   * other children, then the clicked child toggles as usual.
    */
   function explodeAndToggle(id: string) {
     const ancestorId = findSelectedAncestor(id)
@@ -333,27 +255,14 @@ export const useFilesStore = defineStore('files', () => {
     lastClickedId.value = id
   }
 
-  /**
-   * Deletes all entries in `ids`, but skips any entry whose ancestor is also
-   * in `ids` (avoids double-deleting already-deleted descendants).
-   *
-   * @returns true if every delete succeeded.
-   */
   async function bulkDelete(ids: string[]): Promise<boolean> {
-    // Only delete top-level entries in the selection — descendants will be
-    // removed by the recursive deleteEntry cascade.
+    // Descendants go with their folder.
     const topLevel = filterTopLevelIds(ids)
     const results = await Promise.all(topLevel.map((id) => deleteEntry(id)))
     clearSelection()
     return results.every(Boolean)
   }
 
-  /**
-   * Moves all `ids` into `targetFolderId`, assigning consecutive sort_orders
-   * starting at `getNextSortOrder(targetFolderId)` to preserve relative order.
-   *
-   * @returns true if every move succeeded.
-   */
   async function bulkMove(ids: string[], targetFolderId: string | null): Promise<boolean> {
     const base = getNextSortOrder(targetFolderId)
     // Sequential (not Promise.all): each moveEntry renumbers siblings in the target folder,
@@ -367,19 +276,12 @@ export const useFilesStore = defineStore('files', () => {
     return allOk
   }
 
-  /**
-   * Returns the parent folder ID of a file, or null if the file is at the root
-   * or the ID is not found.
-   */
   function getParentFolderId(fileId: string): string | null {
     const entry = entryById.value.get(fileId)
     return entry?.parent_id ?? null
   }
 
-  /**
-   * Returns the ordered list of ancestor directories from root to immediate
-   * parent for the given file id.
-   */
+  /** Ancestor folders, root first. */
   function getAncestorPath(fileId: string): { id: string; name: string }[] {
     const entry = entryById.value.get(fileId)
     if (!entry?.parent_id) return []
@@ -388,37 +290,24 @@ export const useFilesStore = defineStore('files', () => {
     while (currentId) {
       const parent = entryById.value.get(currentId)
       if (!parent) break
-      // Prepend so the array is root-first.
       segments.unshift({ id: parent.id, name: parent.name })
       currentId = parent.parent_id
     }
     return segments
   }
 
-  /**
-   * Human-readable folder path string for a file, e.g. "Notes / Math".
-   * Returns an empty string for root-level files.
-   */
+  /** e.g. "Notes / Math"; empty at the top level. */
   function getFolderPath(fileId: string): string {
     return getAncestorPath(fileId)
       .map((segment) => segment.name)
       .join(' / ')
   }
 
-  /**
-   * Programmatic entry point for starting an inline file creation (used by the
-   * global Ctrl+N shortcut). Mirrors the parent-priority logic in FileExplorer:
-   * selectedFolderId → parent of the active tab → root.
-   */
+  /** For the Ctrl+N shortcut. */
   function beginCreate(kind: 'document' | 'folder', parentId: string | null) {
     triggerCreate(parentId, kind === 'document' ? 'file' : 'folder')
   }
 
-  /**
-   * Sets `pendingCreate` to show the inline creation row in the file explorer.
-   *
-   * @param insertBefore - ID of the sibling to insert before; null appends at end.
-   */
   function triggerCreate(
     parentId: string | null,
     type: 'file' | 'folder',
@@ -427,12 +316,6 @@ export const useFilesStore = defineStore('files', () => {
     pendingCreate.value = { parentId, type, insertBefore }
   }
 
-  /**
-   * Updates the pending creation position (e.g. when the drag target changes
-   * while the input row is visible).
-   *
-   * Precondition: `pendingCreate.value` must be non-null; no-ops otherwise.
-   */
   function updatePendingPosition(parentId: string | null, insertBefore: string | null) {
     if (!pendingCreate.value) return
     pendingCreate.value = { ...pendingCreate.value, parentId, insertBefore }
@@ -442,17 +325,7 @@ export const useFilesStore = defineStore('files', () => {
     pendingCreate.value = null
   }
 
-  // ---------------------------------------------------------------------------
-  // Content map & trigram index helpers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Populates `contentMap` from the already-fetched `entries`.
-   * Only `.md` and `web` entries store their content in the DB `content` column;
-   * binary files (PDF, image) use Storage and are excluded here.
-   *
-   * Called once after `fetchEntries` completes.
-   */
+  /** Only md/web notes keep their text in the DB; binary files live in Storage. */
   function populateContentMap(): void {
     contentMap.clear()
     for (const entry of entries.value) {
@@ -465,12 +338,6 @@ export const useFilesStore = defineStore('files', () => {
     }
   }
 
-  /**
-   * Clears and rebuilds the trigram index from the current `contentMap`.
-   * Sets `indexReady` to true when done, unblocking the search store.
-   *
-   * Called once after `populateContentMap` during startup.
-   */
   function rebuildTrigramIndex(): void {
     trigramIndex.clear()
     const built = buildIndex(contentMap)
@@ -480,23 +347,14 @@ export const useFilesStore = defineStore('files', () => {
     indexReady.value = true
   }
 
-  // ---------------------------------------------------------------------------
-  // CRUD operations
-  // ---------------------------------------------------------------------------
-
   /**
-   * Loads the file tree: the on-device copy first (instant, and all there is offline), then
-   * pushes any changes made offline and pulls the server's current state over it.
-   *
-   * Precondition: `auth.user` must be set. No-ops if not authenticated.
-   * Postcondition: `entries`, `contentMap`, `trigramIndex`, and `indexReady` reflect the newest
-   *   state available.
+   * Shows the on-device copy first (instant, and all there is offline), then pushes offline
+   * changes and pulls the server's state over it.
    */
   async function fetchEntries() {
     if (!auth.user) return
     const uid = auth.user.id
     loading.value = true
-    // Block search while we're rebuilding.
     indexReady.value = false
     await sync.init(uid)
 
@@ -516,12 +374,10 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   /**
-   * Pulls every entry from the server and makes it the local state, except where this device
-   * has changes the server hasn't seen yet: queued creates/renames/moves/deletes are kept on top,
-   * and a note's text is left alone while it has unsynced edits, a merge conflict, or unsaved
-   * typing in the editor. Notes open in the editor pick up the server's text.
-   *
-   * @returns false when the server couldn't be reached.
+   * Makes the server's rows the local state, except for changes it hasn't seen yet: queued
+   * creates/renames/moves/deletes stay on top, and a note keeps its local text while it has
+   * unsynced edits, a conflict or unsaved typing. Open editors pick up newer server text. Returns
+   * false if the server couldn't be reached.
    */
   async function refreshFromServer(): Promise<boolean> {
     if (!auth.user) return false
@@ -578,7 +434,6 @@ export const useFilesStore = defineStore('files', () => {
     return true
   }
 
-  /** Restores state from the on-device copy. */
   function applySnapshot(snapshot: OfflineSnapshot) {
     entries.value = snapshot.entries
     sync.importBases(snapshot.bases)
@@ -588,7 +443,7 @@ export const useFilesStore = defineStore('files', () => {
 
   let snapshotTimer = 0
 
-  /** Saves the current tree + note text to the device (debounced). */
+  /** Debounced. */
   function persistSnapshot() {
     if (!auth.user) return
     const uid = auth.user.id
@@ -606,21 +461,18 @@ export const useFilesStore = defineStore('files', () => {
     }, 400)
   }
 
-  // Any change to the tree (create, rename, move, delete, reorder) lands on the device too.
   watch(entries, persistSnapshot, { deep: true })
 
-  /** Overwrites fields of a local entry (used by sync, e.g. re-parenting to the top level). */
   function patchEntry(id: string, fields: Partial<EntryRow>) {
     const entry = entryById.value.get(id)
     if (entry) Object.assign(entry, fields)
   }
 
-  /** The freshest text of a note: the editor's buffer if it's open, else the saved text. */
+  /** The editor's buffer if it's open (may be newer than the last save), else the saved text. */
   function getLatestText(id: string): string | undefined {
     return useEditorStore().openDocuments.get(id)?.content ?? contentMap.get(id)
   }
 
-  /** Replaces a note's text with the result of a merge (locally, and in the editor if open). */
   function applyMergedContent(id: string, text: string) {
     contentMap.set(id, text)
     updateTrigramsForFile(trigramIndex, id, text)
@@ -628,12 +480,11 @@ export const useFilesStore = defineStore('files', () => {
     persistSnapshot()
   }
 
-  /** Throws the standard error for actions that need the server (uploads, captures). */
   function requireOnline(action: string) {
     if (!sync.online) throw new Error(`${action} needs a connection.`)
   }
 
-  /** A new local entry row with the defaults the database would fill in. */
+  /** Fills in what the database would otherwise default. */
   function newRow(
     fields: Omit<
       EntryRow,
@@ -662,19 +513,6 @@ export const useFilesStore = defineStore('files', () => {
     }
   }
 
-  /**
-   * Creates a new document entry in Supabase and adds it to the local state.
-   *
-   * For `.md` documents: content lives in the DB `content` column, initialized
-   * to an empty string. The entry is also added to `contentMap`.
-   *
-   * For binary types (PDF, image): an empty placeholder blob is uploaded to
-   * Storage so the `storage_path` is valid immediately.
-   *
-   * @param sortOrder - When provided, the entry is inserted at that position
-   *   and `renumberSiblings` is called to keep sort_orders clean.
-   * @returns The created `EntryRow`, or null on failure/duplicate name.
-   */
   async function createDocument(
     name: string,
     type: DocumentType,
@@ -700,9 +538,7 @@ export const useFilesStore = defineStore('files', () => {
       })
       entries.value.push(row)
       contentMap.set(row.id, '')
-      // Empty string has no trigrams; index is unchanged.
       sync.enqueue({ kind: 'create', row: { ...row } })
-      // renumberSiblings keeps sort_orders clean after a midpoint insertion.
       if (sortOrder != null) renumberSiblings(parentId)
       return entries.value[entries.value.length - 1]!
     }
@@ -752,11 +588,6 @@ export const useFilesStore = defineStore('files', () => {
     return data
   }
 
-  /**
-   * Creates a new directory entry.
-   *
-   * @returns The created `EntryRow`, or null on failure/duplicate name.
-   */
   async function createDirectory(name: string, parentId: string | null = null, sortOrder?: number) {
     if (!auth.user) return null
 
@@ -777,11 +608,6 @@ export const useFilesStore = defineStore('files', () => {
     return entries.value[entries.value.length - 1]!
   }
 
-  /**
-   * Renames an entry, checking for sibling name collisions first.
-   *
-   * @returns true on success, false if the rename was rejected or failed.
-   */
   async function renameEntry(id: string, newName: string) {
     const entry = entryById.value.get(id)
     if (entry && isDuplicateName(newName, entry.parent_id, id)) {
@@ -789,34 +615,22 @@ export const useFilesStore = defineStore('files', () => {
       return false
     }
 
-    // Mutate in-place — the row reference is shared with `entries.value`.
     if (entry) entry.name = newName
     sync.enqueue({ kind: 'update', id, fields: { name: newName } })
     return true
   }
 
-  /**
-   * Deletes an entry and all its descendants (files + folders recursively).
-   *
-   * Applied locally at once and queued for the server (see sync store), where `ON DELETE
-   * CASCADE` handles child rows and the Storage objects of binary files are removed too.
-   *
-   * Postcondition: All descendant IDs are removed from `entries`, `contentMap`,
-   *   and `trigramIndex`.
-   *
-   * @returns true (the delete is local-first and always succeeds locally).
-   */
+  /** Deletes the entry and everything under it. */
   async function deleteEntry(id: string) {
     const idsToDelete = collectDescendantIds(id)
 
-    // Storage blobs for binary files in the subtree, collected before any mutation.
+    // Collected before the rows are removed.
     const storagePaths = idsToDelete
       .map((did) => entryById.value.get(did))
       .filter((e) => e?.storage_path)
       .map((e) => e!.storage_path!)
 
-    // Queued changes to anything inside are moot. Deleting the root on the server cascades to its
-    // descendants (DB `ON DELETE CASCADE`); the sync store also removes the Storage blobs.
+    // Queued changes inside are moot; the server cascades the delete to descendants.
     sync.dropOpsFor(idsToDelete.filter((did) => did !== id))
     sync.enqueue({ kind: 'delete', id, storagePaths })
     for (const did of idsToDelete) {
@@ -826,7 +640,6 @@ export const useFilesStore = defineStore('files', () => {
 
     entries.value = entries.value.filter((e) => !idsToDelete.includes(e.id))
 
-    // Sync content map and trigram index.
     for (const did of idsToDelete) {
       if (contentMap.has(did)) {
         contentMap.delete(did)
@@ -841,35 +654,16 @@ export const useFilesStore = defineStore('files', () => {
     return true
   }
 
-  /**
-   * Returns `[id, ...all descendant ids]` via a depth-first walk of `entries`.
-   * Used by `deleteEntry` and `moveEntry` (cycle detection).
-   */
   function collectDescendantIds(id: string): string[] {
     return entryTreeCollectDescendantIds(entries.value, id)
   }
 
-  /**
-   * Filters `ids` down to entries whose ancestors are NOT also in `ids`.
-   * Moving/deleting a folder already covers its descendants, so bulk operations
-   * must act only on these "top-level" ids to avoid double-processing subtrees.
-   */
+  /** Drops ids whose ancestor is also in `ids` (the folder already covers them). */
   function filterTopLevelIds(ids: Iterable<string>): string[] {
     return entryTreeFilterTopLevelIds(entryById.value, ids)
   }
 
-  /**
-   * Moves an entry to a new parent and sort position.
-   *
-   * @param silent - When true, suppresses error toasts (used during bulk moves
-   *   where the caller surfaces aggregate errors).
-   * @returns false immediately if the move would create a folder cycle
-   *   (target is a descendant of the entry being moved).
-   *
-   * Precondition: `newParentId` must not be in `collectDescendantIds(id)`.
-   * Postcondition: Siblings in `newParentId` are renumbered to keep sort_orders
-   *   as clean multiples of 1000.
-   */
+  /** `silent` suppresses toasts (bulk moves report errors themselves). */
   async function moveEntry(
     id: string,
     newParentId: string | null,
@@ -895,19 +689,12 @@ export const useFilesStore = defineStore('files', () => {
       id,
       fields: { parent_id: newParentId, sort_order: newSortOrder },
     })
-    // Renumber siblings so sort_orders remain clean multiples of 1000 after the
-    // fractional midpoint value introduced by getPendingSortOrder.
+    // Clean up the fractional midpoint from getPendingSortOrder.
     renumberSiblings(newParentId)
     return true
   }
 
-  /**
-   * Reassigns sort_order as 1000, 2000, 3000… for all children of `parentId`.
-   *
-   * Necessary because `getPendingSortOrder` uses fractional midpoints for
-   * drag-drop insertions. After enough insertions the values drift toward each
-   * other; renumbering keeps them spread. Local at once; the new orders are queued for sync.
-   */
+  /** Respaces sort_orders to 1000, 2000, … once midpoint inserts have squeezed them together. */
   async function renumberSiblings(parentId: string | null): Promise<void> {
     const siblings = entries.value
       .filter((e) => e.parent_id === parentId)
@@ -922,42 +709,19 @@ export const useFilesStore = defineStore('files', () => {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Content access
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Returns the in-memory content for `entryId` synchronously.
-   * Returns `undefined` on a cache miss (shouldn't happen for `.md` after
-   * startup, but can happen for entries not yet synced).
-   */
   function getCached(entryId: string): string | undefined {
     return contentMap.get(entryId)
   }
 
-  /** Returns the full content map (used by the search store for snippet extraction). */
   function getContentMap(): Map<string, string> {
     return contentMap
   }
 
-  /** Returns the live trigram index (used by the search store for candidate filtering). */
   function getTrigramIndex(): TrigramIndex {
     return trigramIndex
   }
 
-  /**
-   * Returns content for an entry, hitting the in-memory cache first.
-   *
-   * Cache hit path (normal): returns synchronously from `contentMap`.
-   *
-   * Cache miss paths:
-   * - Binary files (PDF, image): downloaded from Supabase Storage.
-   * - `.md` / `web` notes after a cache miss: re-fetched from the DB `content`
-   *   column (shouldn't happen after startup, but guards against partial state).
-   *
-   * @returns The text content, or null if the entry doesn't exist or the
-   *   download fails.
-   */
+  /** Cache first. Binary files come from Storage; a missing note is re-fetched from the DB. */
   async function downloadContent(entryId: string): Promise<string | null> {
     const cached = contentMap.get(entryId)
     if (cached !== undefined) return cached
@@ -966,7 +730,6 @@ export const useFilesStore = defineStore('files', () => {
     if (!entry) return null
 
     if (entry.document_type !== 'md' && entry.document_type !== 'web') {
-      // Binary file: fetch blob from Storage.
       if (!entry.storage_path) return null
       const { data, error: err } = await supabase.storage
         .from('user-files')
@@ -978,7 +741,6 @@ export const useFilesStore = defineStore('files', () => {
       return await data.text()
     }
 
-    // .md / web: re-fetch from DB (should be a rare cold-start edge case).
     const { data, error: err } = await supabase
       .from('entries')
       .select('content')
@@ -990,13 +752,7 @@ export const useFilesStore = defineStore('files', () => {
     return data.content
   }
 
-  /**
-   * Downloads the frozen snapshot HTML for a `web` document from Storage.
-   * Distinct from `downloadContent`, which returns the user's notes column.
-   *
-   * @returns The HTML string, or null if the entry has no storage path or the
-   *   download fails.
-   */
+  /** The captured page's HTML (the notes are `content`). */
   async function downloadSnapshot(entryId: string): Promise<string | null> {
     const entry = entryById.value.get(entryId)
     if (!entry?.storage_path) return null
@@ -1010,16 +766,7 @@ export const useFilesStore = defineStore('files', () => {
     return await data.text()
   }
 
-  /**
-   * Saves `content` for an entry.
-   *
-   * For `.md` and `web` notes: updates the in-memory cache, trigram index and on-device copy at
-   * once, then hands the note to the sync store (pushed now if online, merged with any change
-   * made elsewhere — works offline).
-   * For binary files: uploads to Supabase Storage (upsert; needs a connection).
-   *
-   * @returns true once saved (locally, for notes).
-   */
+  /** Notes save locally and go to sync (works offline); binary files upload to Storage. */
   async function uploadContent(entryId: string, content: string): Promise<boolean> {
     const entry = entryById.value.get(entryId)
     if (!entry) return false
@@ -1032,7 +779,6 @@ export const useFilesStore = defineStore('files', () => {
       return true
     }
 
-    // Binary file: upsert into Storage.
     if (!entry.storage_path) return false
     const { error: err } = await supabase.storage
       .from('user-files')
@@ -1041,15 +787,10 @@ export const useFilesStore = defineStore('files', () => {
     return !err
   }
 
-  // ---------------------------------------------------------------------------
-  // Image support
-  // ---------------------------------------------------------------------------
-
-  // Public URLs are stable for the life of the session; no expiry needed.
+  // Public URLs never expire.
   const imageUrlCache = new Map<string, string>()
 
-  // Supabase Storage uses the MIME subtype as-is in paths, but some subtypes
-  // don't make clean file extensions. Map the exceptions here.
+  // MIME subtypes that don't make sensible file extensions.
   const MIME_EXT_MAP: Record<string, string> = {
     'svg+xml': 'svg',
     jpeg: 'jpg',
@@ -1061,32 +802,18 @@ export const useFilesStore = defineStore('files', () => {
     publicUrl: string
   }
 
-  /**
-   * Returns a name that doesn't already exist among siblings in `parentId`.
-   * Appends ` (2)`, ` (3)`, … to the base name (before the extension) until
-   * the name is unique.
-   */
   function deduplicateName(name: string, parentId: string | null): string {
     return entryTreeDeduplicateName(entries.value, name, parentId)
   }
 
-  /**
-   * Uploads an image file to Supabase Storage, creates a matching `image`
-   * entry in the DB, and caches the public URL.
-   *
-   * Uses a random UUID as the storage filename (not the original filename) to
-   * avoid collisions and ensure global uniqueness.
-   *
-   * @throws If the Storage upload or DB insert fails (caller should catch and
-   *   show an error toast).
-   */
+  /** Throws on failure; the caller shows the error. */
   async function uploadImage(file: File, parentId: string | null): Promise<UploadedImage> {
     if (!auth.user) throw new Error('Not authenticated')
     requireOnline('Uploading images')
 
     const mimeSub = file.type.split('/')[1] ?? 'png'
     const ext = MIME_EXT_MAP[mimeSub] ?? mimeSub
-    // Use a fresh UUID as the entry ID so we can pre-compute the storage path.
+    // The entry id doubles as the file name, so the storage path is known up front.
     const entryId = crypto.randomUUID()
     const filename = `${entryId}.${ext}`
     const storagePath = `${auth.user.id}/${filename}`
@@ -1114,7 +841,6 @@ export const useFilesStore = defineStore('files', () => {
 
     if (insertErr) throw insertErr
 
-    // Mirror the insert in local state so the UI updates immediately.
     const newEntry: EntryRow = {
       id: entryId,
       user_id: auth.user.id,
@@ -1136,13 +862,7 @@ export const useFilesStore = defineStore('files', () => {
     return { entryId, storagePath, publicUrl: urlData.publicUrl }
   }
 
-  /**
-   * Returns the public CDN URL for an image entry.
-   * Hits the in-memory cache; derives and caches the URL on a miss via the
-   * Supabase Storage SDK (synchronous — no network request needed for public buckets).
-   *
-   * @returns null if the entry doesn't exist or has no storage path.
-   */
+  /** Derived locally (public bucket, no request) and cached. */
   function getImageUrl(entryId: string): string | null {
     const cached = imageUrlCache.get(entryId)
     if (cached) return cached
@@ -1155,20 +875,11 @@ export const useFilesStore = defineStore('files', () => {
     return data.publicUrl
   }
 
-  /** Returns the raw EntryRow for an entry ID, or undefined if not found. */
   function getEntry(entryId: string): EntryRow | undefined {
     return entryById.value.get(entryId)
   }
 
-  // ---------------------------------------------------------------------------
-  // Web document support
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Derives a short human-readable display name from a URL.
-   * Strips `www.` and omits the pathname when it's just `/`.
-   * Falls back to the raw URL string on parse failure.
-   */
+  /** Hostname without `www.`, plus the path unless it's `/`. */
   function nameFromUrl(url: string): string {
     try {
       const u = new URL(url)
@@ -1179,17 +890,8 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   /**
-   * Captures a live URL into a frozen snapshot and persists it as a `web` entry.
-   *
-   * Storage layout:
-   * - Snapshot HTML → Storage at `{userId}/{entryId}.html` (via `storage_path`)
-   * - User notes → DB `content` column (initialized empty)
-   * - `{ url, title, capturedAt }` → DB `metadata` column
-   *
-   * @throws If the Storage upload or DB insert fails. On insert failure, the
-   *   already-uploaded snapshot blob is deleted to avoid orphaned Storage objects.
-   *
-   * @returns The created `EntryRow`, or null if not authenticated.
+   * Captures `url` as a `web` entry: snapshot HTML in Storage (`{userId}/{entryId}.html`), notes in
+   * `content`, `{ url, title, capturedAt }` in `metadata`. Throws on failure.
    */
   async function createWebDocument(url: string, parentId: string | null = null) {
     if (!auth.user) return null
@@ -1233,24 +935,18 @@ export const useFilesStore = defineStore('files', () => {
       .single()
 
     if (insertErr || !data) {
-      // Roll back the orphaned snapshot blob to keep Storage clean.
+      // Don't leave an orphaned snapshot.
       await supabase.storage.from('user-files').remove([storagePath])
       console.error('createWebDocument insert failed:', insertErr)
       throw new Error(insertErr?.message ?? 'Failed to create web document.')
     }
 
     entries.value.push(data)
-    // Seed contentMap with empty notes so the editor can open immediately.
     contentMap.set(data.id, '')
     sync.setBase(data.id, { version: data.version ?? null, content: '' })
     return data
   }
 
-  /**
-   * Creates a "Welcome to Lilypad" markdown file for new users.
-   * No-ops if the user already has entries (idempotent on repeated auth), or if the tree hasn't
-   * been loaded from the server this session.
-   */
   async function seedWelcomeFile() {
     // Only when the server itself reported no entries — never from an (empty) offline start.
     if (!auth.user || !serverLoaded || entries.value.length > 0) return
@@ -1275,10 +971,7 @@ Happy note-taking!
     }
   }
 
-  /**
-   * Resets all reactive state and clears all module-level caches.
-   * Called on sign-out to prevent data leaking between user sessions.
-   */
+  /** On sign-out, so nothing leaks into the next session. */
   function $reset() {
     entries.value = []
     loading.value = false

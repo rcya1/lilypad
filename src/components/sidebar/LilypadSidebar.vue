@@ -1,4 +1,4 @@
-<!-- Main sidebar: drag-to-resize panel with file/images tabs, search toggle, settings, and sign-out. -->
+<!-- Editor sidebar: resizable, with Files/Images tabs, search, and the account footer. -->
 <script setup lang="ts">
 import FileExplorer from './FileExplorer.vue'
 import ImagesTab from './ImagesTab.vue'
@@ -22,10 +22,9 @@ const searchStore = useSearchStore()
 const uiStore = useUiStore()
 const router = useRouter()
 
-// True whenever any document is currently being auto-saved to Supabase.
 const isSyncing = computed(() => editorStore.savingIds.size > 0)
 
-// Read/Edit switch → the reader, on the active document if there is one.
+// Read/Edit switch: open the active document in the reader, if there is one.
 function openReader() {
   const entryId = editorStore.activeDocumentId
   uiStore.markModeSwitch('to-read')
@@ -34,7 +33,7 @@ function openReader() {
   )
 }
 
-// Width + minimized live in the ui store so the reader's sidebar matches this one exactly.
+// In the ui store so the reader's sidebar matches.
 const {
   sidebarWidth,
   sidebarMinimized: isMinimized,
@@ -43,8 +42,7 @@ const {
 // Icon-only width shown when minimized.
 const minimizedWidth = 64
 
-// When a pending file creation is triggered (e.g. via Ctrl+N), ensure the
-// sidebar is visible so the inline input can be shown.
+// Un-minimize so a pending inline input (e.g. from Ctrl+N) is visible.
 watch(
   () => filesStore.pendingCreate,
   (val) => {
@@ -55,11 +53,7 @@ watch(
   },
 )
 
-/**
- * Global keyboard shortcuts handled at the sidebar level.
- * Ctrl/Cmd+B toggles sidebar visibility.
- * Ctrl/Cmd+Shift+F opens/closes the search panel (also un-minimizes the sidebar).
- */
+/** Ctrl/Cmd+B toggles the sidebar; Ctrl/Cmd+Shift+F toggles search (un-minimizing if needed). */
 function onKeyDown(e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
     e.preventDefault()

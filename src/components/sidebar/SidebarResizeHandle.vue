@@ -1,7 +1,6 @@
-<!-- Draggable right edge shared by the editor and reader sidebars. Drag to resize (writes the shared
-     width in the ui store); drag below the snap threshold to minimize to the icon rail. While a drag
-     is active `uiStore.sidebarResizing` is true so the sidebar can drop its width transition and
-     track the cursor exactly. Place inside a `relative` sidebar root. -->
+<!-- The draggable right edge of both sidebars: drag to resize, or past the snap point to minimize.
+     Sets `sidebarResizing` so the sidebar can drop its width transition while dragging. Needs a
+     `relative` parent. -->
 <script setup lang="ts">
 import { onBeforeUnmount } from 'vue'
 import { storeToRefs } from 'pinia'
@@ -14,25 +13,15 @@ const { sidebarWidth, sidebarMinimized, sidebarResizing } = storeToRefs(uiStore)
 const SNAP_THRESHOLD = 160
 const MAX_WIDTH = 500
 
-/**
- * Begins a drag-resize session.
- * Attaches document-level listeners instead of the element's own events so the
- * cursor can move freely outside the handle without dropping the resize.
- */
+/** Document listeners, so the drag survives the cursor leaving the handle. */
 function startResize() {
   sidebarResizing.value = true
-  // Prevent text selection while dragging across the document.
   document.body.classList.add('select-none')
   document.addEventListener('mousemove', resize)
   document.addEventListener('mouseup', stopResize)
 }
 
-/**
- * Handles mousemove during a resize drag.
- * clientX maps directly to sidebar width because the sidebar is flush with the
- * left edge of the viewport. Values below SNAP_THRESHOLD collapse to minimized
- * rather than producing a tiny visible panel.
- */
+/** The sidebar is flush with the left edge, so clientX is the width. */
 function resize(event: MouseEvent) {
   if (!sidebarResizing.value) return
   const newWidth = event.clientX
@@ -44,10 +33,6 @@ function resize(event: MouseEvent) {
   }
 }
 
-/**
- * Ends the drag-resize session and cleans up document-level listeners.
- * Must mirror every listener added in startResize to avoid leaks.
- */
 function stopResize() {
   sidebarResizing.value = false
   document.body.classList.remove('select-none')

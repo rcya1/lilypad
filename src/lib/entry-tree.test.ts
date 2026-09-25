@@ -1,4 +1,3 @@
-// Unit tests for pure entry-tree helpers over flat EntryRow lists.
 import { describe, it, expect } from 'vitest'
 import type { EntryRow } from '@/types/database'
 import {
@@ -9,7 +8,6 @@ import {
   deduplicateName,
 } from './entry-tree'
 
-/** Minimal EntryRow builder — fills irrelevant fields with sensible defaults. */
 function row(overrides: Partial<EntryRow> & Pick<EntryRow, 'id' | 'name' | 'parent_id'>): EntryRow {
   return {
     user_id: 'u1',
@@ -25,7 +23,6 @@ function row(overrides: Partial<EntryRow> & Pick<EntryRow, 'id' | 'name' | 'pare
   }
 }
 
-// Fixture: 3 folders, 4 documents, one nested chain.
 // root/
 //   folderA/
 //     folderB/
@@ -34,9 +31,27 @@ function row(overrides: Partial<EntryRow> & Pick<EntryRow, 'id' | 'name' | 'pare
 //   folderC/
 //   doc1.md
 //   doc4.md
-const folderA = row({ id: 'folderA', name: 'folderA', parent_id: null, kind: 'directory', document_type: null })
-const folderB = row({ id: 'folderB', name: 'folderB', parent_id: 'folderA', kind: 'directory', document_type: null })
-const folderC = row({ id: 'folderC', name: 'folderC', parent_id: null, kind: 'directory', document_type: null })
+const folderA = row({
+  id: 'folderA',
+  name: 'folderA',
+  parent_id: null,
+  kind: 'directory',
+  document_type: null,
+})
+const folderB = row({
+  id: 'folderB',
+  name: 'folderB',
+  parent_id: 'folderA',
+  kind: 'directory',
+  document_type: null,
+})
+const folderC = row({
+  id: 'folderC',
+  name: 'folderC',
+  parent_id: null,
+  kind: 'directory',
+  document_type: null,
+})
 const doc1 = row({ id: 'doc1', name: 'doc1.md', parent_id: null })
 const doc2 = row({ id: 'doc2', name: 'doc2.md', parent_id: 'folderA' })
 const doc3 = row({ id: 'doc3', name: 'doc3.md', parent_id: 'folderB' })
@@ -50,7 +65,10 @@ describe('getNextSortOrder', () => {
   })
 
   it('returns max + 1000 otherwise', () => {
-    const entries = [row({ id: 'a', name: 'a', parent_id: null, sort_order: 500 }), row({ id: 'b', name: 'b', parent_id: null, sort_order: 2000 })]
+    const entries = [
+      row({ id: 'a', name: 'a', parent_id: null, sort_order: 500 }),
+      row({ id: 'b', name: 'b', parent_id: null, sort_order: 2000 }),
+    ]
     expect(getNextSortOrder(entries, null)).toBe(3000)
   })
 })

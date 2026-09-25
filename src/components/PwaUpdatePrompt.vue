@@ -1,11 +1,10 @@
-<!-- Registers the service worker (installable app + offline shell) and, when a new version has been
-     deployed, offers "Update available · Reload" instead of reloading on its own — so nothing is
-     swapped out mid-edit. Styled like the toasts, but stays until acted on. -->
+<!-- Registers the service worker. When a new version is deployed, offers "Reload" instead of
+     reloading on its own, so nothing changes mid-edit. -->
 <script setup lang="ts">
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import { Sparkles, X } from 'lucide-vue-next'
 
-// Check for a new deployment hourly while the app stays open (installed apps rarely reload).
+// Installed apps rarely reload, so check hourly.
 const UPDATE_CHECK_MS = 60 * 60 * 1000
 
 const { needRefresh, updateServiceWorker } = useRegisterSW({

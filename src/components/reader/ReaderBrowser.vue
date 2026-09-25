@@ -1,5 +1,4 @@
-<!-- The /read home. When the sidebar is showing (wide screens) the tree is already on screen, so this
-     is just a prompt to pick a note; otherwise (phones, or the sidebar collapsed) it is the tree. -->
+<!-- /read: a prompt to pick a note when the sidebar shows the tree, otherwise the tree itself. -->
 <script setup lang="ts">
 import { inject, onMounted } from 'vue'
 import LilypadIcon from '@/assets/icon.svg'

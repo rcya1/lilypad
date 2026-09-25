@@ -1,5 +1,4 @@
-// Unit tests for the editor's LaTeX math parser: tokenizer, lezer tree shape, and parity with
-// the preview renderer (parseMarkdown) on which spans count as math.
+// Editor LaTeX parser: tokenizer, tree shape, and agreeing with the preview on what is math.
 import { describe, it, expect } from 'vitest'
 import { parser as baseParser } from '@lezer/markdown'
 import { latexMath, matchInlineMath, tokenizeLatex } from './latex'
@@ -7,7 +6,6 @@ import { parseMarkdown } from '@/lib/markdown'
 
 const parser = baseParser.configure([latexMath])
 
-/** All nodes named `name` in `doc`, as their source text. */
 function nodesOf(doc: string, name: string): string[] {
   const out: string[] = []
   parser.parse(doc).iterate({
@@ -123,7 +121,6 @@ describe('latexMath lezer extension', () => {
   })
 })
 
-/** Count of rendered KaTeX expressions in the preview for `doc`. */
 function previewMathCount(doc: string): number {
   return (parseMarkdown(doc).match(/class="katex"/g) ?? []).length
 }

@@ -1,10 +1,7 @@
-// localStorage persistence layer: typed codecs and persisted() for Vue refs that auto-sync to a storage key.
+// Typed localStorage codecs and `persisted()` refs.
 import { ref, watch, type Ref } from 'vue'
 
-/**
- * Single source of truth for every localStorage key the app uses.
- * Keep these in sync with the inline theme bootstrap in `index.html`.
- */
+/** Every localStorage key. `theme` must match the pre-paint bootstrap in index.html. */
 export const STORAGE_KEYS = {
   theme: 'theme',
   previewVisible: 'preview-visible',
@@ -17,20 +14,13 @@ export const STORAGE_KEYS = {
   vimClipboardSync: 'vim-clipboard-sync',
 } as const
 
-/**
- * Converts a value to/from its localStorage string representation.
- * `read` receives the raw stored string (or `null` when absent) plus the
- * fallback to use when the value is missing or unparseable.
- */
+/** `read` gets the stored string (null if absent) and the fallback for missing or bad values. */
 export interface Codec<T> {
   read(raw: string | null, fallback: T): T
   write(value: T): string
 }
 
-/**
- * Boolean stored as `'true'`/`'false'`. A missing value yields the fallback,
- * so a `true` default is only overridden by an explicit `'false'`.
- */
+/** A missing value gives the fallback, so a `true` default only yields to an explicit 'false'. */
 export const boolCodec: Codec<boolean> = {
   read: (raw, fallback) => (raw === null ? fallback : raw === 'true'),
   write: (value) => String(value),
@@ -55,7 +45,6 @@ export function clampedIntCodec(min: number, max: number): Codec<number> {
   }
 }
 
-/** Plain integer; falls back when missing or unparseable. */
 export const intCodec: Codec<number> = {
   read: (raw, fallback) => {
     if (raw === null) return fallback
@@ -65,7 +54,6 @@ export const intCodec: Codec<number> = {
   write: (value) => String(value),
 }
 
-/** JSON-serialized value; returns the fallback on any parse failure. */
 export function jsonCodec<T>(): Codec<T> {
   return {
     read: (raw, fallback) => {
@@ -80,10 +68,7 @@ export function jsonCodec<T>(): Codec<T> {
   }
 }
 
-/**
- * A `ref` hydrated from localStorage that persists itself back on every change.
- * Centralizes read-on-init and write-on-change so each setting is defined once.
- */
+/** Hydrated from localStorage and written back on every change. */
 export function persisted<T>(key: string, fallback: T, codec: Codec<T>): Ref<T> {
   const state = ref(codec.read(localStorage.getItem(key), fallback)) as Ref<T>
   watch(state, (value) => localStorage.setItem(key, codec.write(value)))

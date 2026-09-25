@@ -1,5 +1,4 @@
-<!-- Bottom of both sidebars (editor and reader): the signed-in email, sync status, settings and
-     sign out. Shared so the two modes line up exactly. -->
+<!-- Footer of both sidebars: email, sync status, settings, sign out. -->
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -25,10 +24,8 @@ const { confirm } = useConfirm()
 const showSettings = ref(false)
 
 /**
- * Signs the user out and returns to the login screen. Signing out also wipes this user's
- * offline copy from the device (notes, queued changes, cached images/pages), so it first tries to
- * sync and warns if anything still hasn't reached the server.
- * Resets the stores so stale state doesn't leak into the next login session.
+ * Also wipes this user's offline copy from the device, so it syncs first and warns if anything
+ * still hasn't reached the server.
  */
 async function signOut() {
   editorStore.saveAll()

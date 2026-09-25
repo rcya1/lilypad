@@ -1,21 +1,14 @@
-// On-device storage for offline use (IndexedDB via idb-keyval), and the sync queue's operation
-// types. Everything is keyed per user so two accounts on one browser never see each other's data,
-// and sign-out can wipe exactly one user's copy.
-//
-// What's stored per user:
-//   snapshot       — every entry row (with local note text) + the last-synced server copy of each
-//                    note ("bases", the common ancestor for three-way merges)
-//   queue          — changes made on this device not yet applied on the server, in order
-//   conflicts      — ids of notes holding unresolved merge conflicts
-//   annotations:ID — highlights of one web document
+// On-device storage for offline use (IndexedDB), keyed per user so accounts never mix and sign-out
+// can wipe one: the tree snapshot with merge bases, the sync queue, conflicts, and each web page's
+// highlights. Also the sync queue's op types.
 import { createStore, get, set, del, keys, delMany } from 'idb-keyval'
 import type { AnnotationRow, EntryRow, HighlightColor } from '@/types/database'
 
 const store = createStore('lilypad-offline', 'kv')
 
-/** The server's copy of a note as this device last saw it — the base for three-way merges. */
+/** The server's copy of a note as last seen: the base for three-way merges. */
 export interface NoteBase {
-  /** `entries.version` at that point; null until the versioning migration is applied. */
+  /** Null until the versioning migration is applied. */
   version: number | null
   content: string
 }
@@ -25,7 +18,7 @@ export interface OfflineSnapshot {
   bases: Record<string, NoteBase>
 }
 
-/** Entry fields a rename/move/reorder changes (merged per field; the latest change wins). */
+/** Merged per field; the latest change wins. */
 export interface EntryFieldUpdate {
   name?: string
   parent_id?: string | null
@@ -37,30 +30,24 @@ export interface HighlightFieldUpdate {
   color?: HighlightColor
 }
 
-/** One pending change, replayed against the server in queue order. */
 export type SyncOp =
   | { kind: 'create'; row: EntryRow }
   | { kind: 'update'; id: string; fields: EntryFieldUpdate }
   | { kind: 'delete'; id: string; storagePaths: string[] }
-  /** Push the note's current local text (read at sync time, so one op covers many edits). */
+  /** Pushes the text as it is at sync time, so one op covers many edits. */
   | { kind: 'content'; id: string }
   | { kind: 'hl-create'; row: AnnotationRow }
   | { kind: 'hl-update'; id: string; fields: HighlightFieldUpdate }
   | { kind: 'hl-delete'; id: string }
 
-/** The entry or highlight id an op is about. */
 export function opTarget(op: SyncOp): string {
   return op.kind === 'create' || op.kind === 'hl-create' ? op.row.id : op.id
 }
 
 /**
- * Adds `op` to `queue`, folding it into earlier ops for the same target where possible so the
- * queue stays small across long offline sessions:
- * - a create absorbs later updates (and a later delete cancels it and everything after it);
- * - updates merge field by field (latest value wins);
- * - one content op per note (it pushes whatever the text is at sync time);
- * - a delete drops that target's earlier updates/content pushes.
- * Returns a new array.
+ * Folds `op` into earlier ops for the same target so long offline sessions stay small: creates
+ * absorb updates, updates merge per field, one content op per note, and a delete drops earlier
+ * ops (cancelling an unsynced create outright). Returns a new array.
  */
 export function enqueueOp(queue: SyncOp[], op: SyncOp): SyncOp[] {
   const target = opTarget(op)
@@ -101,8 +88,6 @@ export function enqueueOp(queue: SyncOp[], op: SyncOp): SyncOp[] {
   }
 }
 
-// ── Persistence ────────────────────────────────────────────────────────────────────────────────
-
 const k = (userId: string, name: string) => `${userId}:${name}`
 
 export const loadSnapshot = (userId: string) => get<OfflineSnapshot>(k(userId, 'snapshot'), store)
@@ -125,17 +110,17 @@ export const saveAnnotations = (userId: string, entryId: string, rows: Annotatio
 export const deleteAnnotations = (userId: string, entryId: string) =>
   del(k(userId, `annotations:${entryId}`), store)
 
-/** Service-worker caches holding this user's opened images and captured pages (see vite.config). */
+/** Service-worker caches of opened images and pages (see vite.config.ts). */
 export const USER_MEDIA_CACHES = ['lilypad-images', 'lilypad-pages']
 
-/** Deletes everything stored for `userId`: IndexedDB data and the cached images/pages. */
+/** IndexedDB data and the cached images/pages. */
 export async function wipeUser(userId: string): Promise<void> {
   const mine = (await keys(store)).filter((key) => String(key).startsWith(`${userId}:`))
   await delMany(mine, store)
   if ('caches' in window) await Promise.all(USER_MEDIA_CACHES.map((name) => caches.delete(name)))
 }
 
-// ── Last signed-in user (lets the app open offline when the session can't be refreshed) ───────
+// The last signed-in user, so the app can open offline when the session can't be refreshed.
 
 const LAST_USER_KEY = 'lilypad.lastUser'
 
@@ -148,7 +133,7 @@ export function rememberUser(user: CachedUser) {
   try {
     localStorage.setItem(LAST_USER_KEY, JSON.stringify(user))
   } catch {
-    // Storage unavailable — offline start just won't work in this browser.
+    // Unavailable: offline start just won't work in this browser.
   }
 }
 

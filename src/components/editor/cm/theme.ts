@@ -1,4 +1,4 @@
-// CodeMirror theme mapping Lilypad design tokens (CSS vars) onto editor chrome.
+// CodeMirror theme from the Lilypad design tokens.
 import { EditorView } from 'codemirror'
 
 export const lilypadTheme = EditorView.theme({
@@ -62,7 +62,6 @@ export const lilypadTheme = EditorView.theme({
   '.cm-selectionMatch': {
     backgroundColor: 'var(--surface-elevated)',
   },
-  // Search panel
   '.cm-panels': {
     backgroundColor: 'var(--surface)',
     borderTop: '1px solid var(--border-subtle)',
@@ -87,7 +86,7 @@ export const lilypadTheme = EditorView.theme({
   '.cm-search label:hover': {
     color: 'var(--text-primary)',
   },
-  // Close button — make it larger with a visible hover area
+  // Larger, with a visible hover area.
   '.cm-search button[name="close"]': {
     display: 'flex',
     alignItems: 'center',
@@ -153,7 +152,7 @@ export const lilypadTheme = EditorView.theme({
     outline: '2px solid var(--accent)',
     outlineOffset: '1px',
   },
-  // LaTeX math (classes from latexEditorExtensions in cm/latex.ts)
+  // LaTeX math (cm/latex.ts)
   '.cm-math-block': {
     backgroundColor: 'var(--surface)',
     boxShadow: 'inset 2px 0 0 color-mix(in srgb, var(--amber) 45%, transparent)',
@@ -186,7 +185,7 @@ export const lilypadTheme = EditorView.theme({
   '.cm-math-number': {
     color: 'color-mix(in srgb, var(--amber) 65%, var(--text-primary))',
   },
-  // Merge conflicts (cm/conflicts.ts): this device's side green, the server's amber.
+  // Merge conflicts (cm/conflicts.ts): this device's side green, the server's amber
   '.cm-conflict-mine': {
     backgroundColor: 'color-mix(in srgb, var(--accent) 13%, transparent)',
   },

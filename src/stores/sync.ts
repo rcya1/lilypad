@@ -1,12 +1,7 @@
-// Pinia store for offline sync: the queue of local changes not yet on the server, replaying it
-// when online, the per-note merge bases, and notes with unresolved merge conflicts.
-//
-// Every change is applied locally first (and persisted on the device by the files store), then
-// queued here and pushed. Note text is pushed with a compare-and-swap against the version this
-// device last saw (`save_entry_content`, see docs/features/offline-sync.md): if the note changed
-// on the server in between, the two edits are three-way merged. Clean merges are pushed
-// automatically; overlapping edits leave git-style conflict markers in the note, which stays
-// local-only until they're resolved in the editor.
+// Pinia store for offline sync: the queue of changes not yet on the server, merge bases, and notes
+// with unresolved conflicts. Note text is pushed with a compare-and-swap against the version this
+// device last saw (docs/features/offline-sync.md). On a mismatch the edits are three-way merged;
+// overlapping edits leave conflict markers, and the note stays local until they're resolved.
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
@@ -27,10 +22,10 @@ import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
 import { useFilesStore } from './files'
 
-// How often to retry a stalled queue while the browser claims to be online but requests fail.
+// Retry interval while the browser claims to be online but requests fail.
 const RETRY_MS = 30_000
 
-/** True for failures caused by a missing connection (as opposed to the server rejecting a write). */
+/** No connection, as opposed to the server rejecting the request. */
 export function isNetworkError(err: unknown): boolean {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return true
   const message =
@@ -47,7 +42,6 @@ interface DbError {
   message?: string
 }
 
-// PostgREST / Postgres codes this engine reacts to.
 const UNIQUE_VIOLATION = '23505'
 const FOREIGN_KEY_VIOLATION = '23503'
 const isMissingFunction = (e: DbError) => e.code === 'PGRST202' || e.code === '42883'
@@ -63,14 +57,12 @@ export const useSyncStore = defineStore('sync', () => {
   const syncing = ref(false)
   const conflictIds = ref(new Set<string>())
 
-  // The server's copy of each note as last seen — the common ancestor for merges. Not reactive:
-  // it holds the full text of every note.
+  // Server text of each note as last seen: the merge base. Not reactive (it's every note's text).
   const bases = new Map<string, NoteBase>()
-  // Whether the `save_entry_content` function is deployed. null until the first attempt; false
-  // falls back to plain overwrites (the behaviour before the migration).
+  // Whether save_entry_content is deployed: null until tried; false falls back to plain overwrites.
   let casAvailable: boolean | null = null
   let userId: string | null = null
-  // The op currently being sent. New ops are never folded into it (its request is already out).
+  // New ops are never folded into the one being sent.
   let inFlight: SyncOp | null = null
   let retryTimer = 0
   let listening = false
@@ -83,7 +75,7 @@ export const useSyncStore = defineStore('sync', () => {
     return 'synced'
   })
 
-  /** Loads this user's queue and conflict list from the device. Idempotent per user. */
+  /** Idempotent per user. */
   async function init(uid: string) {
     if (!listening) {
       window.addEventListener('online', onOnline)
@@ -106,7 +98,6 @@ export const useSyncStore = defineStore('sync', () => {
     online.value = false
   }
 
-  // ── Bases ──────────────────────────────────────────────────────────────────────────────────
   function getBase(id: string): NoteBase | undefined {
     return bases.get(id)
   }
@@ -124,13 +115,12 @@ export const useSyncStore = defineStore('sync', () => {
     for (const [id, base] of Object.entries(record)) bases.set(id, base)
   }
 
-  // ── Queue ──────────────────────────────────────────────────────────────────────────────────
   function persistQueue() {
     // JSON round-trip strips Vue's reactive proxies, which IndexedDB can't clone.
     if (userId) void saveQueue(userId, JSON.parse(JSON.stringify(queue.value)))
   }
 
-  /** Queues a change for the server and tries to send it right away. */
+  /** Also tries to send it straight away. */
   function enqueue(op: SyncOp) {
     const [head, ...rest] = queue.value
     queue.value =
@@ -139,7 +129,7 @@ export const useSyncStore = defineStore('sync', () => {
     void flush()
   }
 
-  /** Forgets queued changes for these ids (e.g. their folder was deleted locally). */
+  /** e.g. for everything inside a folder deleted locally. */
   function dropOpsFor(ids: string[]) {
     const drop = new Set(ids)
     queue.value = queue.value.filter((op) => op === inFlight || !drop.has(opTarget(op)))
@@ -150,7 +140,6 @@ export const useSyncStore = defineStore('sync', () => {
     return queue.value.some((op) => opTarget(op) === id && (!kind || op.kind === kind))
   }
 
-  // ── Conflicts ──────────────────────────────────────────────────────────────────────────────
   function setConflict(id: string, conflicted: boolean) {
     const next = new Set(conflictIds.value)
     if (conflicted) next.add(id)
@@ -159,10 +148,7 @@ export const useSyncStore = defineStore('sync', () => {
     if (userId) void saveConflicts(userId, [...next])
   }
 
-  /**
-   * The local text of a note changed (the editor's debounced save). A conflicted note stays
-   * local-only while it still has conflict markers; once they're gone it syncs again.
-   */
+  /** A conflicted note stays local while it still has conflict markers. */
   function noteChanged(id: string, content: string) {
     if (conflictIds.value.has(id)) {
       if (hasConflicts(content)) return
@@ -171,7 +157,6 @@ export const useSyncStore = defineStore('sync', () => {
     enqueue({ kind: 'content', id })
   }
 
-  // ── Replay ─────────────────────────────────────────────────────────────────────────────────
   function scheduleRetry() {
     if (retryTimer) return
     retryTimer = window.setTimeout(() => {
@@ -180,7 +165,7 @@ export const useSyncStore = defineStore('sync', () => {
     }, RETRY_MS)
   }
 
-  /** Sends queued changes in order. Stops (keeping the rest) at the first connection failure. */
+  /** In order; stops at the first connection failure, keeping the rest. */
   async function flush(): Promise<void> {
     if (syncing.value || !auth.user || queue.value.length === 0) return
     if (!navigator.onLine) {
@@ -252,8 +237,8 @@ export const useSyncStore = defineStore('sync', () => {
   }
 
   /**
-   * Inserts the entry as it currently is locally (a queued create, or restoring a note that was
-   * deleted on another device). Falls back to the top level if its folder no longer exists.
+   * Inserts the entry as it is locally (a queued create, or restoring a note deleted elsewhere).
+   * Falls back to the top level if its folder is gone.
    */
   async function insertEntry(id: string, contentOverride?: string): Promise<void> {
     const files = useFilesStore()
@@ -310,13 +295,12 @@ export const useSyncStore = defineStore('sync', () => {
   }
 
   /**
-   * Pushes a note's current local text. With versioning deployed this is a compare-and-swap
-   * against the version the text was based on; on a mismatch the server's text is three-way
-   * merged in and the result pushed (or, on overlapping edits, left with conflict markers).
+   * Compare-and-swap against the version the text was based on. On a mismatch the server's text is
+   * merged in and the result pushed, or left with conflict markers if the edits overlap.
    */
   async function pushContent(id: string): Promise<void> {
     const files = useFilesStore()
-    // A few rounds: a clean merge, or a rename that bumped the version, each need one more try.
+    // A clean merge, or a version bump from a rename, each need another round.
     for (let round = 0; round < 4; round++) {
       const local = files.getCached(id)
       if (local === undefined || !files.getEntry(id)) return // deleted locally
@@ -381,7 +365,7 @@ export const useSyncStore = defineStore('sync', () => {
     }
   }
 
-  /** A note edited here was deleted elsewhere: your edit wins, so it comes back. */
+  /** Edited here but deleted elsewhere: the edit wins and the note comes back. */
   async function restoreDeleted(id: string, local: string) {
     const name = useFilesStore().getEntry(id)?.name.replace(/\.md$/, '')
     await insertEntry(id, local)

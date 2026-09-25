@@ -1,6 +1,4 @@
-<!-- Breadcrumb trail for the reader: folder / … / current note, styled like the editor's
-     BreadcrumbBar so the trail sits in the same place in both modes. A folder crumb asks the shell to
-     reveal that folder in the sidebar. -->
+<!-- Reader breadcrumbs, styled like the editor's BreadcrumbBar so they line up across modes. -->
 <script setup lang="ts">
 import { FileText } from 'lucide-vue-next'
 

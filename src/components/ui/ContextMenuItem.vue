@@ -1,5 +1,4 @@
-<!-- Single row inside a ContextMenu; pass an `icon` (lucide component) for the leading glyph and
-     set `danger` for destructive actions (e.g. Delete). -->
+<!-- A ContextMenu row; `icon` is a lucide component, `danger` for destructive actions. -->
 <script setup lang="ts">
 import type { Component } from 'vue'
 

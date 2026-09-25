@@ -1,4 +1,4 @@
-<!-- Cmd+P command palette: fuzzy-searches all files by name and opens them in the editor. -->
+<!-- Ctrl/Cmd+P: fuzzy-find a file by name and open it. -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { FileText, File, Image } from 'lucide-vue-next'
@@ -30,10 +30,7 @@ function stripExtension(name: string): string {
   return name.replace(/\.[^.]+$/, '')
 }
 
-/**
- * Fuzzy match: every char of `q` must appear in order in `name`.
- * Returns a score that rewards contiguous runs and matches near the start.
- */
+/** Every char of `q` in order; scores contiguous runs and early matches higher. */
 function fuzzyScore(q: string, name: string): { matched: boolean; score: number } {
   let qi = 0
   let score = 0
@@ -66,7 +63,7 @@ const results = computed<FileItem[]>(() => {
   const files = allFiles.value
 
   if (!q) {
-    // Empty query: currently-open files first (tabOrder as recency hint), then the rest A→Z
+    // Empty query: open files first (tab order), then the rest A→Z.
     const openSet = new Set(editorStore.tabOrder)
     const openFiles = editorStore.tabOrder
       .map((id) => files.find((f) => f.id === id))
@@ -82,10 +79,9 @@ const results = computed<FileItem[]>(() => {
     const base = file.displayName.toLowerCase()
     const { matched, score } = fuzzyScore(q, base)
     if (!matched) continue
-    // group 0 = prefix match (ranked first), group 1 = fuzzy-only match
     scored.push({ file, group: base.startsWith(q) ? 0 : 1, score })
   }
-  // Sort: prefix matches first, then by fuzzy score descending, then alpha as tiebreaker
+  // Prefix matches first, then fuzzy score, then name.
   scored.sort(
     (a, b) =>
       a.group - b.group ||
@@ -95,12 +91,10 @@ const results = computed<FileItem[]>(() => {
   return scored.slice(0, MAX_RESULTS).map((s) => s.file)
 })
 
-// Reset highlight whenever the result set changes
 watch(results, () => {
   highlightedIndex.value = 0
 })
 
-// Focus + reset when the switcher opens
 watch(
   () => uiStore.quickSwitcherOpen,
   async (open) => {
@@ -113,7 +107,6 @@ watch(
   },
 )
 
-// Keep the highlighted row in view
 watch(highlightedIndex, async () => {
   await nextTick()
   const row = listRef.value?.children[highlightedIndex.value] as HTMLElement | undefined
@@ -162,7 +155,6 @@ function onKeydown(e: KeyboardEvent) {
     <div
       class="max-w-lg w-full mx-4 bg-surface border border-border rounded-lg shadow-2xl overflow-hidden"
     >
-      <!-- Input -->
       <div class="p-2 border-b border-border-subtle">
         <input
           ref="inputRef"
@@ -174,7 +166,6 @@ function onKeydown(e: KeyboardEvent) {
         />
       </div>
 
-      <!-- Results -->
       <div v-if="results.length > 0" ref="listRef" class="max-h-80 overflow-y-auto py-1">
         <button
           v-for="(item, i) in results"
@@ -196,7 +187,6 @@ function onKeydown(e: KeyboardEvent) {
         </button>
       </div>
 
-      <!-- Empty state -->
       <div v-else-if="query" class="px-3 py-6 text-center">
         <p class="text-sm text-text-muted">No files match</p>
       </div>

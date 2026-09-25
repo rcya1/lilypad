@@ -1,7 +1,6 @@
-<!-- Full-screen, touch-first search for the reader (/read/search, extension E3). Title matches come
-     from the files store; full-text matches reuse the desktop `search` store (trigram index +
-     snippets). It's a route, so the browser back button closes it. Renders its own app bar (back +
-     input) — the shell hides its bar on this route. -->
+<!-- Reader search (/read/search): title matches, plus full-text matches from the shared search
+     store.
+     A route, so browser back closes it; it draws its own bar in place of the shell's. -->
 <script setup lang="ts">
 import { computed, onMounted, useTemplateRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -16,7 +15,6 @@ const filesStore = useFilesStore()
 const searchStore = useSearchStore()
 const inputRef = useTemplateRef<HTMLInputElement>('input')
 
-// Max title-match rows shown above the content matches.
 const MAX_TITLE_RESULTS = 8
 
 ensureEntriesLoaded()
@@ -26,8 +24,8 @@ onMounted(() => {
   inputRef.value?.focus()
 })
 
-// The query lives in the shared search store, so returning here via back keeps it. If the index
-// wasn't built yet when the query was typed (cold load), re-run once it is.
+// The query lives in the shared store, so coming back keeps it. If the index wasn't ready when it
+// was typed (cold load), re-run once it is.
 watch(
   () => filesStore.indexReady,
   (ready) => {
@@ -48,7 +46,7 @@ interface TitleHit {
   folderPath: string
 }
 
-// Notes whose name contains the query (any document type — pdf/web still open the placeholder).
+// Any document type; pdf opens the placeholder.
 const titleHits = computed<TitleHit[]>(() => {
   const q = trimmedQuery.value.toLowerCase()
   if (!q) return []
@@ -73,8 +71,7 @@ const titleHits = computed<TitleHit[]>(() => {
   return hits.slice(0, MAX_TITLE_RESULTS)
 })
 
-// One row per note for content matches: the store returns up to 3 hits per file in rank order;
-// a phone row shows the first snippet plus a count of the rest.
+// One row per note: the first snippet plus a count of the rest.
 const contentHits = computed(() => {
   const groups = new Map<string, { first: SearchResult; count: number }>()
   for (const r of searchStore.results) {
@@ -110,7 +107,7 @@ function clearQuery() {
   inputRef.value?.focus()
 }
 
-// Enter dismisses the on-screen keyboard so the results are visible.
+// Dismiss the on-screen keyboard so the results are visible.
 function onEnter() {
   inputRef.value?.blur()
 }
@@ -150,7 +147,7 @@ function snippetParts(r: SearchResult) {
           class="flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border-subtle bg-bg px-3 focus-within:border-accent"
         >
           <Search :size="16" class="shrink-0 text-text-muted" />
-          <!-- 16px text: anything smaller makes iOS Safari zoom the page on focus. -->
+          <!-- 16px: anything smaller makes iOS Safari zoom the page on focus -->
           <input
             ref="input"
             type="search"
@@ -183,14 +180,13 @@ function snippetParts(r: SearchResult) {
     </header>
 
     <div class="min-h-0 flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
-      <!-- Empty query -->
       <div v-if="!trimmedQuery" class="flex flex-col items-center gap-2 px-6 py-16 text-center">
         <Search :size="32" class="text-text-muted" />
         <h2 class="font-display text-xl text-text-secondary">Search your notes</h2>
         <p class="text-sm text-text-muted">Find notes by title or by anything written in them.</p>
       </div>
 
-      <!-- No results (only once the debounced search has actually run) -->
+      <!-- Only once the debounced search has actually run -->
       <div
         v-else-if="!hasResults && !pending"
         class="flex flex-col items-center gap-2 px-6 py-16 text-center"

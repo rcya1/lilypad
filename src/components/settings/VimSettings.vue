@@ -1,4 +1,4 @@
-<!-- Vim settings section: enable/disable Vim mode, escape timeout, yank highlight, clipboard sync, and custom key mappings. -->
+<!-- Vim settings: on/off, Escape timeout, yank highlight, clipboard sync, key mappings. -->
 <script setup lang="ts">
 import { Plus, X } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
@@ -7,21 +7,17 @@ import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 
 const uiStore = useUiStore()
 
-// Validate on change (not on input) so partial numbers mid-typing don't discard the value.
+// On change rather than input, so a half-typed number isn't thrown away.
 function handleEscTimeoutChange(e: Event) {
   const val = parseInt((e.target as HTMLInputElement).value, 10)
   if (!isNaN(val) && val >= 0 && val <= 5000) uiStore.setVimEscTimeout(val)
 }
 
-/**
- * Update a single field on an existing mapping row.
- * The generic constraint ensures only valid VimMapping fields can be targeted.
- */
 function updateField(id: string, field: keyof Omit<VimMapping, 'id'>, value: string | boolean) {
   uiStore.updateVimMapping(id, { [field]: value } as Partial<Omit<VimMapping, 'id'>>)
 }
 
-// noremap: true is the safe default — prevents recursive key expansion.
+// noremap by default: avoids recursive expansion.
 function addMapping() {
   uiStore.addVimMapping({ lhs: '', rhs: '', mode: 'normal', noremap: true })
 }
@@ -29,13 +25,9 @@ function addMapping() {
 
 <template>
   <div class="flex flex-col gap-4">
-    <!-- Vim enabled -->
     <div class="flex items-center justify-between">
       <span class="text-sm text-text-secondary font-ui">Vim mode</span>
-      <ToggleSwitch
-        :model-value="uiStore.vimEnabled"
-        @update:model-value="uiStore.setVimEnabled"
-      />
+      <ToggleSwitch :model-value="uiStore.vimEnabled" @update:model-value="uiStore.setVimEnabled" />
     </div>
 
     <div
@@ -46,7 +38,6 @@ function addMapping() {
         <div class="flex flex-col gap-4">
           <div class="border-t border-border-subtle" />
 
-          <!-- Escape key timeout -->
           <div class="flex items-start justify-between gap-4">
             <div>
               <p class="text-sm text-text-secondary font-ui">Escape key timeout</p>
@@ -65,7 +56,6 @@ function addMapping() {
             />
           </div>
 
-          <!-- Highlight on yank -->
           <div class="flex items-center justify-between">
             <span class="text-sm text-text-secondary font-ui">Highlight on yank</span>
             <ToggleSwitch
@@ -74,7 +64,6 @@ function addMapping() {
             />
           </div>
 
-          <!-- Clipboard sync -->
           <div class="flex items-center justify-between">
             <span class="text-sm text-text-secondary font-ui">Sync with system clipboard</span>
             <ToggleSwitch
@@ -85,12 +74,10 @@ function addMapping() {
 
           <div class="border-t border-border-subtle" />
 
-          <!-- Key mappings -->
           <div>
             <p class="text-sm text-text-secondary font-ui mb-3">Key mappings</p>
 
             <div v-if="uiStore.vimMappings.length > 0" class="mb-2">
-              <!-- Header -->
               <div
                 class="grid gap-1.5 px-0.5 mb-1"
                 style="grid-template-columns: 76px 1fr 1fr 56px 24px"
@@ -102,7 +89,6 @@ function addMapping() {
                 <span />
               </div>
 
-              <!-- Rows -->
               <div
                 v-for="m in uiStore.vimMappings"
                 :key="m.id"

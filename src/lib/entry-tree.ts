@@ -8,21 +8,14 @@ export function sortedChildren(entries: EntryRow[], parentId: string | null): En
     .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
 }
 
-/**
- * Returns the next available sort_order for a new child of `parentId`.
- * Uses 1000-step increments so there's ample room for midpoint insertions
- * before renumbering is needed.
- */
+/** 1000-step gaps leave room for midpoint inserts before renumbering. */
 export function getNextSortOrder(entries: EntryRow[], parentId: string | null): number {
   const siblings = entries.filter((e) => e.parent_id === parentId)
   if (siblings.length === 0) return 1000
   return Math.max(...siblings.map((e) => e.sort_order)) + 1000
 }
 
-/**
- * Returns `[id, ...all descendant ids]` via a depth-first walk of `entries`.
- * Used by `deleteEntry` and `moveEntry` (cycle detection).
- */
+/** `[id, ...descendants]`, depth first. */
 export function collectDescendantIds(entries: EntryRow[], id: string): string[] {
   const result = [id]
   const children = entries.filter((e) => e.parent_id === id)
@@ -32,11 +25,7 @@ export function collectDescendantIds(entries: EntryRow[], id: string): string[] 
   return result
 }
 
-/**
- * Filters `ids` down to entries whose ancestors are NOT also in `ids`.
- * Moving/deleting a folder already covers its descendants, so bulk operations
- * must act only on these "top-level" ids to avoid double-processing subtrees.
- */
+/** Drops ids whose ancestor is also in `ids` (the folder already covers them). */
 export function filterTopLevelIds(byId: Map<string, EntryRow>, ids: Iterable<string>): string[] {
   const idSet = new Set(ids)
   return [...idSet].filter((id) => {
@@ -49,10 +38,7 @@ export function filterTopLevelIds(byId: Map<string, EntryRow>, ids: Iterable<str
   })
 }
 
-/**
- * Returns true if `name` already exists among siblings under `parentId`.
- * Pass `excludeId` when renaming so the entry doesn't collide with itself.
- */
+/** Pass `excludeId` when renaming so the entry doesn't collide with itself. */
 export function isDuplicateName(
   entries: EntryRow[],
   name: string,
@@ -62,11 +48,7 @@ export function isDuplicateName(
   return entries.some((e) => e.parent_id === parentId && e.name === name && e.id !== excludeId)
 }
 
-/**
- * Returns a name that doesn't already exist among siblings in `parentId`.
- * Appends ` (2)`, ` (3)`, … to the base name (before the extension) until
- * the name is unique.
- */
+/** Appends ` (2)`, ` (3)`, … before the extension until the name is free. */
 export function deduplicateName(
   entries: EntryRow[],
   name: string,

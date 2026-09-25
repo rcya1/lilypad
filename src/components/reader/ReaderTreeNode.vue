@@ -1,7 +1,6 @@
-<!-- One row in the reader's note tree; recurses for folder children. Deliberately minimal (no
-     drag-drop, multi-select, or context menu) — tap a folder to expand/collapse, tap a note to open
-     it. Not to be confused with the desktop FileExplorerNode, but drawn to its exact row metrics
-     (padding, indent, guides, icons) so the tree doesn't shift when flipping Read/Edit. -->
+<!-- A row in the reader's note tree (tap a folder to toggle it, a note to open it). No drag-drop,
+     selection or menus, but the same row metrics as FileExplorerNode so flipping Read/Edit doesn't
+     shift the tree. -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -10,7 +9,7 @@ import { Folder, FolderOpen, FileText, Image, Globe, File, AlertTriangle } from 
 import { useFilesStore } from '@/stores/files'
 import { useSyncStore } from '@/stores/sync'
 
-// Explicit name so the template can reference itself recursively regardless of build heuristics.
+// Explicit, for the recursive self-reference.
 defineOptions({ name: 'ReaderTreeNode' })
 
 const props = defineProps<{ entry: Entry; depth: number }>()
@@ -19,13 +18,12 @@ const syncStore = useSyncStore()
 const route = useRoute()
 const router = useRouter()
 
-// The note currently open in the reader gets the selected-row highlight.
 const isCurrent = computed(() => route.params.entryId === props.entry.id)
 
 const isOpen = computed(() => !filesStore.isFolderCollapsed(props.entry.id))
 const children = computed(() => (isDirectory(props.entry) ? props.entry.children : []))
 
-// PDFs render only as a "view on desktop" placeholder, so dim them in the tree.
+// PDFs only get a placeholder in the reader.
 const dimmed = computed(() => !isDirectory(props.entry) && props.entry.type === 'pdf')
 
 const icon = computed(() => {
@@ -50,7 +48,6 @@ const iconClass = computed(() => {
   return 'text-amber'
 })
 
-// Folders + web docs keep their full name; other documents drop the file extension.
 const label = computed(() => {
   if (isDirectory(props.entry) || props.entry.type === 'web') return props.entry.name
   return props.entry.name.replace(/\.[^.]+$/, '')
@@ -99,8 +96,7 @@ function onTap() {
     </span>
   </button>
 
-  <!-- Animated expand/collapse (grid-rows 0fr ↔ 1fr), same as the editor tree. Children stay
-       mounted so it can animate; `inert` keeps collapsed rows out of the tab order. -->
+  <!-- Mounted for the grid-rows animation; `inert` keeps hidden rows out of the tab order -->
   <div
     v-if="isDirectory(entry)"
     class="grid transition-[grid-template-rows] duration-100 ease-in-out motion-reduce:transition-none"

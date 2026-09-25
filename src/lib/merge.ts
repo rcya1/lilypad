@@ -1,9 +1,7 @@
-// Git-style three-way merge for note text, plus helpers for finding and resolving the conflict
-// blocks it leaves behind. Used by the sync engine when a note changed both on this device and on
-// the server since they last agreed, and by the editor's conflict UI.
+// Git-style three-way merge for note text, and helpers for the conflict blocks it leaves.
 import { diff3Merge } from 'node-diff3'
 
-/** Marker labels, as they appear after `<<<<<<<` / `>>>>>>>` in a conflicted note. */
+/** Labels after `<<<<<<<` / `>>>>>>>`. */
 export const MINE_LABEL = 'This device'
 export const THEIRS_LABEL = 'Server'
 
@@ -13,15 +11,11 @@ const END = '>>>>>>>'
 
 export interface MergeResult {
   text: string
-  /** Number of conflict blocks left in `text` (0 = clean merge). */
+  /** Conflict blocks left in `text` (0 = clean). */
   conflicts: number
 }
 
-/**
- * Line-based three-way merge. `base` is the version both sides started from; `mine` and
- * `theirs` are the two edits. Changes to different lines merge cleanly; overlapping changes
- * become git-style conflict blocks (mine first, then theirs).
- */
+/** Line-based. Overlapping edits become conflict blocks, mine first. */
 export function threeWayMerge(base: string, mine: string, theirs: string): MergeResult {
   if (mine === theirs || theirs === base) return { text: mine, conflicts: 0 }
   if (mine === base) return { text: theirs, conflicts: 0 }
@@ -45,13 +39,11 @@ export function threeWayMerge(base: string, mine: string, theirs: string): Merge
   return { text: lines.join('\n'), conflicts }
 }
 
-/** One conflict block in a note, located by character offsets. */
 export interface ConflictBlock {
-  /** Offset of the start of the `<<<<<<<` line. */
   from: number
-  /** Offset just past the end of the `>>>>>>>` line (excluding its newline). */
+  /** Just past the `>>>>>>>` line, excluding its newline. */
   to: number
-  /** Offsets of the start of each marker line (for decorating them). */
+  /** Marker line starts, for decorating them. */
   startLine: number
   separatorLine: number
   endLine: number
@@ -59,7 +51,7 @@ export interface ConflictBlock {
   theirs: string
 }
 
-/** Finds every well-formed conflict block (`<<<<<<<` … `=======` … `>>>>>>>`) in `text`. */
+/** Well-formed blocks only. */
 export function findConflicts(text: string): ConflictBlock[] {
   const blocks: ConflictBlock[] = []
   const lines = text.split('\n')
@@ -101,10 +93,7 @@ export function hasConflicts(text: string): boolean {
 
 export type ConflictChoice = 'mine' | 'theirs' | 'both'
 
-/**
- * The edit that resolves `block` in `text` with the given choice. When the chosen side is empty,
- * the block's line break is removed too so no blank line is left behind.
- */
+/** If the chosen side is empty, its line break goes too, so no blank line is left. */
 export function resolveConflict(
   text: string,
   block: ConflictBlock,

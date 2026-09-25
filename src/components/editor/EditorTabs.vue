@@ -1,4 +1,4 @@
-<!-- Tab bar for open documents: supports drag-to-reorder, middle-click close, preview-tab italics, and layout/swap controls. -->
+<!-- Tab bar: drag to reorder, middle-click to close, italic preview tab, layout/swap buttons. -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
@@ -20,7 +20,7 @@ import { useFilesStore } from '@/stores/files'
 defineProps<{
   isVertical: boolean
   isSwapped: boolean
-  /** Controls which rotation icon direction to show on the layout toggle button. */
+  /** Which way the rotate icon points. */
   rotationClockwise: boolean
   previewVisible: boolean
 }>()
@@ -34,19 +34,14 @@ const store = useEditorStore()
 const uiStore = useUiStore()
 const filesStore = useFilesStore()
 
-/**
- * Activate a tab and also sync the sidebar file selection so the active document
- * is highlighted in the file explorer.
- */
+/** Also selects the document in the sidebar. */
 function switchToTab(id: string) {
   store.setActiveDocument(id)
   filesStore.selectSingle(id)
 }
 
-// Derived from tabOrder so the display order matches the user's drag-reordered sequence.
 const tabs = computed(() => store.tabOrder.map((id) => store.openDocuments.get(id)!))
 
-// Drag state: which tab is being dragged and where the insertion indicator should appear.
 const draggedId = ref<string | null>(null)
 const dropIndex = ref<number | null>(null)
 
@@ -61,10 +56,7 @@ function onDragStart(e: DragEvent, id: string) {
   e.dataTransfer!.setData('text/plain', id)
 }
 
-/**
- * Determine whether the drop indicator should appear before or after this tab
- * by comparing the cursor's X position to the tab's horizontal midpoint.
- */
+/** Before or after this tab, by which half the cursor is over. */
 function onDragOver(e: DragEvent, index: number) {
   e.preventDefault()
   e.dataTransfer!.dropEffect = 'move'
@@ -73,7 +65,7 @@ function onDragOver(e: DragEvent, index: number) {
   dropIndex.value = e.clientX < rect.left + rect.width / 2 ? index : index + 1
 }
 
-// The empty trailing area after all tabs: dragging here targets the end of the list.
+// The empty space after the tabs targets the end of the list.
 function onDragOverEnd(e: DragEvent) {
   e.preventDefault()
   dropIndex.value = tabs.value.length
@@ -97,7 +89,6 @@ function handleClose(id: string) {
   store.closeDocument(id)
 }
 
-// Middle-click closes the tab (standard tab-strip behavior).
 function onTabMouseDown(e: MouseEvent, id: string) {
   if (e.button === 1) {
     e.preventDefault()

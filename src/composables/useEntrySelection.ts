@@ -1,4 +1,4 @@
-// Shared multi-select state for tree rows (FileExplorerNode, ImageNode).
+// Multi-select state for tree rows (FileExplorerNode, ImageNode).
 import { computed, type Ref } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { useFilesStore } from '@/stores/files'
@@ -9,9 +9,8 @@ export function useEntrySelection(entry: Ref<Entry>) {
   const isSelected = computed(() => filesStore.selectedIds.has(entry.value.id))
 
   /**
-   * True when an ancestor of this entry is in the multi-select set.
-   * Covered entries act as selected for bulk delete/drag (preventing a subtree from being moved
-   * twice) but aren't highlighted — only the explicitly selected row is.
+   * An ancestor is selected. Counts as selected for bulk delete and drag (so a subtree isn't moved
+   * twice), but isn't highlighted.
    */
   const isCoveredBySelection = computed(() => {
     if (filesStore.selectedIds.size === 0) return false
@@ -23,8 +22,7 @@ export function useEntrySelection(entry: Ref<Entry>) {
     return false
   })
 
-  // Once ≥2 items are selected, single-clicking an entry adjusts the selection
-  // instead of opening the document (to avoid accidentally navigating away).
+  // With 2+ selected, a click adjusts the selection instead of opening the document.
   const inSelectionMode = computed(() => filesStore.selectedIds.size >= 2)
 
   return { isSelected, isCoveredBySelection, inSelectionMode }

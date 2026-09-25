@@ -1,7 +1,5 @@
-<!-- Right pane of a web document: the user's markdown notes for the captured page.
-     Per the design doc this is a single pane with one toggle between a rendered view and the
-     raw source editor — deliberately NOT the side-by-side editor+preview split used for .md
-     files, since the captured page already occupies the "other half" of the split. -->
+<!-- A web document's notes: one pane that toggles between rendered and source (not the md split,
+     since the captured page already takes the other half). -->
 <script setup lang="ts">
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { Eye, Code } from 'lucide-vue-next'
@@ -18,8 +16,7 @@ function setMode(m: Mode) {
   emit('update:mode', m)
 }
 
-// The toggle buttons are content-sized (so each keeps its own natural padding), so the sliding pill
-// can't assume 50% — it measures the active button and matches its position/width instead.
+// The toggle buttons are content-sized, so the sliding pill measures the active one.
 const codeBtn = ref<HTMLButtonElement | null>(null)
 const renderedBtn = ref<HTMLButtonElement | null>(null)
 const pillStyle = ref({ left: '0px', width: '0px' })
@@ -44,14 +41,13 @@ const store = useEditorStore()
 const isDirty = computed(() => store.dirtyIds.has(props.documentId))
 const isSaving = computed(() => store.savingIds.has(props.documentId))
 
-// The editor only counts as "active" (drives focus + CodeMirror re-measure) when this tab is
-// active AND we're showing the source view — otherwise a hidden editor would steal focus.
+// Only "active" (focus, CodeMirror re-measure) when this tab is active and showing the source, or a
+// hidden editor would steal focus.
 const editorActive = computed(() => props.isActive && props.mode === 'code')
 </script>
 
 <template>
   <div class="h-full w-full flex flex-col overflow-hidden bg-surface">
-    <!-- Toggle header -->
     <div
       class="flex items-center justify-between h-9 shrink-0 pl-3 pr-2 border-b border-border-subtle bg-surface"
     >
@@ -70,7 +66,6 @@ const editorActive = computed(() => props.isActive && props.mode === 'code')
       <div
         class="relative inline-flex items-center rounded-md bg-surface-elevated p-0.5 text-xs font-ui"
       >
-        <!-- Sliding active pill — measured to the active button, animates as the mode changes. -->
         <div
           class="absolute top-0.5 bottom-0.5 rounded bg-bg shadow-sm transition-all duration-200 ease-out"
           :style="pillStyle"
@@ -100,9 +95,8 @@ const editorActive = computed(() => props.isActive && props.mode === 'code')
       </div>
     </div>
 
-    <!-- Body. The editor stays mounted (v-show) so its CodeMirror state — cursor, undo history,
-         scroll — survives toggling to the rendered view and back. The preview is mounted on
-         demand (v-if) so it isn't re-parsing markdown on every keystroke while hidden. -->
+    <!-- The editor stays mounted (v-show) so cursor, undo history and scroll survive toggling; the
+         preview mounts on demand so it isn't re-parsing on every keystroke while hidden. -->
     <div class="flex-1 min-h-0 relative">
       <div v-show="mode === 'code'" class="absolute inset-0">
         <TextEditor :document-id="documentId" :is-active="editorActive" class="h-full" />

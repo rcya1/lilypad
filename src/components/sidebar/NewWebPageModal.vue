@@ -1,4 +1,4 @@
-<!-- Modal for entering a URL to capture as a frozen web snapshot stored in Supabase. -->
+<!-- Modal for capturing a URL as a web page. -->
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Globe, X, Loader2 } from 'lucide-vue-next'
@@ -6,11 +6,10 @@ import { useFilesStore } from '@/stores/files'
 import type { EntryRow } from '@/types/database'
 
 const props = defineProps<{
-  /** Folder to create the snapshot in; null places it at the workspace root. */
+  /** null = top level. */
   parentId: string | null
 }>()
 const emit = defineEmits<{
-  /** Emitted with the new entry after a successful capture. */
   created: [entry: EntryRow]
   cancel: []
 }>()
@@ -20,25 +19,15 @@ const url = ref('')
 const capturing = ref(false)
 const error = ref<string | null>(null)
 
-/**
- * Prepends "https://" if the user omitted the scheme.
- * Returns an empty string for blank input so the caller can show a validation error.
- */
+/** Adds https:// if there's no scheme; '' for blank input. */
 function normalizeUrl(raw: string): string {
   const trimmed = raw.trim()
   if (!trimmed) return ''
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
-/**
- * Initiates the web capture via the files store.
- * Sets `capturing` to block re-submissions and disable the backdrop click-away
- * (so the user can't accidentally close the modal mid-capture).
- *
- * @throws Re-surfaces network or server errors to display inline.
- */
+/** While capturing, the backdrop can't close the modal. */
 async function submit() {
-  // Guard against double-submit while the capture is in-flight.
   if (capturing.value) return
   const target = normalizeUrl(url.value)
   if (!target) {
@@ -66,7 +55,6 @@ async function submit() {
       @click.self="!capturing && emit('cancel')"
     >
       <div class="bg-surface border border-border rounded-lg shadow-xl w-96 flex flex-col">
-        <!-- Header -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
           <span class="flex items-center gap-2 text-sm font-medium text-text-primary font-ui">
             <Globe :size="15" class="text-accent" />
@@ -81,7 +69,6 @@ async function submit() {
           </button>
         </div>
 
-        <!-- Body -->
         <div class="px-4 py-4 space-y-2">
           <label class="block text-xs font-medium text-text-muted uppercase tracking-widest">
             Page URL
@@ -101,7 +88,6 @@ async function submit() {
           </p>
         </div>
 
-        <!-- Actions -->
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-border-subtle">
           <button
             class="px-3 py-1.5 text-xs font-ui text-text-secondary hover:text-text-primary hover:bg-surface-elevated rounded transition-colors duration-75 cursor-pointer disabled:opacity-40"

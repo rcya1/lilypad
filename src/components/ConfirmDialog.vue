@@ -1,4 +1,4 @@
-<!-- Modal for confirming destructive actions; driven by the useConfirm singleton so any caller can await a boolean result. -->
+<!-- The dialog behind useConfirm(). -->
 <script setup lang="ts">
 import { watch, onBeforeUnmount } from 'vue'
 import { useConfirm } from '@/composables/useConfirm'
@@ -6,7 +6,7 @@ import { useConfirm } from '@/composables/useConfirm'
 const { open, title, message, confirmLabel, cancelLabel, danger, onConfirm, onCancel } =
   useConfirm()
 
-// mousedown (not click) on the overlay so the cancel fires before any drag-release click propagates.
+// mousedown, so a drag that ends on the overlay doesn't cancel.
 function onOverlayClick(e: MouseEvent) {
   if (e.target === e.currentTarget) onCancel()
 }
@@ -15,7 +15,6 @@ function onWindowKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') onCancel()
 }
 
-// Listen globally only while the dialog is open, so Escape works regardless of focus.
 watch(open, (isOpen) => {
   if (isOpen) window.addEventListener('keydown', onWindowKeydown)
   else window.removeEventListener('keydown', onWindowKeydown)

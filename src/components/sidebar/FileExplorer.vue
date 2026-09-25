@@ -1,4 +1,4 @@
-<!-- Root of the sidebar file tree: toolbar for creating files/folders/web captures, drag-drop to root, and bulk-expand controls. -->
+<!-- Sidebar file tree: create files, folders and web pages; top-level drop zone; expand all. -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, useTemplateRef } from 'vue'
 import { FilePlus, FolderPlus, Globe, ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
@@ -20,8 +20,7 @@ const toast = useToastStore()
 const uiStore = useUiStore()
 const growActionsIn = uiStore.arrivedViaModeSwitch('to-edit')
 
-// The tree's scroll position is shared with the reader's sidebar, so flipping between modes with
-// the Read/Edit switch keeps the same rows on screen.
+// Shared with the reader's sidebar so flipping Read/Edit keeps the same rows on screen.
 const scroller = useTemplateRef<HTMLDivElement>('scroller')
 function onScroll() {
   if (scroller.value) uiStore.sidebarScrollTop = scroller.value.scrollTop
@@ -30,7 +29,6 @@ onMounted(() => {
   if (scroller.value) scroller.value.scrollTop = uiStore.sidebarScrollTop
 })
 
-// anyExpanded drives the collapse-all / expand-all toggle button label.
 const totalFolderCount = computed(() => files.entries.filter((e) => e.kind === 'directory').length)
 const anyExpanded = computed(() => files.collapsedFolderIds.size < totalFolderCount.value)
 const newName = ref('')
@@ -43,10 +41,7 @@ function deselectAll() {
   files.clearSelection()
 }
 
-/**
- * Returns a sort_order value that places a new entry after all current root entries.
- * Uses +1000 gaps so subsequent reorders have room to insert between existing values.
- */
+/** After every top-level entry, with a 1000 gap. */
 function getRootAppendOrder(): number {
   const roots = files.entries
     .filter((e) => e.parent_id === null)
@@ -54,13 +49,7 @@ function getRootAppendOrder(): number {
   return roots.length === 0 ? 1000 : Math.max(...roots.map((e) => e.sort_order)) + 1000
 }
 
-/**
- * Handles a drop onto the empty area at the bottom of the explorer (root level).
- *
- * When multiple entries are selected and the dragged item is part of the selection,
- * only "top-level" selected entries are moved — entries whose ancestor is also
- * selected are skipped to avoid moving the same subtree twice.
- */
+/** Drop on the empty space below the tree: move to the top level (selected subtrees once each). */
 async function onRootDrop(e: DragEvent) {
   e.preventDefault()
   isRootDropTarget.value = false
@@ -79,7 +68,7 @@ async function onRootDrop(e: DragEvent) {
     })
     const failed: typeof snapshot = []
     for (let i = 0; i < topLevel.length; i++) {
-      // silent=true: suppress per-entry toasts; we show one aggregate toast for all failures below.
+      // One aggregate toast below instead of one per entry.
       const ok = await files.moveEntry(topLevel[i]!, null, baseOrder + i, true)
       if (!ok) failed.push(snapshot[i]!)
     }
@@ -97,13 +86,11 @@ const showEmptyContextMenu = ref(false)
 const emptyContextMenuPos = ref({ x: 0, y: 0 })
 
 /**
- * Shows a "New file / New folder" context menu when right-clicking the empty
- * space of the explorer (not on any entry row).
- * The setTimeout(0) defers attaching the click-away listener until after the
- * current event finishes propagating, preventing it from immediately closing.
+ * Right-click on the empty space. The click-away listener is attached after this event finishes,
+ * or it would close the menu straight away.
  */
 function onEmptyAreaContextMenu(e: MouseEvent) {
-  // Only fire when clicking the scrollable container itself, not a child entry
+  // Only the empty space itself, not a row.
   if (e.target !== e.currentTarget) return
   e.preventDefault()
   emptyContextMenuPos.value = { x: e.clientX, y: e.clientY }
@@ -126,18 +113,15 @@ function emptyAreaNewFolder() {
 }
 
 onMounted(async () => {
-  // Skip fetch if the store was already populated (e.g. sidebar remount).
+  // Already loaded (e.g. the sidebar remounted).
   if (files.entries.length > 0) return
   await files.fetchEntries()
   await files.seedWelcomeFile()
 })
 
-// True when a root-level (no parent) pending create input should be shown.
 const showRootInput = computed(() => files.pendingCreate?.parentId === null)
 
-// When a root-level pending input appears, attach a click-away handler so
-// clicking elsewhere cancels the creation without requiring an explicit Escape.
-// onCleanup removes the handler when the input disappears.
+// Cancel a top-level pending input on click-away.
 watch(showRootInput, (val, _old, onCleanup) => {
   if (val) {
     newName.value = ''
@@ -151,13 +135,7 @@ watch(showRootInput, (val, _old, onCleanup) => {
   }
 })
 
-/**
- * Returns the insertion position (parentId + insertBefore sibling) directly
- * below the currently active document, so new files created from the toolbar
- * appear next to the file being edited rather than at an arbitrary location.
- *
- * Returns null if there is no active document.
- */
+/** Just below the active document, so toolbar-created files land next to it. */
 function getInsertBelowActive(): {
   parentId: string | null
   insertBefore: string | null
@@ -174,11 +152,7 @@ function getInsertBelowActive(): {
   return { parentId: activeEntry.parent_id, insertBefore }
 }
 
-/**
- * Initiates creation of a new markdown file.
- * If a folder is selected in the sidebar, the file is created inside it.
- * Otherwise, the file is inserted immediately below the currently open document.
- */
+/** Into the selected folder, else just below the open document. */
 function startNewFile() {
   const folderId = files.selectedFolderId
   if (folderId) {
@@ -189,10 +163,7 @@ function startNewFile() {
   }
 }
 
-/**
- * Initiates creation of a new folder.
- * Placement priority: selected folder → below the active document → root.
- */
+/** Into the selected folder, else below the active document, else the top level. */
 function startNewFolder() {
   const folderId = files.selectedFolderId
   if (folderId) {
@@ -206,26 +177,18 @@ function startNewFolder() {
 const showWebModal = ref(false)
 const webModalParentId = ref<string | null>(null)
 
-/** Opens the web-capture modal, resolving the target parent folder the same way as startNewFile. */
+/** Parent chosen as in startNewFile. */
 function startNewWebPage() {
   webModalParentId.value = files.selectedFolderId ?? getInsertBelowActive()?.parentId ?? null
   showWebModal.value = true
 }
 
-/**
- * Called after a web document is captured; immediately opens it in the editor.
- * @param entry - The newly created entry row returned by the capture flow.
- */
 function onWebPageCreated(entry: EntryRow) {
   showWebModal.value = false
   editorStore.openDocument(entry.id, entry.name, 'web', entry.content ?? '')
 }
 
-/**
- * Confirms and creates the entry described by `files.pendingCreate`.
- * Auto-appends ".md" if the user omitted it for file entries.
- * Clears the pending state regardless of success or cancellation.
- */
+/** Appends ".md" if missing; clears the pending state either way. */
 async function submitNew() {
   const name = newName.value.trim()
   if (!name) {
@@ -249,11 +212,7 @@ function cancelNew() {
   newName.value = ''
 }
 
-/**
- * Sets draggingEntry to the PENDING_ID sentinel so drop zones know a
- * not-yet-created entry is being dragged (used to reorder the pending row
- * before committing the name).
- */
+/** PENDING_ID marks the not-yet-created entry so it can be repositioned before it's named. */
 function onPendingDragStart(e: DragEvent) {
   draggingEntry.value = {
     kind: 'document',
@@ -334,7 +293,6 @@ function onPendingDragEnd() {
       @cancel="showWebModal = false"
     />
 
-    <!-- Loading skeleton -->
     <div v-if="files.loading" class="px-3 space-y-2">
       <div v-for="i in 3" :key="i" class="h-6 bg-surface-elevated rounded animate-pulse" />
     </div>
@@ -366,13 +324,12 @@ function onPendingDragEnd() {
         @dragend="onPendingDragEnd"
       />
 
-      <!-- Empty state -->
       <div v-if="files.tree.length === 0 && !showRootInput" class="px-3 py-4">
         <p class="text-xs text-text-muted text-center">No files yet</p>
       </div>
     </div>
 
-    <!-- Empty-space drop zone — fills remaining height, shows line at top when active -->
+    <!-- Empty space below the tree: a top-level drop zone -->
     <div
       class="flex-1 min-h-4 relative"
       @click="deselectAll"

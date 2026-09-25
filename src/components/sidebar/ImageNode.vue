@@ -1,4 +1,4 @@
-<!-- Individual image or folder node in the images gallery with thumbnail, rename, drag-drop, and context menu. -->
+<!-- An image or folder in the Images tab: thumbnail, rename, drag-drop, context menu. -->
 <script setup lang="ts">
 import { computed, ref, type WritableComputedRef } from 'vue'
 import { Folder, FolderOpen, Image, Pencil, Trash2 } from 'lucide-vue-next'
@@ -39,18 +39,15 @@ const {
 
 const paddingLeft = computed(() => `${12 + props.depth * 24}px`)
 const isDir = computed(() => isDirectory(props.entry))
-// Resolved public URL from Supabase Storage; null for folders.
 const url = computed(() => (isDir.value ? null : filesStore.getImageUrl(props.entry.id)))
-// Highlighted when the editor just inserted this image (e.g. via paste).
+// Just inserted by the editor (e.g. pasted).
 const isHighlighted = computed(() => uiStore.highlightedImageId === props.entry.id)
 const children = computed(() => (isDirectory(props.entry) ? props.entry.children : []))
 
-// Writable computed so useDragDrop can expand folders on hover (auto-expand
-// during a drag) while the actual expanded state lives in the parent ImagesTab.
+// Writable so useDragDrop can expand it on hover; ImagesTab owns the state.
 const isOpen: WritableComputedRef<boolean> = computed({
   get: () => props.expandedFolders.has(props.entry.id),
   set: (val: boolean) => {
-    // Only emit toggle when state actually changes to avoid redundant re-renders.
     if (val !== props.expandedFolders.has(props.entry.id)) {
       emit('toggleFolder', props.entry.id)
     }
@@ -71,12 +68,8 @@ const {
 const { isSelected, isCoveredBySelection, inSelectionMode } = useEntrySelection(entryRef)
 
 /**
- * Handles click interactions on an image or folder node.
- *
- * Modifier keys:
- *   Ctrl/Cmd — toggle in multi-select set (or explode folder for images)
- *   Shift    — range-select from last-clicked to this entry
- *   Plain    — open image in editor pane / toggle folder
+ * Ctrl/Cmd toggles multi-select, Shift selects a range; a plain click opens the image or toggles
+ * the folder.
  */
 function handleClick(e: MouseEvent) {
   if (isDirectory(props.entry)) {
@@ -93,7 +86,6 @@ function handleClick(e: MouseEvent) {
     return
   }
 
-  // Image entry
   if (e.ctrlKey || e.metaKey) {
     filesStore.explodeAndToggle(props.entry.id)
     return
@@ -118,11 +110,7 @@ function handleClick(e: MouseEvent) {
   }
 }
 
-/**
- * Extends the composable's drag-start to also set text/plain with the markdown
- * image syntax (`![](img:<id>)`), so dragging from the gallery into the editor
- * inserts the image reference inline.
- */
+/** Also sets `![](img:<id>)` as text, so dropping into the editor inserts the image. */
 function onDragStart(e: DragEvent) {
   dndDragStart(e)
   if (!isDir.value && e.dataTransfer) {
@@ -140,7 +128,7 @@ function startRename() {
   isRenaming.value = true
 }
 
-/** Commits a rename if the value changed; exits rename mode regardless. */
+/** Leaves rename mode either way. */
 async function submitRename() {
   const newName = renameValue.value.trim()
   if (newName && newName !== props.entry.name) {
@@ -158,7 +146,6 @@ const { handleDelete } = useEntryDelete(
 
 <template>
   <div>
-    <!-- Rename input -->
     <div v-if="isRenaming" class="py-0.5 px-2" :style="{ paddingLeft }">
       <input
         v-model="renameValue"
@@ -205,7 +192,6 @@ const { handleDelete } = useEntryDelete(
             :style="{ left: (i - 1) * 24 + 22 + 'px' }"
           />
 
-          <!-- Before drop indicator -->
           <div
             v-if="dropRegion === 'before' && !isInvalidTarget"
             class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
@@ -217,14 +203,12 @@ const { handleDelete } = useEntryDelete(
           </span>
           <span class="truncate">{{ entry.name }}</span>
 
-          <!-- After drop indicator -->
           <div
             v-if="dropRegion === 'after' && !isInvalidTarget"
             class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
           />
         </div>
 
-        <!-- Children with grid animation -->
         <div
           class="grid transition-[grid-template-rows] duration-100 ease-in-out"
           :style="{ gridTemplateRows: isOpen ? '1fr' : '0fr' }"
@@ -277,7 +261,6 @@ const { handleDelete } = useEntryDelete(
           :style="{ left: (i - 1) * 24 + 22 + 'px' }"
         />
 
-        <!-- Before drop indicator -->
         <div
           v-if="dropRegion === 'before' && !isInvalidTarget"
           class="absolute top-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
@@ -292,7 +275,6 @@ const { handleDelete } = useEntryDelete(
         <Image v-else :size="15" class="text-text-muted shrink-0" />
         <span class="truncate">{{ entry.name }}</span>
 
-        <!-- After drop indicator -->
         <div
           v-if="dropRegion === 'after' && !isInvalidTarget"
           class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full z-10 pointer-events-none"
@@ -300,16 +282,14 @@ const { handleDelete } = useEntryDelete(
       </div>
     </div>
 
-    <!-- Context menu -->
     <ContextMenu v-if="contextMenuVisible" :x="contextMenuPos.x" :y="contextMenuPos.y">
-      <!-- Multi-select mode: only Delete -->
+      <!-- Multi-select: only Delete -->
       <template v-if="filesStore.selectedIds.size >= 2 && (isSelected || isCoveredBySelection)">
         <ContextMenuItem :icon="Trash2" danger @click="handleDelete">
           Delete {{ filesStore.selectedIds.size }} items
         </ContextMenuItem>
       </template>
 
-      <!-- Single-item menu -->
       <template v-else>
         <ContextMenuItem :icon="Pencil" @click="startRename">Rename</ContextMenuItem>
         <div class="border-t border-border-subtle my-1" />

@@ -1,4 +1,4 @@
-// Composable for file-tree drag-and-drop: manages drop zones (before/into/after), auto-expand on hover, and multi-select moves.
+// Tree drag-and-drop: before/into/after drop zones, expand on hover, multi-select moves.
 import { ref, computed, type Ref } from 'vue'
 import type { Entry } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
@@ -7,29 +7,19 @@ import { useToastStore } from '@/stores/toast'
 
 type FilesStore = ReturnType<typeof useFilesStore>
 
-/** Sentinel ID used when dragging the pending creation row (not a real DB entry). */
+/** Stands in for the pending creation row (not a real entry). */
 export const PENDING_ID = '__pending__'
 
-// Module-level ref shared across all FileExplorerNode instances so only one drag is active at a time.
-// Using a module-level ref (not composable-local) is intentional: dragstart on node A must be
-// visible when dragover fires on node B in a completely separate composable instance.
+// Module-level so a dragstart on one node is visible to dragover on another.
 export const draggingEntry = ref<Entry | null>(null)
 
-/**
- * Per-node drag-and-drop logic for the file tree.
- *
- * @param entryRef  - The entry this node represents.
- * @param isOpen    - Writable ref controlling whether a folder is expanded; mutated on drop-into and hover-expand.
- * @param filesStore - The files Pinia store; needed to resolve siblings and call moveEntry.
- */
+/** `isOpen` is written on drop-into and on hover-expand. */
 export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesStore: FilesStore) {
   const dropRegion = ref<'before' | 'into' | 'after' | null>(null)
   let hoverTimer: ReturnType<typeof setTimeout> | null = null
 
   /**
-   * True when the current drag source cannot be dropped onto this node.
-   * Covers: dropping onto itself, and dropping an ancestor into one of its own descendants (circular nesting).
-   * In multi-select mode, checks all selected entries.
+   * Onto itself or into its own descendants (checked for every selected entry when multi-dragging).
    */
   const isInvalidTarget = computed(() => {
     if (!draggingEntry.value) return false
@@ -92,7 +82,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
       region = isDirectory(entry) ? 'into' : ratio < 0.5 ? 'before' : 'after'
     }
 
-    // Guard: can't drop a real entry into its own descendant
+    // Not into its own descendant.
     if (region === 'into' && draggingEntry.value.id !== PENDING_ID) {
       const descendants = filesStore.collectDescendantIds(draggingEntry.value.id)
       if (descendants.includes(entry.id)) {
@@ -139,7 +129,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
 
     if (dragId === targetEntry.id) return
 
-    // Handle pending creation row being repositioned
+    // The pending creation row being repositioned.
     if (dragId === PENDING_ID) {
       const siblings = filesStore.entries
         .filter((e) => e.parent_id === targetEntry.parentId)
@@ -165,7 +155,6 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
       return
     }
 
-    // Normal entry move — compute destination
     let newParentId: string | null
     let newSortOrder: number
 
@@ -174,7 +163,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
       const siblings = filesStore.entries
         .filter((e) => e.parent_id === targetEntry.id)
         .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
-      // Append after the last child; step by 1000 so there's room for future insertions.
+      // After the last child.
       newSortOrder =
         siblings.length === 0 ? 1000 : Math.max(...siblings.map((e) => e.sort_order)) + 1000
       isOpen.value = true
@@ -198,8 +187,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
       }
     }
 
-    // Multi-drag: move all top-level selected entries (skip entries whose parent is also selected,
-    // since moving the parent moves the child implicitly).
+    // Top-level selected entries only; children move with their folder.
     const isMultiDrag = filesStore.selectedIds.size >= 2 && filesStore.selectedIds.has(dragId)
     if (isMultiDrag) {
       const topLevel = filesStore.filterTopLevelIds(filesStore.selectedIds)
@@ -207,9 +195,7 @@ export function useDragDrop(entryRef: Ref<Entry>, isOpen: Ref<boolean>, filesSto
       // Snapshot names + source folders before any moves mutate local state
       const snapshot = topLevel.map((id) => {
         const e = filesStore.getEntry(id)
-        const srcFolder = e?.parent_id
-          ? (filesStore.getEntry(e.parent_id)?.name ?? 'root')
-          : 'root'
+        const srcFolder = e?.parent_id ? (filesStore.getEntry(e.parent_id)?.name ?? 'root') : 'root'
         return { id, label: e ? e.name.replace(/\.[^.]+$/, '') : id, srcFolder }
       })
 

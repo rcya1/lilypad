@@ -1,6 +1,4 @@
-<!-- Sync status next to the email in the sidebar footer: "Offline · 3 pending", "Syncing",
-     "3 pending", or "1 conflict" (click to open the first conflicted note). Hidden when fully
-     synced. -->
+<!-- Footer sync status ("Offline · 3 pending", "Syncing", "1 conflict"…); hidden when synced -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -15,7 +13,7 @@ const conflicts = computed(() => sync.conflictIds.size)
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-// Opens the note in the editor (the editor's `?open=` handler works from the reader too).
+// `?open=` works from the reader too.
 function openFirstConflict() {
   const [id] = sync.conflictIds
   if (id) router.push({ name: 'app', query: { open: id } })
