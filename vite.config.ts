@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
 import svgLoader from 'vite-svg-loader'
+import { VitePWA } from 'vite-plugin-pwa'
 
 /**
  * Dev-only `POST /api/capture` endpoint for the Web Annotations feature. Runs the headless
@@ -48,9 +49,88 @@ function devCapturePlugin(): Plugin {
   }
 }
 
+/**
+ * Installable app (web manifest) + service worker. The app itself is precached so it opens with
+ * no connection; note data lives in IndexedDB (src/lib/offline.ts), not here. Images and captured
+ * web pages are cached the first time they're opened (sign-out deletes those caches, see
+ * USER_MEDIA_CACHES). New versions wait for the user to click "Reload" (PwaUpdatePrompt.vue).
+ */
+function pwaPlugin() {
+  return VitePWA({
+    registerType: 'prompt',
+    includeAssets: ['icons/apple-touch-icon.png'],
+    manifest: {
+      name: 'Lilypad',
+      short_name: 'Lilypad',
+      description: 'Markdown notes, annotated web pages and PDFs.',
+      start_url: '/',
+      scope: '/',
+      display: 'standalone',
+      background_color: '#f4f8f4',
+      theme_color: '#e5eee5',
+      icons: [
+        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+        {
+          src: '/icons/icon-maskable-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+    },
+    workbox: {
+      // woff2 only: browsers that can run a service worker all pick KaTeX's woff2 fonts.
+      globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+      maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      navigateFallback: '/index.html',
+      navigateFallbackDenylist: [/^\/api\//],
+      runtimeCaching: [
+        {
+          urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
+          handler: 'StaleWhileRevalidate',
+          options: { cacheName: 'google-fonts-css' },
+        },
+        {
+          urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'google-fonts',
+            expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+        {
+          // Images: public Storage URLs. Immutable — every upload gets a fresh UUID path.
+          urlPattern: ({ url }) => url.pathname.startsWith('/storage/v1/object/public/'),
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'lilypad-images',
+            expiration: { maxEntries: 1000 },
+            cacheableResponse: { statuses: [0, 200] },
+          },
+        },
+        {
+          // Captured web pages (`<user>/<entry>.html` downloads). Snapshots never change.
+          urlPattern: ({ url, request }) =>
+            request.method === 'GET' &&
+            url.pathname.startsWith('/storage/v1/object/') &&
+            url.pathname.endsWith('.html'),
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'lilypad-pages',
+            expiration: { maxEntries: 300 },
+            cacheableResponse: { statuses: [200] },
+          },
+        },
+      ],
+    },
+  })
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools(), tailwindcss(), svgLoader(), devCapturePlugin()],
+  plugins: [vue(), vueDevTools(), tailwindcss(), svgLoader(), devCapturePlugin(), pwaPlugin()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

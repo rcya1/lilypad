@@ -44,6 +44,11 @@ export interface Database {
           sort_order: number
           created_at: string
           updated_at: string
+          /**
+           * Bumped by a trigger on every update; the offline-sync compare-and-swap checks it (see
+           * docs/features/offline-sync.md). Absent until that migration is applied.
+           */
+          version?: number
         }
         Insert: {
           id?: string
@@ -133,7 +138,17 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      /**
+       * Compare-and-swap save of a note's text: writes only if the row is still at
+       * `p_expected_version`. Returns the new version on success, else the server's current version
+       * and content (both null when the row no longer exists).
+       */
+      save_entry_content: {
+        Args: { p_id: string; p_content: string; p_expected_version: number }
+        Returns: { ok: boolean; version: number | null; content: string | null }[]
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

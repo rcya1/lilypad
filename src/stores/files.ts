@@ -1,10 +1,18 @@
 // Pinia store for all file-system state: entry tree, CRUD, drag-drop ordering, in-memory content, trigram search index, image uploads, and web captures.
+//
+// Offline-first: every change is applied to local state immediately, persisted on the device
+// (IndexedDB snapshot), and handed to the sync store, which pushes it to Supabase when online and
+// merges note text that changed elsewhere meanwhile. Image uploads and web captures still need a
+// connection (they go through Storage / the capture server).
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch, toRaw } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { captureWebPage } from '@/lib/webCapture'
+import { loadSnapshot, saveSnapshot, type OfflineSnapshot } from '@/lib/offline'
 import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
+import { useSyncStore } from './sync'
+import { useEditorStore } from './editor'
 import type { EntryRow } from '@/types/database'
 import type { Entry, DocumentType } from '@/types/file-explorer'
 import { isDirectory } from '@/types/file-explorer'
@@ -41,10 +49,14 @@ const trigramIndex: TrigramIndex = new Map()
 export const useFilesStore = defineStore('files', () => {
   const auth = useAuthStore()
   const toast = useToastStore()
+  const sync = useSyncStore()
 
-  // All entry rows fetched from Supabase for the authenticated user.
+  // All entry rows for the authenticated user: the server's, plus local changes not yet synced.
   const entries = ref<EntryRow[]>([])
   const loading = ref(false)
+  // True once this session has loaded the tree from the server at least once (vs. only the
+  // on-device copy) — gates first-run seeding so offline starts never create duplicates.
+  let serverLoaded = false
 
   // The folder the user explicitly navigated into (used as default parent for new files).
   const selectedFolderId = ref<string | null>(null)
@@ -473,34 +485,181 @@ export const useFilesStore = defineStore('files', () => {
   // ---------------------------------------------------------------------------
 
   /**
-   * Fetches all entries for the authenticated user from Supabase, then
-   * populates the in-memory content map and rebuilds the trigram index.
+   * Loads the file tree: the on-device copy first (instant, and all there is offline), then
+   * pushes any changes made offline and pulls the server's current state over it.
    *
    * Precondition: `auth.user` must be set. No-ops if not authenticated.
-   * Postcondition: `entries`, `contentMap`, `trigramIndex`, and `indexReady`
-   *   are all updated atomically from the caller's perspective.
+   * Postcondition: `entries`, `contentMap`, `trigramIndex`, and `indexReady` reflect the newest
+   *   state available.
    */
   async function fetchEntries() {
     if (!auth.user) return
+    const uid = auth.user.id
     loading.value = true
     // Block search while we're rebuilding.
     indexReady.value = false
+    await sync.init(uid)
 
+    if (entries.value.length === 0) {
+      const snapshot = await loadSnapshot(uid)
+      if (snapshot) {
+        applySnapshot(snapshot)
+        loading.value = false
+      }
+    }
+
+    await sync.flush()
+    const ok = await refreshFromServer()
+    if (!ok && entries.value.length === 0 && sync.online) showError('Failed to load files.')
+    if (!indexReady.value) rebuildTrigramIndex()
+    loading.value = false
+  }
+
+  /**
+   * Pulls every entry from the server and makes it the local state, except where this device
+   * has changes the server hasn't seen yet: queued creates/renames/moves/deletes are kept on top,
+   * and a note's text is left alone while it has unsynced edits, a merge conflict, or unsaved
+   * typing in the editor. Notes open in the editor pick up the server's text.
+   *
+   * @returns false when the server couldn't be reached.
+   */
+  async function refreshFromServer(): Promise<boolean> {
+    if (!auth.user) return false
     const { data, error: err } = await supabase
       .from('entries')
       .select('*')
       .eq('user_id', auth.user.id)
       .order('sort_order')
       .returns<EntryRow[]>()
+    if (err || !data) return false
 
-    if (err) {
-      showError('Failed to load files.')
-    } else {
-      entries.value = data ?? []
-      populateContentMap()
-      rebuildTrigramIndex()
+    const editor = useEditorStore()
+    const serverIds = new Set(data.map((row) => row.id))
+    const next: EntryRow[] = []
+
+    for (const row of data) {
+      if (sync.hasPending(row.id, 'delete')) continue
+      const local = entryById.value.get(row.id)
+      next.push(
+        local && sync.hasPending(row.id, 'update')
+          ? { ...row, name: local.name, parent_id: local.parent_id, sort_order: local.sort_order }
+          : row,
+      )
+
+      if (row.document_type !== 'md' && row.document_type !== 'web') continue
+      const hasLocalEdits =
+        sync.hasPending(row.id, 'content') ||
+        sync.conflictIds.has(row.id) ||
+        editor.dirtyIds.has(row.id)
+      if (hasLocalEdits && contentMap.has(row.id)) continue
+      const text = row.content ?? ''
+      sync.setBase(row.id, { version: row.version ?? null, content: text })
+      if (contentMap.get(row.id) !== text) {
+        contentMap.set(row.id, text)
+        editor.applyExternalContent(row.id, text)
+      }
     }
-    loading.value = false
+    // Created on this device and not on the server yet.
+    for (const local of entries.value) {
+      if (!serverIds.has(local.id) && sync.hasPending(local.id, 'create')) next.push(local)
+    }
+
+    const kept = new Set(next.map((row) => row.id))
+    for (const id of contentMap.keys()) {
+      if (!kept.has(id)) {
+        contentMap.delete(id)
+        sync.deleteBase(id)
+      }
+    }
+    entries.value = next
+    rebuildTrigramIndex()
+    serverLoaded = true
+    persistSnapshot()
+    return true
+  }
+
+  /** Restores state from the on-device copy. */
+  function applySnapshot(snapshot: OfflineSnapshot) {
+    entries.value = snapshot.entries
+    sync.importBases(snapshot.bases)
+    populateContentMap()
+    rebuildTrigramIndex()
+  }
+
+  let snapshotTimer = 0
+
+  /** Saves the current tree + note text to the device (debounced). */
+  function persistSnapshot() {
+    if (!auth.user) return
+    const uid = auth.user.id
+    clearTimeout(snapshotTimer)
+    snapshotTimer = window.setTimeout(() => {
+      const rows = entries.value.map((row) => ({
+        ...toRaw(row),
+        content: contentMap.get(row.id) ?? row.content,
+      }))
+      // JSON round-trip: plain data only (IndexedDB can't clone Vue proxies).
+      const snapshot: OfflineSnapshot = JSON.parse(
+        JSON.stringify({ entries: rows, bases: sync.exportBases() }),
+      )
+      void saveSnapshot(uid, snapshot)
+    }, 400)
+  }
+
+  // Any change to the tree (create, rename, move, delete, reorder) lands on the device too.
+  watch(entries, persistSnapshot, { deep: true })
+
+  /** Overwrites fields of a local entry (used by sync, e.g. re-parenting to the top level). */
+  function patchEntry(id: string, fields: Partial<EntryRow>) {
+    const entry = entryById.value.get(id)
+    if (entry) Object.assign(entry, fields)
+  }
+
+  /** The freshest text of a note: the editor's buffer if it's open, else the saved text. */
+  function getLatestText(id: string): string | undefined {
+    return useEditorStore().openDocuments.get(id)?.content ?? contentMap.get(id)
+  }
+
+  /** Replaces a note's text with the result of a merge (locally, and in the editor if open). */
+  function applyMergedContent(id: string, text: string) {
+    contentMap.set(id, text)
+    updateTrigramsForFile(trigramIndex, id, text)
+    useEditorStore().applyExternalContent(id, text)
+    persistSnapshot()
+  }
+
+  /** Throws the standard error for actions that need the server (uploads, captures). */
+  function requireOnline(action: string) {
+    if (!sync.online) throw new Error(`${action} needs a connection.`)
+  }
+
+  /** A new local entry row with the defaults the database would fill in. */
+  function newRow(
+    fields: Omit<
+      EntryRow,
+      | 'id'
+      | 'user_id'
+      | 'created_at'
+      | 'updated_at'
+      | 'storage_path'
+      | 'content'
+      | 'metadata'
+      | 'document_type'
+    > &
+      Partial<EntryRow>,
+  ): EntryRow {
+    const now = new Date().toISOString()
+    return {
+      id: crypto.randomUUID(),
+      user_id: auth.user!.id,
+      document_type: null,
+      storage_path: null,
+      content: null,
+      metadata: null,
+      created_at: now,
+      updated_at: now,
+      ...fields,
+    }
   }
 
   /**
@@ -529,57 +688,66 @@ export const useFilesStore = defineStore('files', () => {
       return null
     }
 
-    const isMd = type === 'md'
+    // Markdown notes are created locally and synced (works offline).
+    if (type === 'md') {
+      const row = newRow({
+        kind: 'document',
+        name,
+        document_type: 'md',
+        parent_id: parentId,
+        sort_order: sortOrder ?? getNextSortOrder(parentId),
+        content: '',
+      })
+      entries.value.push(row)
+      contentMap.set(row.id, '')
+      // Empty string has no trigrams; index is unchanged.
+      sync.enqueue({ kind: 'create', row: { ...row } })
+      // renumberSiblings keeps sort_orders clean after a midpoint insertion.
+      if (sortOrder != null) renumberSiblings(parentId)
+      return entries.value[entries.value.length - 1]!
+    }
+
+    // Other types need a Storage placeholder, so they need a connection.
+    if (!sync.online) {
+      showError('Creating this kind of file needs a connection.')
+      return null
+    }
+    const id = crypto.randomUUID()
+    const ext = type === 'pdf' ? 'pdf' : type
+    const storagePath = `${auth.user.id}/${id}.${ext}`
+
+    const { error: uploadErr } = await supabase.storage
+      .from('user-files')
+      .upload(storagePath, new Blob([''], { type: 'text/plain' }))
+    if (uploadErr) {
+      showError('Failed to create file.')
+      return null
+    }
 
     const { data, error: err } = await supabase
       .from('entries')
       .insert({
+        id,
         user_id: auth.user.id,
         kind: 'document' as const,
         name,
         document_type: type,
         parent_id: parentId,
+        storage_path: storagePath,
         sort_order: sortOrder ?? getNextSortOrder(parentId),
-        // Only seed `content` for .md; other types use Storage.
-        ...(isMd ? { content: '' } : {}),
       })
       .select()
       .returns<EntryRow[]>()
       .single()
 
     if (err || !data) {
+      // Remove the placeholder so no blob exists without an entry.
+      await supabase.storage.from('user-files').remove([storagePath])
       showError('Failed to create file.')
       return null
     }
 
-    if (!isMd) {
-      // Create an empty Storage placeholder so storage_path is immediately valid.
-      const ext = type === 'pdf' ? 'pdf' : type
-      const storagePath = `${auth.user.id}/${data.id}.${ext}`
-
-      const { error: uploadErr } = await supabase.storage
-        .from('user-files')
-        .upload(storagePath, new Blob([''], { type: 'text/plain' }))
-
-      const { error: pathErr } = uploadErr
-        ? { error: uploadErr }
-        : await supabase.from('entries').update({ storage_path: storagePath }).eq('id', data.id)
-
-      if (uploadErr || pathErr) {
-        // Roll back the row so no entry exists without a valid storage_path.
-        await supabase.from('entries').delete().eq('id', data.id)
-        showError('Failed to create file.')
-        return null
-      }
-
-      data.storage_path = storagePath
-    } else {
-      contentMap.set(data.id, '')
-      // Empty string has no trigrams; index is unchanged.
-    }
-
     entries.value.push(data)
-    // renumberSiblings keeps sort_orders clean after a midpoint insertion.
     if (sortOrder != null) renumberSiblings(parentId)
     return data
   }
@@ -597,27 +765,16 @@ export const useFilesStore = defineStore('files', () => {
       return null
     }
 
-    const { data, error: err } = await supabase
-      .from('entries')
-      .insert({
-        user_id: auth.user.id,
-        kind: 'directory' as const,
-        name,
-        parent_id: parentId,
-        sort_order: sortOrder ?? getNextSortOrder(parentId),
-      })
-      .select()
-      .returns<EntryRow[]>()
-      .single()
-
-    if (err || !data) {
-      showError('Failed to create folder.')
-      return null
-    }
-
-    entries.value.push(data)
+    const row = newRow({
+      kind: 'directory',
+      name,
+      parent_id: parentId,
+      sort_order: sortOrder ?? getNextSortOrder(parentId),
+    })
+    entries.value.push(row)
+    sync.enqueue({ kind: 'create', row: { ...row } })
     if (sortOrder != null) renumberSiblings(parentId)
-    return data
+    return entries.value[entries.value.length - 1]!
   }
 
   /**
@@ -632,28 +789,22 @@ export const useFilesStore = defineStore('files', () => {
       return false
     }
 
-    const { error: err } = await supabase.from('entries').update({ name: newName }).eq('id', id)
-
-    if (err) {
-      showError('Failed to rename entry.')
-      return false
-    }
-
     // Mutate in-place — the row reference is shared with `entries.value`.
     if (entry) entry.name = newName
+    sync.enqueue({ kind: 'update', id, fields: { name: newName } })
     return true
   }
 
   /**
    * Deletes an entry and all its descendants (files + folders recursively).
    *
-   * Supabase's `ON DELETE CASCADE` handles DB child rows; we still need to
-   * manually remove Storage objects for any binary files in the subtree.
+   * Applied locally at once and queued for the server (see sync store), where `ON DELETE
+   * CASCADE` handles child rows and the Storage objects of binary files are removed too.
    *
    * Postcondition: All descendant IDs are removed from `entries`, `contentMap`,
    *   and `trigramIndex`.
    *
-   * @returns true on success, false if the Supabase delete failed.
+   * @returns true (the delete is local-first and always succeeds locally).
    */
   async function deleteEntry(id: string) {
     const idsToDelete = collectDescendantIds(id)
@@ -664,18 +815,13 @@ export const useFilesStore = defineStore('files', () => {
       .filter((e) => e?.storage_path)
       .map((e) => e!.storage_path!)
 
-    // Deleting the root triggers DB cascade for all descendants.
-    const { error: err } = await supabase.from('entries').delete().eq('id', id)
-
-    if (err) {
-      showError('Failed to delete entry.')
-      return false
-    }
-
-    if (storagePaths.length > 0) {
-      const { error: storageErr } = await supabase.storage.from('user-files').remove(storagePaths)
-      // Rows are already deleted; an orphaned blob is harmless, so just log.
-      if (storageErr) console.error('deleteEntry: failed to remove storage blobs', storageErr)
+    // Queued changes to anything inside are moot. Deleting the root on the server cascades to its
+    // descendants (DB `ON DELETE CASCADE`); the sync store also removes the Storage blobs.
+    sync.dropOpsFor(idsToDelete.filter((did) => did !== id))
+    sync.enqueue({ kind: 'delete', id, storagePaths })
+    for (const did of idsToDelete) {
+      sync.deleteBase(did)
+      if (sync.conflictIds.has(did)) sync.setConflict(did, false)
     }
 
     entries.value = entries.value.filter((e) => !idsToDelete.includes(e.id))
@@ -740,20 +886,15 @@ export const useFilesStore = defineStore('files', () => {
       return false
     }
 
-    const { error: err } = await supabase
-      .from('entries')
-      .update({ parent_id: newParentId, sort_order: newSortOrder })
-      .eq('id', id)
-
-    if (err) {
-      if (!silent) showError(`Failed to move "${moving?.name ?? id}": ${err.message}`)
-      return false
-    }
-
     if (moving) {
       moving.parent_id = newParentId
       moving.sort_order = newSortOrder
     }
+    sync.enqueue({
+      kind: 'update',
+      id,
+      fields: { parent_id: newParentId, sort_order: newSortOrder },
+    })
     // Renumber siblings so sort_orders remain clean multiples of 1000 after the
     // fractional midpoint value introduced by getPendingSortOrder.
     renumberSiblings(newParentId)
@@ -765,33 +906,20 @@ export const useFilesStore = defineStore('files', () => {
    *
    * Necessary because `getPendingSortOrder` uses fractional midpoints for
    * drag-drop insertions. After enough insertions the values drift toward each
-   * other; renumbering keeps them spread. Runs in the background — callers
-   * don't need to await it.
+   * other; renumbering keeps them spread. Local at once; the new orders are queued for sync.
    */
   async function renumberSiblings(parentId: string | null): Promise<void> {
     const siblings = entries.value
       .filter((e) => e.parent_id === parentId)
       .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
 
-    const updates: PromiseLike<unknown>[] = []
     for (let i = 0; i < siblings.length; i++) {
       const clean = (i + 1) * 1000
       if (siblings[i]!.sort_order !== clean) {
         siblings[i]!.sort_order = clean
-        updates.push(
-          supabase
-            .from('entries')
-            .update({ sort_order: clean })
-            .eq('id', siblings[i]!.id)
-            .then(({ error }) => {
-              // Local sort_order has already been mutated; a log is enough to make
-              // divergence between local and remote state diagnosable.
-              if (error) console.error('renumberSiblings: failed to update sort_order', error)
-            }),
-        )
+        sync.enqueue({ kind: 'update', id: siblings[i]!.id, fields: { sort_order: clean } })
       }
     }
-    if (updates.length > 0) await Promise.all(updates)
   }
 
   // ---------------------------------------------------------------------------
@@ -883,26 +1011,24 @@ export const useFilesStore = defineStore('files', () => {
   }
 
   /**
-   * Persists `content` for an entry, updating both the remote source of truth
-   * and the in-memory cache and trigram index.
+   * Saves `content` for an entry.
    *
-   * For `.md` and `web` notes: writes to the DB `content` column.
-   * For binary files: uploads to Supabase Storage (upsert).
+   * For `.md` and `web` notes: updates the in-memory cache, trigram index and on-device copy at
+   * once, then hands the note to the sync store (pushed now if online, merged with any change
+   * made elsewhere — works offline).
+   * For binary files: uploads to Supabase Storage (upsert; needs a connection).
    *
-   * @returns true on success.
+   * @returns true once saved (locally, for notes).
    */
   async function uploadContent(entryId: string, content: string): Promise<boolean> {
     const entry = entryById.value.get(entryId)
     if (!entry) return false
 
     if (entry.document_type === 'md' || entry.document_type === 'web') {
-      const { error: err } = await supabase.from('entries').update({ content }).eq('id', entryId)
-
-      if (err) return false
-
-      // Keep in-memory state consistent with what was just saved.
       contentMap.set(entryId, content)
       updateTrigramsForFile(trigramIndex, entryId, content)
+      persistSnapshot()
+      sync.noteChanged(entryId, content)
       return true
     }
 
@@ -956,6 +1082,7 @@ export const useFilesStore = defineStore('files', () => {
    */
   async function uploadImage(file: File, parentId: string | null): Promise<UploadedImage> {
     if (!auth.user) throw new Error('Not authenticated')
+    requireOnline('Uploading images')
 
     const mimeSub = file.type.split('/')[1] ?? 'png'
     const ext = MIME_EXT_MAP[mimeSub] ?? mimeSub
@@ -1066,6 +1193,7 @@ export const useFilesStore = defineStore('files', () => {
    */
   async function createWebDocument(url: string, parentId: string | null = null) {
     if (!auth.user) return null
+    requireOnline('Capturing a web page')
 
     const capture = await captureWebPage(url)
 
@@ -1114,15 +1242,18 @@ export const useFilesStore = defineStore('files', () => {
     entries.value.push(data)
     // Seed contentMap with empty notes so the editor can open immediately.
     contentMap.set(data.id, '')
+    sync.setBase(data.id, { version: data.version ?? null, content: '' })
     return data
   }
 
   /**
    * Creates a "Welcome to Lilypad" markdown file for new users.
-   * No-ops if the user already has entries (idempotent on repeated auth).
+   * No-ops if the user already has entries (idempotent on repeated auth), or if the tree hasn't
+   * been loaded from the server this session.
    */
   async function seedWelcomeFile() {
-    if (!auth.user || entries.value.length > 0) return
+    // Only when the server itself reported no entries — never from an (empty) offline start.
+    if (!auth.user || !serverLoaded || entries.value.length > 0) return
 
     const welcomeContent = `# Welcome to Lilypad
 
@@ -1160,6 +1291,8 @@ Happy note-taking!
     contentMap.clear()
     trigramIndex.clear()
     imageUrlCache.clear()
+    clearTimeout(snapshotTimer)
+    serverLoaded = false
   }
 
   return {
@@ -1174,6 +1307,10 @@ Happy note-taking!
     lastClickedId,
     pendingCreate,
     fetchEntries,
+    refreshFromServer,
+    patchEntry,
+    getLatestText,
+    applyMergedContent,
     createDocument,
     createDirectory,
     renameEntry,

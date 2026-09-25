@@ -13,9 +13,11 @@ import {
   FilePlus,
   FolderPlus,
   Trash2,
+  AlertTriangle,
 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
+import { useSyncStore } from '@/stores/sync'
 import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useEntrySelection } from '@/composables/useEntrySelection'
@@ -31,6 +33,7 @@ const props = defineProps<{
 
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
+const syncStore = useSyncStore()
 
 // Writable computed so useDragDrop can set isOpen.value = true (auto-expand on hover) while
 // the source of truth stays in the files store's collapsedFolderIds set.
@@ -364,6 +367,13 @@ function onPendingDragEnd() {
         <!-- Name -->
         <span class="truncate">
           {{ isDirectory(entry) || entry.type === 'web' ? entry.name : stripExtension(entry.name) }}
+        </span>
+        <span
+          v-if="syncStore.conflictIds.has(entry.id)"
+          class="ml-auto flex shrink-0 items-center text-amber"
+          title="Merge conflicts: open to resolve"
+        >
+          <AlertTriangle :size="13" />
         </span>
 
         <!-- After drop indicator -->

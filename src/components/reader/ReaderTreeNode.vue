@@ -6,14 +6,16 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { isDirectory, type Entry } from '@/types/file-explorer'
-import { Folder, FolderOpen, FileText, Image, Globe, File } from 'lucide-vue-next'
+import { Folder, FolderOpen, FileText, Image, Globe, File, AlertTriangle } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
+import { useSyncStore } from '@/stores/sync'
 
 // Explicit name so the template can reference itself recursively regardless of build heuristics.
 defineOptions({ name: 'ReaderTreeNode' })
 
 const props = defineProps<{ entry: Entry; depth: number }>()
 const filesStore = useFilesStore()
+const syncStore = useSyncStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -88,6 +90,13 @@ function onTap() {
       <component :is="icon" :size="17" :class="iconClass" />
     </span>
     <span class="truncate">{{ label }}</span>
+    <span
+      v-if="syncStore.conflictIds.has(entry.id)"
+      class="ml-auto flex shrink-0 items-center text-amber"
+      title="Merge conflicts: open to resolve"
+    >
+      <AlertTriangle :size="13" />
+    </span>
   </button>
 
   <!-- Animated expand/collapse (grid-rows 0fr ↔ 1fr), same as the editor tree. Children stay

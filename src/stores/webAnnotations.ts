@@ -1,11 +1,16 @@
 // Pinia store for web-document highlights (annotations): loads/creates/updates/deletes rows in the
 // `annotations` table and carries the cross-pane intent state (active/hovered highlight, and
 // scroll requests in both directions) that links the captured page (WebView) with the notes pane.
+//
+// Offline-first like notes: changes apply locally, are cached on the device per web page, and are
+// queued in the sync store. Loading falls back to the on-device copy when offline.
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { loadAnnotations, saveAnnotations, type SyncOp } from '@/lib/offline'
 import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
+import { useSyncStore } from './sync'
 import type { AnnotationRow, HighlightColor, HighlightSelectors } from '@/types/database'
 
 /** Client-side view model for a highlight. `note` is normalised to '' (never null). */
@@ -49,6 +54,20 @@ export const HIGHLIGHT_COLORS: Record<
 
 export const HIGHLIGHT_COLOR_KEYS = Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]
 
+function highlightToRow(h: Highlight, userId: string): AnnotationRow {
+  return {
+    id: h.id,
+    entry_id: h.entryId,
+    user_id: userId,
+    local_id: h.localId,
+    color: h.color,
+    selectors: h.selectors,
+    note: h.note || null,
+    created_at: h.createdAt,
+    updated_at: h.createdAt,
+  }
+}
+
 function rowToHighlight(row: AnnotationRow): Highlight {
   return {
     id: row.id,
@@ -74,6 +93,7 @@ function nextLocalId(existing: Highlight[]): string {
 export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
   const auth = useAuthStore()
   const toast = useToastStore()
+  const sync = useSyncStore()
 
   /** All highlights loaded so far, across any entries opened this session. */
   const highlights = ref<Highlight[]>([])
@@ -108,13 +128,40 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
     return highlights.value.find((h) => h.entryId === entryId && h.localId === localId)
   }
 
+  /** Saves one web page's highlights on the device. */
+  function persist(entryId: string) {
+    if (!auth.user) return
+    const uid = auth.user.id
+    const rows = highlightsFor(entryId).map((h) => highlightToRow(h, uid))
+    void saveAnnotations(uid, entryId, JSON.parse(JSON.stringify(rows)))
+  }
+
   /**
-   * Fetch highlights for an entry from Supabase (once per session unless `force`).
-   * Populates `highlights` with the rows for this entry, replacing any stale copies.
+   * Layers this device's unsynced highlight changes over rows fetched from the server (a fetch
+   * can land while creates/edits/deletes are still queued).
+   */
+  function withPendingChanges(entryId: string, rows: AnnotationRow[]): AnnotationRow[] {
+    let result = [...rows]
+    for (const op of sync.queue as SyncOp[]) {
+      if (op.kind === 'hl-create' && op.row.entry_id === entryId) {
+        if (!result.some((r) => r.id === op.row.id)) result.push(op.row)
+      } else if (op.kind === 'hl-update') {
+        result = result.map((r) => (r.id === op.id ? { ...r, ...op.fields } : r))
+      } else if (op.kind === 'hl-delete') {
+        result = result.filter((r) => r.id !== op.id)
+      }
+    }
+    return result
+  }
+
+  /**
+   * Load highlights for an entry (once per session unless `force`): from the server, falling back
+   * to the on-device copy when offline. Replaces any stale copies for this entry.
    */
   async function loadForEntry(entryId: string, force = false): Promise<void> {
     if (!auth.user) return
     if (loadedEntries.value.has(entryId) && !force) return
+    const uid = auth.user.id
 
     const { data, error } = await supabase
       .from('annotations')
@@ -123,20 +170,28 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
       .order('created_at')
       .returns<AnnotationRow[]>()
 
-    if (error) {
-      toast.addToast('Failed to load highlights.', 'error')
-      return
+    let rows: AnnotationRow[]
+    if (error || !data) {
+      const cached = await loadAnnotations(uid, entryId)
+      if (!cached) {
+        if (sync.online) toast.addToast('Failed to load highlights.', 'error')
+        return
+      }
+      rows = cached
+    } else {
+      rows = withPendingChanges(entryId, data)
     }
 
     // Drop any existing rows for this entry, then insert the fresh set.
     highlights.value = highlights.value.filter((h) => h.entryId !== entryId)
-    highlights.value.push(...(data ?? []).map(rowToHighlight))
+    highlights.value.push(...rows.map(rowToHighlight))
     loadedEntries.value = new Set(loadedEntries.value).add(entryId)
+    persist(entryId)
   }
 
   /**
-   * Create a highlight from serialized selectors. Assigns the next short `local_id`, inserts the
-   * row, and appends it to local state. Returns the new highlight, or null on failure.
+   * Create a highlight from serialized selectors. Assigns the next short `local_id`, adds it
+   * locally, and queues it for sync (works offline). Returns the new highlight.
    */
   async function createHighlight(
     entryId: string,
@@ -145,74 +200,51 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
   ): Promise<Highlight | null> {
     if (!auth.user) return null
 
-    const localId = nextLocalId(highlightsFor(entryId))
-
-    const { data, error } = await supabase
-      .from('annotations')
-      .insert({
-        entry_id: entryId,
-        user_id: auth.user.id,
-        local_id: localId,
-        color,
-        selectors,
-        note: null,
-      })
-      .select()
-      .returns<AnnotationRow[]>()
-      .single()
-
-    if (error || !data) {
-      toast.addToast('Failed to create highlight.', 'error')
-      return null
+    const now = new Date().toISOString()
+    const row: AnnotationRow = {
+      id: crypto.randomUUID(),
+      entry_id: entryId,
+      user_id: auth.user.id,
+      local_id: nextLocalId(highlightsFor(entryId)),
+      color,
+      selectors,
+      note: null,
+      created_at: now,
+      updated_at: now,
     }
-
-    const highlight = rowToHighlight(data)
-    highlights.value.push(highlight)
-    return highlight
+    highlights.value.push(rowToHighlight(row))
+    sync.enqueue({ kind: 'hl-create', row })
+    persist(entryId)
+    return highlights.value[highlights.value.length - 1]!
   }
 
-  /** Update the inline markdown note for a highlight. Mutates local state on success. */
+  /** Update the inline markdown note for a highlight (local at once, then synced). */
   async function updateNote(id: string, note: string): Promise<boolean> {
-    const { error } = await supabase
-      .from('annotations')
-      .update({ note: note || null })
-      .eq('id', id)
-    if (error) {
-      toast.addToast('Failed to save note.', 'error')
-      return false
-    }
     const h = getById(id)
-    if (h) h.note = note
+    if (!h) return false
+    h.note = note
+    sync.enqueue({ kind: 'hl-update', id, fields: { note: note || null } })
+    persist(h.entryId)
     return true
   }
 
-  /**
-   * Update a highlight's colour. Applies the change locally first (optimistic) so the repaint is
-   * instant, then persists to Supabase in the background and reverts if the write fails — otherwise
-   * every colour swap would visibly lag behind the network round-trip.
-   */
+  /** Update a highlight's colour (local at once so the repaint is instant, then synced). */
   async function updateColor(id: string, color: HighlightColor): Promise<boolean> {
     const h = getById(id)
     if (!h) return false
-    const previous = h.color
     h.color = color
-    const { error } = await supabase.from('annotations').update({ color }).eq('id', id)
-    if (error) {
-      h.color = previous
-      toast.addToast('Failed to update highlight.', 'error')
-      return false
-    }
+    sync.enqueue({ kind: 'hl-update', id, fields: { color } })
+    persist(h.entryId)
     return true
   }
 
-  /** Delete a highlight. Removes it from local state on success. */
+  /** Delete a highlight (local at once, then synced). */
   async function deleteHighlight(id: string): Promise<boolean> {
-    const { error } = await supabase.from('annotations').delete().eq('id', id)
-    if (error) {
-      toast.addToast('Failed to delete highlight.', 'error')
-      return false
-    }
-    highlights.value = highlights.value.filter((h) => h.id !== id)
+    const h = getById(id)
+    if (!h) return false
+    sync.enqueue({ kind: 'hl-delete', id })
+    highlights.value = highlights.value.filter((x) => x.id !== id)
+    persist(h.entryId)
     if (activeHighlightId.value === id) activeHighlightId.value = null
     if (hoveredHighlightId.value === id) hoveredHighlightId.value = null
     return true

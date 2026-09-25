@@ -43,12 +43,14 @@ router.beforeEach((to) => {
   // and trust that main.ts will redirect after initialize() resolves.
   if (auth.loading) return true
 
-  if (!auth.session && to.name !== 'login') {
+  // `user` rather than `session`: offline, the app runs on the last signed-in user even when the
+  // session can't be refreshed (see auth store).
+  if (!auth.user && to.name !== 'login') {
     return { name: 'login' }
   }
 
   // Redirect already-authed users away from the login page.
-  if (auth.session && to.name === 'login') {
+  if (auth.user && to.name === 'login') {
     return { name: 'app' }
   }
 

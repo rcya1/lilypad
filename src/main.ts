@@ -21,7 +21,7 @@ const auth = useAuthStore()
 // has a resolved session to check. Without this, the guard sees auth.loading=true and lets
 // every navigation through, only to redirect after the async check completes.
 auth.initialize().then(() => {
-  if (!auth.session) {
+  if (!auth.user) {
     router.replace({ name: 'login' })
   }
 })

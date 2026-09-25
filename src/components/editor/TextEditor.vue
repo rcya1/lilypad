@@ -67,6 +67,7 @@ import {
 } from './cm/highlight'
 import { indentBullet, dedentBullet } from './cm/commands'
 import { latexMath, latexEditorExtensions } from './cm/latex'
+import { conflictMarkers, externalEdit, replaceDocMinimally } from './cm/conflicts'
 import { findImageRefs } from '@/lib/image-refs'
 import { Pencil } from 'lucide-vue-next'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
@@ -758,11 +759,14 @@ onMounted(() => {
         ),
         markdown({ extensions: [latexMath] }),
         latexEditorExtensions,
+        conflictMarkers,
         // basicSetup registers defaultHighlightStyle only as a *fallback*, which switches off
         // once any other highlighter (the LaTeX one above) is present — so register it directly.
         syntaxHighlighting(defaultHighlightStyle),
         EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
+          // Edits from sync (merges, newer server text) aren't the user's: don't mark dirty.
+          const external = update.transactions.some((tr) => tr.annotation(externalEdit))
+          if (update.docChanged && !external) {
             store.updateContent(props.documentId, update.state.doc.toString())
           }
           if (update.focusChanged && update.view.hasFocus) {
@@ -931,6 +935,17 @@ watch(
       selection: { anchor: pos + req.text.length },
     })
     view.focus()
+  },
+)
+
+// Text replaced from outside (a sync merge or newer server text): apply it as a minimal edit so
+// the cursor stays put when the change is elsewhere in the note.
+watch(
+  () => store.externalContentRequest,
+  (req) => {
+    if (!req || req.documentId !== props.documentId || !view) return
+    store.externalContentRequest = null
+    replaceDocMinimally(view, req.content)
   },
 )
 

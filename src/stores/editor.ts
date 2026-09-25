@@ -53,6 +53,13 @@ export const useEditorStore = defineStore('editor', () => {
    */
   const insertTextRequest = ref<{ documentId: string; text: string } | null>(null)
 
+  /**
+   * Pending replacement of a document's text from outside the editor (a sync merge, or a newer
+   * version pulled from the server). TextEditor applies it as a minimal edit — not as the user's
+   * own typing, so it doesn't mark the tab dirty — and clears it.
+   */
+  const externalContentRequest = ref<{ documentId: string; content: string } | null>(null)
+
   /** ID of the tab in preview (single-click) mode; replaced by the next single-clicked file. */
   const previewDocumentId = ref<string | null>(null)
 
@@ -79,6 +86,14 @@ export const useEditorStore = defineStore('editor', () => {
   /** Asks TextEditor to cancel any active line-flash highlight for the named document. */
   function requestClearEditorHighlight(documentId: string) {
     clearHighlightRequest.value = documentId
+  }
+
+  /** Replaces an open document's text from outside the editor (see externalContentRequest). */
+  function applyExternalContent(id: string, content: string) {
+    const doc = openDocuments.value.get(id)
+    if (!doc || doc.content === content) return
+    doc.content = content
+    externalContentRequest.value = { documentId: id, content }
   }
 
   /** Asks TextEditor to insert `text` at its current cursor position. */
@@ -428,6 +443,8 @@ export const useEditorStore = defineStore('editor', () => {
     clearHighlightRequest,
     requestClearEditorHighlight,
     insertTextRequest,
+    externalContentRequest,
+    applyExternalContent,
     requestInsertText,
     editorCursorLine,
     setEditorCursorLine,

@@ -186,6 +186,35 @@ export const lilypadTheme = EditorView.theme({
   '.cm-math-number': {
     color: 'color-mix(in srgb, var(--amber) 65%, var(--text-primary))',
   },
+  // Merge conflicts (cm/conflicts.ts): this device's side green, the server's amber.
+  '.cm-conflict-mine': {
+    backgroundColor: 'color-mix(in srgb, var(--accent) 13%, transparent)',
+  },
+  '.cm-conflict-theirs': {
+    backgroundColor: 'color-mix(in srgb, var(--amber) 15%, transparent)',
+  },
+  '.cm-conflict-marker': {
+    backgroundColor: 'var(--surface-elevated)',
+    color: 'var(--text-muted)',
+    fontWeight: '600',
+  },
+  '.cm-conflict-actions': {
+    padding: '4px 0 2px',
+    fontFamily: 'var(--font-family-ui)',
+    fontSize: '12px',
+    color: 'var(--text-muted)',
+  },
+  '.cm-conflict-action': {
+    padding: '0 2px',
+    border: 'none',
+    background: 'none',
+    color: 'var(--accent)',
+    font: 'inherit',
+    cursor: 'pointer',
+  },
+  '.cm-conflict-action:hover': {
+    textDecoration: 'underline',
+  },
   '.cm-fat-cursor': {
     background: 'color-mix(in srgb, var(--accent) 35%, transparent) !important',
     color: 'var(--text-primary) !important',

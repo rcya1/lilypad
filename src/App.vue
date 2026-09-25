@@ -8,6 +8,7 @@ import { useUiStore } from '@/stores/ui'
 import ToastContainer from '@/components/ToastContainer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import QuickSwitcher from '@/components/QuickSwitcher.vue'
+import PwaUpdatePrompt from '@/components/PwaUpdatePrompt.vue'
 
 const auth = useAuthStore()
 const filesStore = useFilesStore()
@@ -70,4 +71,5 @@ onBeforeUnmount(() => {
   <QuickSwitcher />
   <ToastContainer />
   <ConfirmDialog />
+  <PwaUpdatePrompt />
 </template>
