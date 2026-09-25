@@ -28,6 +28,7 @@ function onTabShortcut(e: KeyboardEvent): boolean {
   const key = e.key.toLowerCase()
 
   if (mod && !e.shiftKey && key === 'w') {
+    if (isVimCtrlW(e)) return false
     // Even with no tab open, so it never closes the window.
     const id = editorStore.activeDocumentId
     if (id) void editorStore.closeDocument(id)
@@ -50,6 +51,21 @@ function onTabShortcut(e: KeyboardEvent): boolean {
   e.preventDefault()
   if (editorStore.activeDocumentId) filesStore.selectSingle(editorStore.activeDocumentId)
   return true
+}
+
+function isVimCtrlW(e: KeyboardEvent): boolean {
+  return (
+    uiStore.vimEnabled &&
+    e.ctrlKey &&
+    e.key.toLowerCase() === 'w' &&
+    !!(e.target as Element | null)?.closest?.('.cm-editor')
+  )
+}
+
+// Bubble phase, after CodeMirror has handled the key: in the installed app the browser would
+// otherwise close the window on Ctrl+W.
+function onKeyDownAfter(e: KeyboardEvent) {
+  if (isInstalledApp() && isVimCtrlW(e)) e.preventDefault()
 }
 
 function onKeyDown(e: KeyboardEvent) {
@@ -89,13 +105,15 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
 }
 
 onMounted(() => {
-  // capture: so these win over CodeMirror's own bindings (Ctrl+P, Ctrl+N, Vim's Ctrl+W).
+  // capture: so these win over CodeMirror's own bindings (Ctrl+P, Ctrl+N).
   window.addEventListener('keydown', onKeyDown, { capture: true })
+  window.addEventListener('keydown', onKeyDownAfter)
   window.addEventListener('beforeunload', onBeforeUnload)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown, { capture: true })
+  window.removeEventListener('keydown', onKeyDownAfter)
   window.removeEventListener('beforeunload', onBeforeUnload)
 })
 </script>
