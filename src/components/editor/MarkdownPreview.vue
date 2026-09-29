@@ -428,7 +428,17 @@ watch(
   width: auto;
 }
 
-/* Images: ring around the image itself. */
+/* Images: ring around the image itself, not the figure. The figure keeps its full width — fit-content
+   would make a percentage-width img (`{w-1/2}`) resolve against itself and shrink on hover.
+   Combined-state selector for specificity, as above. */
+.markdown-body :deep(figure.image-container.preview-hover),
+.markdown-body :deep(figure.image-container.preview-selected),
+.markdown-body :deep(figure.image-container.preview-hover.preview-selected) {
+  background-color: transparent;
+  width: auto;
+  box-shadow: none;
+}
+
 .markdown-body :deep(figure.image-container.preview-hover img),
 .markdown-body :deep(figure.image-container.preview-selected img) {
   box-shadow: 0 0 0 5px var(--surface-elevated);
