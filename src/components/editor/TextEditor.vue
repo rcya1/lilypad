@@ -36,9 +36,20 @@ function findSentinels(doc: string): { uuid: string; from: number; to: number }[
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState, StateEffect, StateField, Compartment, type Range } from '@codemirror/state'
+import {
+  EditorState,
+  StateEffect,
+  StateField,
+  Compartment,
+  Prec,
+  type Range,
+} from '@codemirror/state'
 import { Decoration, type DecorationSet, keymap } from '@codemirror/view'
-import { markdown } from '@codemirror/lang-markdown'
+import {
+  markdown,
+  insertNewlineContinueMarkupCommand,
+  deleteMarkupBackward,
+} from '@codemirror/lang-markdown'
 import { defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { search, searchKeymap } from '@codemirror/search'
 import { vim, getCM, Vim } from '@replit/codemirror-vim'
@@ -661,7 +672,15 @@ onMounted(() => {
         fontSizeCompartment.of(
           EditorView.theme({ '&': { fontSize: `${uiStore.editorFontSize}px` } }),
         ),
-        markdown({ extensions: [latexMath] }),
+        markdown({ extensions: [latexMath], addKeymap: false }),
+        // Markdown's default Enter turns an empty 2nd item into a blank line instead of ending the
+        // list; nonTightLists: false makes Enter on an empty item always drop its marker.
+        Prec.high(
+          keymap.of([
+            { key: 'Enter', run: insertNewlineContinueMarkupCommand({ nonTightLists: false }) },
+            { key: 'Backspace', run: deleteMarkupBackward },
+          ]),
+        ),
         latexEditorExtensions,
         conflictMarkers,
         // basicSetup registers defaultHighlightStyle only as a *fallback*, which switches off
