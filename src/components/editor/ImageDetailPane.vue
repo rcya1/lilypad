@@ -4,6 +4,7 @@ import { ref, computed } from 'vue'
 import { Pencil, FileText } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
+import { splitExtension, joinExtension } from '@/lib/fileName'
 
 const props = defineProps<{
   documentId: string
@@ -28,14 +29,16 @@ function onImageLoad(e: Event) {
 const isRenaming = ref(false)
 const renameValue = ref('')
 
+/** Only the stem is editable; the extension is reattached on submit. */
 function startRename() {
-  renameValue.value = imageName.value
+  renameValue.value = splitExtension(imageName.value).stem
   isRenaming.value = true
 }
 
 /** The editor tab keeps its own copy of the name, so update both. */
 async function submitRename() {
-  const newName = renameValue.value.trim()
+  const stem = renameValue.value.trim()
+  const newName = stem && joinExtension(stem, splitExtension(imageName.value).ext)
   if (newName && newName !== imageName.value) {
     await filesStore.renameEntry(props.documentId, newName)
     const doc = editorStore.openDocuments.get(props.documentId)

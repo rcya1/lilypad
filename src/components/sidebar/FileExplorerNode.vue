@@ -22,6 +22,7 @@ import { useDragDrop, draggingEntry, PENDING_ID } from '@/composables/useDragDro
 import { useContextMenu } from '@/composables/useContextMenu'
 import { useEntrySelection } from '@/composables/useEntrySelection'
 import { useEntryDelete } from '@/composables/useEntryDelete'
+import { splitExtension, joinExtension } from '@/lib/fileName'
 import PendingInputRow from './PendingInputRow.vue'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
@@ -157,15 +158,25 @@ function onContextMenu(e: MouseEvent) {
   openContextMenu(e)
 }
 
+/** Folders and web pages have no real extension; anything else keeps its extension locked. */
+const lockedExtension = computed(() => {
+  const entry = props.entry
+  if (isDirectory(entry) || entry.type === 'web') return ''
+  return splitExtension(entry.name).ext
+})
+
 function startRename() {
   closeContextMenu()
-  renameValue.value = props.entry.name
+  renameValue.value = lockedExtension.value
+    ? splitExtension(props.entry.name).stem
+    : props.entry.name
   isRenaming.value = true
 }
 
 /** On Enter, blur or click-away. Ignores empty or unchanged names. */
 async function submitRename() {
-  const newName = renameValue.value.trim()
+  const stem = renameValue.value.trim()
+  const newName = stem && joinExtension(stem, lockedExtension.value)
   if (newName && newName !== props.entry.name) {
     await filesStore.renameEntry(props.entry.id, newName)
   }
@@ -228,7 +239,7 @@ function cancelNew() {
 }
 
 function stripExtension(name: string) {
-  return name.replace(/\.[^.]+$/, '')
+  return splitExtension(name).stem
 }
 
 /** PENDING_ID marks a not-yet-created entry being repositioned. */

@@ -11,6 +11,7 @@ import { useContextMenu } from '@/composables/useContextMenu'
 import { useDragDrop, draggingEntry } from '@/composables/useDragDrop'
 import { useEntrySelection } from '@/composables/useEntrySelection'
 import { useEntryDelete } from '@/composables/useEntryDelete'
+import { splitExtension, joinExtension } from '@/lib/fileName'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
@@ -122,15 +123,23 @@ function onDragEnd() {
   dndDragEnd()
 }
 
+/** Folders have no extension; an image's is locked so only its stem is editable. */
+const lockedExtension = computed(() =>
+  isDirectory(props.entry) ? '' : splitExtension(props.entry.name).ext,
+)
+
 function startRename() {
   closeContextMenu()
-  renameValue.value = props.entry.name
+  renameValue.value = lockedExtension.value
+    ? splitExtension(props.entry.name).stem
+    : props.entry.name
   isRenaming.value = true
 }
 
 /** Leaves rename mode either way. */
 async function submitRename() {
-  const newName = renameValue.value.trim()
+  const stem = renameValue.value.trim()
+  const newName = stem && joinExtension(stem, lockedExtension.value)
   if (newName && newName !== props.entry.name) {
     await filesStore.renameEntry(props.entry.id, newName)
   }
