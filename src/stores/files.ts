@@ -1,18 +1,20 @@
-// Pinia store for the file tree, note text, search index, image uploads and web captures.
+// Pinia store for the file tree, note text, search index, image uploads, web captures and PDFs.
 // Offline-first: changes apply locally, are saved on the device, and are pushed by the sync store.
-// Image uploads and web captures still need a connection.
+// Image uploads, web captures and PDF imports still need a connection.
 import { defineStore } from 'pinia'
 import { ref, computed, watch, toRaw } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { captureWebPage } from '@/lib/webCapture'
+import { fetchPdfIntoStorage, pdfFileName, MAX_PDF_BYTES } from '@/lib/pdfFetch'
+import { hasPdfHeader, readPdfInfo } from '@/lib/pdfjs'
 import { loadSnapshot, saveSnapshot, type OfflineSnapshot } from '@/lib/offline'
 import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
 import { useSyncStore } from './sync'
 import { useEditorStore } from './editor'
-import type { EntryRow } from '@/types/database'
+import type { EntryRow, PdfDocMeta } from '@/types/database'
 import type { Entry, DocumentType } from '@/types/file-explorer'
-import { isDirectory } from '@/types/file-explorer'
+import { isDirectory, hasNoteContent } from '@/types/file-explorer'
 import {
   buildTrigramIndex as buildIndex,
   updateTrigramsForFile,
@@ -28,7 +30,7 @@ import {
 } from '@/lib/entry-tree'
 
 // Outside the store so they survive hot reloads, and so search can read them without reactivity
-// (too large to make reactive). contentMap holds the text of every md/web note.
+// (too large to make reactive). contentMap holds the text of every md/web/pdf note.
 const contentMap = new Map<string, string>()
 const trigramIndex: TrigramIndex = new Map()
 
@@ -325,14 +327,11 @@ export const useFilesStore = defineStore('files', () => {
     pendingCreate.value = null
   }
 
-  /** Only md/web notes keep their text in the DB; binary files live in Storage. */
+  /** Only notes keep their text in the DB; binary files live in Storage. */
   function populateContentMap(): void {
     contentMap.clear()
     for (const entry of entries.value) {
-      if (
-        (entry.document_type === 'md' || entry.document_type === 'web') &&
-        entry.content != null
-      ) {
+      if (hasNoteContent(entry.document_type) && entry.content != null) {
         contentMap.set(entry.id, entry.content)
       }
     }
@@ -402,7 +401,7 @@ export const useFilesStore = defineStore('files', () => {
           : row,
       )
 
-      if (row.document_type !== 'md' && row.document_type !== 'web') continue
+      if (!hasNoteContent(row.document_type)) continue
       const hasLocalEdits =
         sync.hasPending(row.id, 'content') ||
         sync.conflictIds.has(row.id) ||
@@ -729,7 +728,7 @@ export const useFilesStore = defineStore('files', () => {
     const entry = entryById.value.get(entryId)
     if (!entry) return null
 
-    if (entry.document_type !== 'md' && entry.document_type !== 'web') {
+    if (!hasNoteContent(entry.document_type)) {
       if (!entry.storage_path) return null
       const { data, error: err } = await supabase.storage
         .from('user-files')
@@ -766,12 +765,26 @@ export const useFilesStore = defineStore('files', () => {
     return await data.text()
   }
 
+  /** The PDF's bytes (the notes are `content`). */
+  async function downloadPdf(entryId: string): Promise<ArrayBuffer | null> {
+    const entry = entryById.value.get(entryId)
+    if (!entry?.storage_path) return null
+    const { data, error: err } = await supabase.storage
+      .from('user-files')
+      .download(entry.storage_path)
+    if (err) {
+      showError('Failed to load the PDF.')
+      return null
+    }
+    return await data.arrayBuffer()
+  }
+
   /** Notes save locally and go to sync (works offline); binary files upload to Storage. */
   async function uploadContent(entryId: string, content: string): Promise<boolean> {
     const entry = entryById.value.get(entryId)
     if (!entry) return false
 
-    if (entry.document_type === 'md' || entry.document_type === 'web') {
+    if (hasNoteContent(entry.document_type)) {
       contentMap.set(entryId, content)
       updateTrigramsForFile(trigramIndex, entryId, content)
       persistSnapshot()
@@ -947,6 +960,114 @@ export const useFilesStore = defineStore('files', () => {
     return data
   }
 
+  /** Inserts a `pdf` row for a blob already in Storage; removes the blob if the insert fails. */
+  async function insertPdfEntry(
+    entryId: string,
+    storagePath: string,
+    name: string,
+    parentId: string | null,
+    metadata: PdfDocMeta,
+  ): Promise<EntryRow> {
+    const { data, error: insertErr } = await supabase
+      .from('entries')
+      .insert({
+        id: entryId,
+        user_id: auth.user!.id,
+        kind: 'document' as const,
+        document_type: 'pdf' as const,
+        name: deduplicateName(name, parentId),
+        parent_id: parentId,
+        storage_path: storagePath,
+        content: '',
+        metadata,
+        sort_order: getNextSortOrder(parentId),
+      })
+      .select()
+      .returns<EntryRow[]>()
+      .single()
+
+    if (insertErr || !data) {
+      await supabase.storage.from('user-files').remove([storagePath])
+      console.error('PDF entry insert failed:', insertErr)
+      throw new Error(insertErr?.message ?? 'Failed to add the PDF.')
+    }
+
+    entries.value.push(data)
+    contentMap.set(data.id, '')
+    sync.setBase(data.id, { version: data.version ?? null, content: '' })
+    return data
+  }
+
+  /** Uploads a local PDF as a `pdf` entry (`{userId}/{entryId}.pdf`). Throws on failure. */
+  async function uploadPdf(file: File, parentId: string | null = null): Promise<EntryRow | null> {
+    if (!auth.user) return null
+    requireOnline('Uploading a PDF')
+    if (file.size > MAX_PDF_BYTES) throw new Error(`"${file.name}" is larger than the 50 MB limit.`)
+
+    const bytes = await file.arrayBuffer()
+    if (!hasPdfHeader(bytes)) throw new Error(`"${file.name}" is not a PDF.`)
+    const info = await readPdfInfo(bytes)
+
+    const entryId = crypto.randomUUID()
+    const storagePath = `${auth.user.id}/${entryId}.pdf`
+    const { error: uploadErr } = await supabase.storage
+      .from('user-files')
+      .upload(storagePath, file, { contentType: 'application/pdf' })
+    if (uploadErr) throw uploadErr
+
+    return insertPdfEntry(entryId, storagePath, pdfFileName(file.name), parentId, {
+      source: 'upload',
+      originalFilename: file.name,
+      ...(info.title ? { title: info.title } : {}),
+      pageCount: info.pageCount,
+      importedAt: new Date().toISOString(),
+    })
+  }
+
+  /**
+   * Imports the PDF at `url` (fetched server-side into a signed upload URL). Returns null if the URL
+   * isn't a PDF, so the caller can capture it as a web page instead. Throws on failure.
+   */
+  async function importPdfFromUrl(url: string, parentId: string | null = null) {
+    if (!auth.user) return null
+    requireOnline('Importing a PDF')
+
+    const entryId = crypto.randomUUID()
+    const storagePath = `${auth.user.id}/${entryId}.pdf`
+    const { data: signed, error: signErr } = await supabase.storage
+      .from('user-files')
+      .createSignedUploadUrl(storagePath)
+    if (signErr || !signed) throw signErr ?? new Error('Could not prepare the upload.')
+
+    const result = await fetchPdfIntoStorage(url, signed.signedUrl)
+    if (result.notPdf) return null
+
+    const { data: blob, error: dlErr } = await supabase.storage
+      .from('user-files')
+      .download(storagePath)
+    if (dlErr || !blob) {
+      await supabase.storage.from('user-files').remove([storagePath])
+      throw dlErr ?? new Error('Could not read the imported PDF.')
+    }
+    let info: { pageCount: number; title: string | null }
+    try {
+      info = await readPdfInfo(await blob.arrayBuffer())
+    } catch {
+      await supabase.storage.from('user-files').remove([storagePath])
+      throw new Error('That file could not be read as a PDF.')
+    }
+
+    const name = info.title ?? result.filename ?? nameFromUrl(result.finalUrl)
+    return insertPdfEntry(entryId, storagePath, pdfFileName(name), parentId, {
+      source: 'url',
+      url: result.finalUrl,
+      ...(result.filename ? { originalFilename: result.filename } : {}),
+      ...(info.title ? { title: info.title } : {}),
+      pageCount: info.pageCount,
+      importedAt: new Date().toISOString(),
+    })
+  }
+
   async function seedWelcomeFile() {
     // Only when the server itself reported no entries — never from an (empty) offline start.
     if (!auth.user || !serverLoaded || entries.value.length > 0) return
@@ -1039,10 +1160,13 @@ Happy note-taking!
     getTrigramIndex,
     downloadContent,
     downloadSnapshot,
+    downloadPdf,
     uploadContent,
     uploadImage,
     getImageUrl,
     createWebDocument,
+    uploadPdf,
+    importPdfFromUrl,
     getEntry,
     seedWelcomeFile,
     $reset,

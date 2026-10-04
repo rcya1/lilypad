@@ -7,7 +7,7 @@ import { useUiStore } from '@/stores/ui'
 import TextEditor from './TextEditor.vue'
 import MarkdownPreview from './MarkdownPreview.vue'
 import ImageDetailPane from './ImageDetailPane.vue'
-import WebDocPane from './WebDocPane.vue'
+import AnnotatedDocPane from './AnnotatedDocPane.vue'
 import EditorTabs from './EditorTabs.vue'
 import BreadcrumbBar from './BreadcrumbBar.vue'
 import LilypadIcon from '@/assets/icon.svg'
@@ -20,6 +20,8 @@ const hasTabs = computed(() => store.tabOrder.length > 0)
 const slideTabsIn = ref(uiStore.arrivedViaModeSwitch('to-edit'))
 const activeId = computed(() => store.activeDocumentId)
 const activeDocType = computed(() => store.activeDocument?.type)
+// Web pages and PDFs: a viewer beside single-pane notes, no font controls in the breadcrumb bar.
+const isAnnotated = computed(() => activeDocType.value === 'web' || activeDocType.value === 'pdf')
 
 const splitPane = useTemplateRef<HTMLDivElement[]>('splitPane')
 // Share of the container taken by the first panel (editor or preview, depending on swap).
@@ -172,7 +174,7 @@ onBeforeUnmount(() => {
         <BreadcrumbBar />
 
         <div
-          v-if="activeDocType !== 'image' && activeDocType !== 'web'"
+          v-if="activeDocType !== 'image' && !isAnnotated"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
           :style="editorFontControlsStyle"
         >
@@ -196,7 +198,7 @@ onBeforeUnmount(() => {
 
         <!-- Preview font size controls (left of the editor's when stacked) -->
         <div
-          v-if="showPreviewFontControls && activeDocType !== 'image' && activeDocType !== 'web'"
+          v-if="showPreviewFontControls && activeDocType !== 'image' && !isAnnotated"
           class="absolute inset-y-0 flex items-center gap-1.5 px-2 bg-surface border-b border-border-subtle"
           :class="isVertical ? 'border-r' : 'border-l'"
           :style="previewFontControlsStyle"
@@ -224,9 +226,10 @@ onBeforeUnmount(() => {
         <div v-if="id === activeId" class="flex-1 min-h-0 overflow-hidden">
           <ImageDetailPane v-if="activeDocType === 'image'" :document-id="id" class="h-full" />
 
-          <WebDocPane
-            v-else-if="activeDocType === 'web'"
+          <AnnotatedDocPane
+            v-else-if="activeDocType === 'web' || activeDocType === 'pdf'"
             :document-id="id"
+            :type="activeDocType"
             :is-active="id === activeId"
             :is-vertical="isVertical"
             :is-swapped="isSwapped"

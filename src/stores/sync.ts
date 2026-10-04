@@ -18,6 +18,7 @@ import {
   type SyncOp,
 } from '@/lib/offline'
 import type { EntryRow } from '@/types/database'
+import { hasNoteContent } from '@/types/file-explorer'
 import { useAuthStore } from './auth'
 import { useToastStore } from './toast'
 import { useFilesStore } from './files'
@@ -244,7 +245,7 @@ export const useSyncStore = defineStore('sync', () => {
     const files = useFilesStore()
     const row = files.getEntry(id)
     if (!row) return // deleted locally since
-    const isText = row.document_type === 'md' || row.document_type === 'web'
+    const isText = hasNoteContent(row.document_type)
     const content = isText ? (contentOverride ?? files.getCached(id) ?? '') : row.content
     let parentId = row.parent_id
 

@@ -2,7 +2,7 @@
 // text are a stable anchor. Offsets count text nodes in document order, exactly as
 // `Range.toString()` does, so serializing and resolving round-trip.
 
-import type { HighlightSelectors } from '@/types/database'
+import type { WebHighlightSelectors } from '@/types/database'
 
 /** Context kept on each side of the quote. */
 const CONTEXT_LEN = 40
@@ -18,7 +18,7 @@ function offsetWithin(root: Node, container: Node, offset: number): number {
 }
 
 /** Null for a collapsed range. */
-export function serializeRange(root: Node, range: Range): HighlightSelectors | null {
+export function serializeRange(root: Node, range: Range): WebHighlightSelectors | null {
   const exact = range.toString()
   if (exact.length === 0) return null
 
@@ -55,7 +55,7 @@ function locate(root: Node, target: number): { node: Text; offset: number } | nu
 }
 
 /** Null if the offsets can't be located (e.g. an empty document): an orphaned highlight. */
-export function resolveRange(root: Node, selectors: HighlightSelectors): Range | null {
+export function resolveRange(root: Node, selectors: WebHighlightSelectors): Range | null {
   const doc = root.ownerDocument
   if (!doc) return null
   const { start, end } = selectors.position

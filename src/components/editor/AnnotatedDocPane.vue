@@ -1,23 +1,38 @@
-<!-- A captured web page and its notes, split by a draggable divider. Follows the tab bar's
-     rotate/swap toggles like EditorPane, owns the notes' rendered/code mode, and draws the leader line
-     from a hovered highlight to its reference. -->
+<!-- A captured web page or a PDF beside its notes, split by a draggable divider. Follows the tab
+     bar's rotate/swap toggles like EditorPane, owns the notes' rendered/code mode, and draws the
+     leader line from a hovered highlight to its reference. -->
 <script setup lang="ts">
-import { ref, computed, watch, useTemplateRef, onMounted, onBeforeUnmount } from 'vue'
-import { useWebAnnotationsStore } from '@/stores/webAnnotations'
+import {
+  ref,
+  computed,
+  watch,
+  useTemplateRef,
+  onMounted,
+  onBeforeUnmount,
+  defineAsyncComponent,
+} from 'vue'
+import { useAnnotationsStore, type ViewerHighlightRect } from '@/stores/annotations'
 import WebView from './WebView.vue'
 import WebNotesPane from './WebNotesPane.vue'
 
+// Async so pdf.js and its stylesheet load only once a PDF is opened.
+const PdfView = defineAsyncComponent(() => import('./PdfView.vue'))
+
 const props = defineProps<{
   documentId: string
+  type: 'web' | 'pdf'
   isActive: boolean
   isVertical: boolean
   isSwapped: boolean
 }>()
 
-const anno = useWebAnnotationsStore()
+const anno = useAnnotationsStore()
 
 const container = useTemplateRef<HTMLDivElement>('container')
-const webView = useTemplateRef<InstanceType<typeof WebView>>('webView')
+// WebView or PdfView; both expose this for the leader line.
+const viewer = useTemplateRef<{ highlightViewportRect(id: string): ViewerHighlightRect | null }>(
+  'viewer',
+)
 // Share of the primary axis for the first slot. 60/40 gives the page room and keeps notes usable.
 const DEFAULT_PCT = 60
 const splitPct = ref(DEFAULT_PCT)
@@ -25,7 +40,7 @@ const MIN_PCT = 25
 const MAX_PCT = 80
 const isDragging = ref(false)
 
-// Lifted here so WebView's "insert reference" and Ctrl+E can switch it.
+// Lifted here so the viewer's "insert reference" and Ctrl+E can switch it.
 const notesMode = ref<'code' | 'rendered'>('code')
 function onInsertReference() {
   notesMode.value = 'code'
@@ -87,7 +102,7 @@ function tick() {
     return
   }
 
-  const pageRect = webView.value?.highlightViewportRect(h.id)
+  const pageRect = viewer.value?.highlightViewportRect(h.id)
   const chipEl = cont.querySelector<HTMLElement>(
     `.markdown-body [data-lily-ref="${CSS.escape(h.localId)}"]`,
   )
@@ -101,7 +116,7 @@ function tick() {
   const cr = cont.getBoundingClientRect()
   const chipRect = chipEl.getBoundingClientRect()
 
-  // Each end sits on the edge facing the divider. The page end is clamped to the iframe's visible
+  // Each end sits on the edge facing the divider. The page end is clamped to the viewer's visible
   // band so the line stays anchored when the highlight scrolls out of view.
   let x1: number, y1: number, x2: number, y2: number
   if (!props.isVertical) {
@@ -202,7 +217,15 @@ onBeforeUnmount(() => {
       :style="pageStyle"
     >
       <WebView
-        ref="webView"
+        v-if="type === 'web'"
+        ref="viewer"
+        :document-id="documentId"
+        class="h-full"
+        @insert-reference="onInsertReference"
+      />
+      <PdfView
+        v-else
+        ref="viewer"
         :document-id="documentId"
         class="h-full"
         @insert-reference="onInsertReference"

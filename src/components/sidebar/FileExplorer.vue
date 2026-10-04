@@ -1,16 +1,26 @@
-<!-- Sidebar file tree: create files, folders and web pages; top-level drop zone; expand all. -->
+<!-- Sidebar file tree: create files and folders, add links (web pages or PDFs), upload PDFs (button
+     or drop from the computer); top-level drop zone; expand all. -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, useTemplateRef } from 'vue'
-import { FilePlus, FolderPlus, Globe, ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
+import {
+  FilePlus,
+  FolderPlus,
+  Link,
+  FileUp,
+  Loader2,
+  ChevronsDownUp,
+  ChevronsUpDown,
+} from 'lucide-vue-next'
 import FileExplorerNode from './FileExplorerNode.vue'
 import PendingInputRow from './PendingInputRow.vue'
-import NewWebPageModal from './NewWebPageModal.vue'
+import AddFromLinkModal from './AddFromLinkModal.vue'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import { draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
 import { useToastStore } from '@/stores/toast'
 import { useUiStore } from '@/stores/ui'
 import type { EntryRow } from '@/types/database'
+import type { DocumentType } from '@/types/file-explorer'
 import ContextMenu from '@/components/ui/ContextMenu.vue'
 import ContextMenuItem from '@/components/ui/ContextMenuItem.vue'
 
@@ -174,18 +184,103 @@ function startNewFolder() {
   }
 }
 
-const showWebModal = ref(false)
-const webModalParentId = ref<string | null>(null)
+const showLinkModal = ref(false)
+const linkModalParentId = ref<string | null>(null)
 
 /** Parent chosen as in startNewFile. */
-function startNewWebPage() {
-  webModalParentId.value = files.selectedFolderId ?? getInsertBelowActive()?.parentId ?? null
-  showWebModal.value = true
+function defaultParentId(): string | null {
+  return files.selectedFolderId ?? getInsertBelowActive()?.parentId ?? null
 }
 
-function onWebPageCreated(entry: EntryRow) {
-  showWebModal.value = false
-  editorStore.openDocument(entry.id, entry.name, 'web', entry.content ?? '')
+function startAddFromLink() {
+  linkModalParentId.value = defaultParentId()
+  showLinkModal.value = true
+}
+
+function openCreated(entry: EntryRow) {
+  const type = (entry.document_type ?? 'md') as DocumentType
+  editorStore.openDocument(entry.id, entry.name, type, entry.content ?? '')
+}
+
+function onLinkAdded(entry: EntryRow) {
+  showLinkModal.value = false
+  openCreated(entry)
+}
+
+// PDF uploads: the button's file picker, or files dropped from the computer onto the tree.
+const pdfInput = useTemplateRef<HTMLInputElement>('pdfInput')
+const uploadingCount = ref(0)
+const isFileDropTarget = ref(false)
+
+function isPdfFile(file: File): boolean {
+  return file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
+}
+
+/** One at a time; opens the last one that made it. */
+async function uploadPdfs(list: File[], parentId: string | null) {
+  const pdfs = list.filter(isPdfFile)
+  const skipped = list.length - pdfs.length
+  if (skipped) toast.addToast(`Only PDFs can be uploaded here (skipped ${skipped}).`, 'info')
+  let last: EntryRow | null = null
+  for (const file of pdfs) {
+    uploadingCount.value++
+    try {
+      last = (await files.uploadPdf(file, parentId)) ?? last
+    } catch (err) {
+      toast.addToast(err instanceof Error ? err.message : `Couldn't upload "${file.name}".`)
+    } finally {
+      uploadingCount.value--
+    }
+  }
+  if (last) openCreated(last)
+}
+
+function startUploadPdf() {
+  pdfInput.value?.click()
+}
+
+function onPdfInputChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const list = Array.from(input.files ?? [])
+  input.value = ''
+  if (list.length) void uploadPdfs(list, defaultParentId())
+}
+
+/** Only drags of files from the computer; tree rows use their own drag and drop. */
+function isExternalFileDrag(e: DragEvent): boolean {
+  return !draggingEntry.value && !!e.dataTransfer?.types.includes('Files')
+}
+
+function onExternalDragOver(e: DragEvent) {
+  if (!isExternalFileDrag(e)) return
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+  isFileDropTarget.value = true
+}
+
+function onExternalDragLeave(e: DragEvent) {
+  const current = e.currentTarget as HTMLElement
+  if (e.relatedTarget && current.contains(e.relatedTarget as Node)) return
+  isFileDropTarget.value = false
+}
+
+/**
+ * Into the folder dropped on (or the dropped-on file's folder); the empty space below the tree is
+ * the top level; anywhere else, the default parent.
+ */
+function onExternalDrop(e: DragEvent) {
+  if (!isExternalFileDrag(e)) return
+  e.preventDefault()
+  isFileDropTarget.value = false
+  isRootDropTarget.value = false
+  const target = e.target as Element | null
+  const row = target?.closest?.<HTMLElement>('[data-entry-id]')
+  const rowEntry = row ? files.getEntry(row.dataset.entryId!) : undefined
+  let parentId: string | null
+  if (rowEntry) parentId = rowEntry.kind === 'directory' ? rowEntry.id : rowEntry.parent_id
+  else if (target?.closest?.('[data-root-drop]')) parentId = null
+  else parentId = defaultParentId()
+  void uploadPdfs(Array.from(e.dataTransfer?.files ?? []), parentId)
 }
 
 /** Appends ".md" if missing; clears the pending state either way. */
@@ -233,9 +328,13 @@ function onPendingDragEnd() {
   <div
     ref="scroller"
     class="flex-1 flex flex-col overflow-y-auto"
+    :class="{ 'ring-2 ring-inset ring-accent/60': isFileDropTarget }"
     @scroll.passive="onScroll"
     @click.self="deselectAll"
     @contextmenu="onEmptyAreaContextMenu"
+    @dragover="onExternalDragOver"
+    @dragleave="onExternalDragLeave"
+    @drop="onExternalDrop"
   >
     <div class="flex items-center justify-between px-3 py-2">
       <span class="text-xs font-medium text-text-muted uppercase tracking-widest">Files</span>
@@ -277,20 +376,49 @@ function onPendingDragEnd() {
             :class="{ 'animate-icon-pop': growActionsIn }"
             style="animation-delay: 80ms"
             class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
-            :title="files.selectedFolderId ? 'New web page in selected folder' : 'New web page'"
-            @click="startNewWebPage"
+            :title="
+              files.selectedFolderId
+                ? 'Add a web page or PDF from a link, in selected folder'
+                : 'Add a web page or PDF from a link'
+            "
+            @click="startAddFromLink"
           >
-            <Globe :size="16" />
+            <Link :size="16" />
           </button>
+          <button
+            :class="{ 'animate-icon-pop': growActionsIn }"
+            style="animation-delay: 120ms"
+            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer disabled:cursor-wait"
+            :title="
+              uploadingCount
+                ? 'Uploading…'
+                : files.selectedFolderId
+                  ? 'Upload a PDF into selected folder (or drop PDFs onto the tree)'
+                  : 'Upload a PDF (or drop PDFs onto the tree)'
+            "
+            :disabled="uploadingCount > 0"
+            @click="startUploadPdf"
+          >
+            <Loader2 v-if="uploadingCount" :size="16" class="animate-spin" />
+            <FileUp v-else :size="16" />
+          </button>
+          <input
+            ref="pdfInput"
+            type="file"
+            accept="application/pdf,.pdf"
+            multiple
+            class="hidden"
+            @change="onPdfInputChange"
+          />
         </span>
       </div>
     </div>
 
-    <NewWebPageModal
-      v-if="showWebModal"
-      :parent-id="webModalParentId"
-      @created="onWebPageCreated"
-      @cancel="showWebModal = false"
+    <AddFromLinkModal
+      v-if="showLinkModal"
+      :parent-id="linkModalParentId"
+      @created="onLinkAdded"
+      @cancel="showLinkModal = false"
     />
 
     <div v-if="files.loading" class="px-3 space-y-2">
@@ -332,6 +460,7 @@ function onPendingDragEnd() {
     <!-- Empty space below the tree: a top-level drop zone -->
     <div
       class="flex-1 min-h-4 relative"
+      data-root-drop
       @click="deselectAll"
       @dragover.prevent="isRootDropTarget = true"
       @dragleave="isRootDropTarget = false"

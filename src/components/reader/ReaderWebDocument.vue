@@ -7,17 +7,18 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, useTemplate
 import { ExternalLink, Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import {
-  useWebAnnotationsStore,
+  useAnnotationsStore,
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_KEYS,
   type Highlight,
-} from '@/stores/webAnnotations'
+} from '@/stores/annotations'
 import { parseMarkdown } from '@/lib/markdown'
 import { resolveRange } from '@/lib/textAnchor'
+import { isPdfSelectors } from '@/types/database'
 
 const props = defineProps<{ entryId: string }>()
 const filesStore = useFilesStore()
-const anno = useWebAnnotationsStore()
+const anno = useAnnotationsStore()
 
 const container = useTemplateRef<HTMLDivElement>('container')
 const frame = useTemplateRef<HTMLIFrameElement>('frame')
@@ -96,6 +97,7 @@ function repaint() {
   resolvedRanges.clear()
   if (!frameDoc?.body || !frameWin) return
   for (const h of highlights.value) {
+    if (isPdfSelectors(h.selectors)) continue
     const range = resolveRange(frameDoc.body, h.selectors)
     if (range) resolvedRanges.set(h.id, range)
   }

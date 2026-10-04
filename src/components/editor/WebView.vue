@@ -1,28 +1,27 @@
 <!-- A captured page in a sandboxed iframe with its highlights: painted with the CSS Custom
-     Highlight
-     API, a selection toolbar to create them, a note popover, and links to the notes pane. Link clicks
-     inside the page are intercepted so the snapshot never navigates. -->
+     Highlight API, a selection toolbar to create them, a note popover, and links to the notes pane.
+     Link clicks inside the page are intercepted so the snapshot never navigates. -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { StickyNote, Pencil, Trash2, Link2, Check, Loader2 } from 'lucide-vue-next'
+import { Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
-import { useEditorStore } from '@/stores/editor'
 import {
-  useWebAnnotationsStore,
+  useAnnotationsStore,
   HIGHLIGHT_COLORS,
   HIGHLIGHT_COLOR_KEYS,
   type Highlight,
-} from '@/stores/webAnnotations'
-import type { HighlightColor } from '@/types/database'
+  type ViewerHighlightRect,
+} from '@/stores/annotations'
+import { isPdfSelectors, type HighlightColor } from '@/types/database'
 import { serializeRange, resolveRange } from '@/lib/textAnchor'
-import { parseMarkdown } from '@/lib/markdown'
+import HighlightToolbar from './HighlightToolbar.vue'
+import HighlightPopover from './HighlightPopover.vue'
 
 const props = defineProps<{ documentId: string }>()
 const emit = defineEmits<{ 'insert-reference': [] }>()
 
 const filesStore = useFilesStore()
-const editorStore = useEditorStore()
-const anno = useWebAnnotationsStore()
+const anno = useAnnotationsStore()
 
 const container = ref<HTMLDivElement | null>(null)
 const frame = ref<HTMLIFrameElement | null>(null)
@@ -42,22 +41,14 @@ const highlights = computed(() => anno.highlightsFor(props.documentId))
 const DEFAULT_COLOR: HighlightColor = 'amber'
 
 const toolbar = ref<{ x: number; y: number } | null>(null)
-const popover = ref<{ id: string; x: number; y: number; editing: boolean } | null>(null)
-const toolbarEl = ref<HTMLDivElement | null>(null)
-const popoverEl = ref<HTMLDivElement | null>(null)
-const noteDraft = ref('')
+const popover = ref<{ id: string; x: number; y: number; startEditing: boolean } | null>(null)
+const toolbarComp = ref<InstanceType<typeof HighlightToolbar> | null>(null)
+const popoverComp = ref<InstanceType<typeof HighlightPopover> | null>(null)
+const toolbarEl = () => (toolbarComp.value?.$el as HTMLElement | undefined) ?? null
+const popoverEl = () => (popoverComp.value?.$el as HTMLElement | undefined) ?? null
 
-const isMac = /Mac|iPhone|iPad|iPod/i.test(navigator.platform)
-const saveHint = isMac ? '⌘↵ to save' : 'Ctrl+↵ to save'
 // Captured on mouseup, held until a colour is picked.
 let pendingRange: Range | null = null
-
-const popoverHighlight = computed(() =>
-  popover.value ? (anno.getById(popover.value.id) ?? null) : null,
-)
-const popoverNoteHtml = computed(() =>
-  popoverHighlight.value?.note ? parseMarkdown(popoverHighlight.value.note) : '',
-)
 
 function revoke() {
   if (blobUrl) {
@@ -133,6 +124,7 @@ function rebuildRanges() {
   resolvedRanges.clear()
   if (!frameDoc?.body) return
   for (const h of highlights.value) {
+    if (isPdfSelectors(h.selectors)) continue
     const range = resolveRange(frameDoc.body, h.selectors)
     if (range) resolvedRanges.set(h.id, range)
   }
@@ -242,7 +234,7 @@ function onFrameMouseUp() {
   pendingRange = range.cloneRange()
   const rect = range.getBoundingClientRect()
   toolbar.value = toContainer(rect.left + rect.width / 2, rect.top)
-  clampOverlay(() => toolbarEl.value, toolbar.value)
+  clampOverlay(toolbarEl, toolbar.value)
 }
 
 function onFrameClick(e: MouseEvent) {
@@ -278,7 +270,7 @@ function onFrameScroll() {
       const rect = r.getBoundingClientRect()
       const pos = toContainer(rect.left, rect.bottom + 6)
       popover.value = { ...popover.value, x: pos.x, y: pos.y }
-      clampOverlay(() => popoverEl.value, popover.value)
+      clampOverlay(popoverEl, popover.value)
     }
   }
 }
@@ -331,50 +323,13 @@ function openPopover(h: Highlight, editing = false) {
   if (!r) return
   const rect = r.getBoundingClientRect()
   const pos = toContainer(rect.left, rect.bottom + 6)
-  noteDraft.value = h.note
-  popover.value = { id: h.id, x: pos.x, y: pos.y, editing: editing || !h.note }
-  clampOverlay(() => popoverEl.value, popover.value)
+  popover.value = { id: h.id, x: pos.x, y: pos.y, startEditing: editing }
+  clampOverlay(popoverEl, popover.value)
 }
 
-function startEditNote() {
-  if (!popover.value) return
-  noteDraft.value = popoverHighlight.value?.note ?? ''
-  popover.value = { ...popover.value, editing: true }
-}
-
-async function saveNote() {
-  if (!popover.value) return
-  await anno.updateNote(popover.value.id, noteDraft.value.trim())
-  popover.value = { ...popover.value, editing: false }
-}
-
-function cancelEditNote() {
-  if (!popover.value) return
-  noteDraft.value = popoverHighlight.value?.note ?? ''
-  popover.value = { ...popover.value, editing: false }
-}
-
-async function setPopoverColor(color: HighlightColor) {
-  if (!popover.value) return
-  await anno.updateColor(popover.value.id, color)
-  repaint()
-}
-
-async function deletePopoverHighlight() {
-  if (!popover.value) return
-  await anno.deleteHighlight(popover.value.id)
+function onPopoverClose() {
   popover.value = null
   repaint()
-}
-
-/** Inserts `[quote](lily:hl-x)` at the notes cursor; the notes pane switches to code mode. */
-function insertReference() {
-  const h = popoverHighlight.value
-  if (!h) return
-  const quote = h.selectors.quote.exact
-  const label = quote.length > 40 ? quote.slice(0, 40).trim() + '…' : quote
-  editorStore.requestInsertText(props.documentId, `[${label}](lily:${h.localId})`)
-  emit('insert-reference')
 }
 
 function closeOverlays() {
@@ -401,8 +356,8 @@ function onWindowKeyDown(e: KeyboardEvent) {
 // clicking a highlight to open its popover isn't undone.
 function onWindowMouseDown(e: MouseEvent) {
   const t = e.target as Node
-  if (toolbar.value && !toolbarEl.value?.contains(t)) toolbar.value = null
-  if (popover.value && !popoverEl.value?.contains(t)) {
+  if (toolbar.value && !toolbarEl()?.contains(t)) toolbar.value = null
+  if (popover.value && !popoverEl()?.contains(t)) {
     popover.value = null
     if (anno.activeHighlightId) {
       anno.setActiveHighlight(null)
@@ -447,19 +402,10 @@ watch(
 )
 
 /**
- * For WebDocPane's leader line: the highlight's rect in page coordinates, plus the iframe's visible
+ * For AnnotatedDocPane's leader line: the highlight's rect in page coordinates, plus the iframe's visible
  * band so the line can be clamped when the highlight is scrolled out of view.
  */
-function highlightViewportRect(id: string): {
-  left: number
-  top: number
-  right: number
-  bottom: number
-  frameTop: number
-  frameBottom: number
-  frameLeft: number
-  frameRight: number
-} | null {
+function highlightViewportRect(id: string): ViewerHighlightRect | null {
   if (!frameDoc?.body || !frame.value) return null
   let r = resolvedRanges.get(id)
   if (!r) {
@@ -507,108 +453,26 @@ onBeforeUnmount(() => {
       @load="onFrameLoad"
     />
 
-    <!-- Selection toolbar, above the selection -->
-    <div
+    <HighlightToolbar
       v-if="toolbar"
-      ref="toolbarEl"
-      class="overlay-pop absolute z-30 flex items-center gap-1 px-1.5 py-1 rounded-lg bg-surface border border-border shadow-lg -translate-x-1/2 -translate-y-full"
-      :style="{ left: toolbar.x + 'px', top: toolbar.y - 8 + 'px' }"
-    >
-      <button
-        v-for="key in HIGHLIGHT_COLOR_KEYS"
-        :key="key"
-        class="w-5 h-5 rounded-full border border-black/10 cursor-pointer transition-transform hover:scale-110"
-        :style="{ backgroundColor: HIGHLIGHT_COLORS[key].swatch }"
-        :title="`Highlight ${key}`"
-        @click="createFromSelection(key)"
-      />
-      <div class="w-px h-4 bg-border mx-0.5" />
-      <button
-        class="flex items-center justify-center w-6 h-6 rounded text-text-secondary hover:text-text-primary hover:bg-surface-elevated cursor-pointer"
-        title="Highlight and add a note"
-        @click="createAndAnnotate"
-      >
-        <StickyNote :size="14" />
-      </button>
-    </div>
+      ref="toolbarComp"
+      :x="toolbar.x"
+      :y="toolbar.y"
+      @highlight="createFromSelection"
+      @annotate="createAndAnnotate"
+    />
 
-    <div
+    <HighlightPopover
       v-if="popover"
-      ref="popoverEl"
-      class="overlay-pop absolute z-30 w-72 max-w-[90%] rounded-lg bg-surface border border-border shadow-xl -translate-x-1/2"
-      :style="{ left: popover.x + 'px', top: popover.y + 'px' }"
-    >
-      <div class="flex items-center justify-between px-2.5 py-1.5 border-b border-border-subtle">
-        <div class="flex items-center gap-1">
-          <button
-            v-for="key in HIGHLIGHT_COLOR_KEYS"
-            :key="key"
-            class="w-4 h-4 rounded-full border cursor-pointer transition-transform hover:scale-110"
-            :class="popoverHighlight?.color === key ? 'border-text-primary' : 'border-black/10'"
-            :style="{ backgroundColor: HIGHLIGHT_COLORS[key].swatch }"
-            :title="`Set colour ${key}`"
-            @click="setPopoverColor(key)"
-          />
-        </div>
-        <div class="flex items-center gap-0.5">
-          <button
-            v-if="!popover.editing"
-            class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated cursor-pointer"
-            title="Edit note"
-            @click="startEditNote"
-          >
-            <Pencil :size="13" />
-          </button>
-          <button
-            class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated cursor-pointer"
-            title="Insert reference into notes"
-            @click="insertReference"
-          >
-            <Link2 :size="13" />
-          </button>
-          <button
-            class="flex items-center justify-center w-6 h-6 rounded text-text-muted hover:text-red-500 hover:bg-surface-elevated cursor-pointer"
-            title="Delete highlight"
-            @click="deletePopoverHighlight"
-          >
-            <Trash2 :size="13" />
-          </button>
-        </div>
-      </div>
-
-      <div class="p-2.5">
-        <template v-if="popover.editing">
-          <textarea
-            v-model="noteDraft"
-            rows="3"
-            placeholder="Write a note (markdown supported)…"
-            class="w-full resize-y rounded border border-border-subtle bg-bg px-2 py-1.5 text-sm font-preview text-text-primary outline-none focus:border-accent"
-            @keydown.enter.meta.prevent="saveNote"
-            @keydown.enter.ctrl.prevent="saveNote"
-            @keydown.esc.stop.prevent="cancelEditNote"
-            v-focus
-          />
-          <div class="flex items-center justify-between mt-1.5">
-            <span class="text-[11px] text-text-muted font-ui">{{ saveHint }}</span>
-            <button
-              class="flex items-center gap-1 h-6 px-2 rounded bg-accent text-white text-xs font-ui cursor-pointer hover:bg-accent-hover"
-              @click="saveNote"
-            >
-              <Check :size="13" />
-              Save
-            </button>
-          </div>
-        </template>
-        <template v-else>
-          <div
-            v-if="popoverNoteHtml"
-            class="hl-note-body text-sm font-preview text-text-primary leading-snug"
-            v-html="popoverNoteHtml"
-          />
-          <p v-else class="text-sm text-text-muted italic">No note yet.</p>
-        </template>
-      </div>
-    </div>
+      ref="popoverComp"
+      :key="popover.id"
+      :highlight-id="popover.id"
+      :x="popover.x"
+      :y="popover.y"
+      :start-editing="popover.startEditing"
+      @close="onPopoverClose"
+      @insert-reference="emit('insert-reference')"
+    />
 
     <div
       v-if="loading"
@@ -625,40 +489,3 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Fade only: the overlays are positioned with translate utilities, which a transform animation
-   would fight. */
-.overlay-pop {
-  animation: overlay-in 120ms ease-out;
-}
-@keyframes overlay-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.hl-note-body :deep(p) {
-  margin: 0.25em 0;
-}
-.hl-note-body :deep(p:first-child) {
-  margin-top: 0;
-}
-.hl-note-body :deep(p:last-child) {
-  margin-bottom: 0;
-}
-.hl-note-body :deep(a) {
-  color: var(--accent);
-  text-decoration: underline;
-}
-.hl-note-body :deep(code) {
-  font-family: var(--font-family-mono);
-  font-size: 0.85em;
-  background: var(--surface-elevated);
-  border-radius: 3px;
-  padding: 0.05em 0.3em;
-}
-</style>

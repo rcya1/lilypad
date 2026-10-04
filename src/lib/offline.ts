@@ -111,7 +111,7 @@ export const deleteAnnotations = (userId: string, entryId: string) =>
   del(k(userId, `annotations:${entryId}`), store)
 
 /** Service-worker caches of opened images and pages (see vite.config.ts). */
-export const USER_MEDIA_CACHES = ['lilypad-images', 'lilypad-pages']
+export const USER_MEDIA_CACHES = ['lilypad-images', 'lilypad-pages', 'lilypad-pdfs']
 
 /** IndexedDB data and the cached images/pages. */
 export async function wipeUser(userId: string): Promise<void> {

@@ -1,4 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -48,8 +50,82 @@ function devCapturePlugin(): Plugin {
 }
 
 /**
+ * Dev-only `POST /api/fetch-pdf` (production: api/fetch-pdf.ts): fetches a PDF from a URL into a
+ * signed Storage upload URL.
+ */
+function devFetchPdfPlugin(): Plugin {
+  return {
+    name: 'lily-dev-fetch-pdf',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/api/fetch-pdf', (req, res) => {
+        res.setHeader('content-type', 'application/json')
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end(JSON.stringify({ error: 'Method Not Allowed' }))
+          return
+        }
+        let body = ''
+        req.on('data', (chunk) => (body += chunk))
+        req.on('end', async () => {
+          const { fetchPdfToStorage, FetchPdfError } = await import('./tools/fetch-pdf.mjs')
+          try {
+            const { url, uploadUrl } = JSON.parse(body || '{}')
+            const result = await fetchPdfToStorage({
+              url,
+              uploadUrl,
+              supabaseUrl: server.config.env.VITE_SUPABASE_URL,
+              anonKey: server.config.env.VITE_SUPABASE_ANON_KEY,
+            })
+            res.end(JSON.stringify(result))
+          } catch (err) {
+            res.statusCode = err instanceof FetchPdfError ? err.status : 500
+            res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }))
+          }
+        })
+      })
+    },
+  }
+}
+
+/** pdf.js data it fetches at runtime (CJK cMaps, standard fonts, image decoders), under /pdfjs/. */
+const PDFJS_ASSET_DIRS = ['cmaps', 'standard_fonts', 'wasm', 'iccs']
+const PDFJS_ROOT = fileURLToPath(new URL('./node_modules/pdfjs-dist/', import.meta.url))
+
+function pdfjsAssetsPlugin(): Plugin {
+  return {
+    name: 'lily-pdfjs-assets',
+    configureServer(server) {
+      server.middlewares.use('/pdfjs', (req, res, next) => {
+        const rel = decodeURIComponent((req.url ?? '').split('?')[0]!).replace(/^\/+/, '')
+        if (rel.includes('..') || !PDFJS_ASSET_DIRS.includes(rel.split('/')[0]!)) return next()
+        try {
+          const data = readFileSync(join(PDFJS_ROOT, rel))
+          if (rel.endsWith('.wasm')) res.setHeader('content-type', 'application/wasm')
+          res.end(data)
+        } catch {
+          next()
+        }
+      })
+    },
+    generateBundle() {
+      for (const dir of PDFJS_ASSET_DIRS) {
+        for (const name of readdirSync(join(PDFJS_ROOT, dir))) {
+          this.emitFile({
+            type: 'asset',
+            fileName: `pdfjs/${dir}/${name}`,
+            source: readFileSync(join(PDFJS_ROOT, dir, name)),
+          })
+        }
+      }
+    },
+  }
+}
+
+/**
  * Installable app + service worker. The app shell is precached; note data lives in IndexedDB
- * (src/lib/offline.ts). Images and captured pages are cached once opened (sign-out deletes them).
+ * (src/lib/offline.ts). Images, captured pages and PDFs are cached once opened (sign-out deletes
+ * them).
  */
 function pwaPlugin() {
   return VitePWA({
@@ -80,6 +156,8 @@ function pwaPlugin() {
     workbox: {
       // woff2 only: browsers that can run a service worker all pick KaTeX's woff2 fonts.
       globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+      // pdf.js data and decoder fallbacks are fetched on demand (runtime-cached below).
+      globIgnores: ['pdfjs/**'],
       maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       navigateFallback: '/index.html',
       navigateFallbackDenylist: [/^\/api\//],
@@ -121,13 +199,42 @@ function pwaPlugin() {
             cacheableResponse: { statuses: [200] },
           },
         },
+        {
+          // PDFs (`<user>/<entry>.pdf` downloads). Never modified, like snapshots.
+          urlPattern: ({ url, request }) =>
+            request.method === 'GET' &&
+            url.pathname.startsWith('/storage/v1/object/') &&
+            url.pathname.endsWith('.pdf'),
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'lilypad-pdfs',
+            expiration: { maxEntries: 100 },
+            cacheableResponse: { statuses: [200] },
+          },
+        },
+        {
+          // pdf.js's worker (an .mjs, so not precached) and its cMaps/fonts, fetched on demand.
+          urlPattern: ({ url }) =>
+            url.pathname.startsWith('/pdfjs/') || url.pathname.startsWith('/assets/pdf.worker'),
+          handler: 'CacheFirst',
+          options: { cacheName: 'pdfjs-assets', expiration: { maxEntries: 200 } },
+        },
       ],
     },
   })
 }
 
 export default defineConfig({
-  plugins: [vue(), vueDevTools(), tailwindcss(), svgLoader(), devCapturePlugin(), pwaPlugin()],
+  plugins: [
+    vue(),
+    vueDevTools(),
+    tailwindcss(),
+    svgLoader(),
+    devCapturePlugin(),
+    devFetchPdfPlugin(),
+    pdfjsAssetsPlugin(),
+    pwaPlugin(),
+  ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

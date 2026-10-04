@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, type WritableComputedRef } from 'vue'
 import type { Entry } from '@/types/file-explorer'
-import { isDirectory } from '@/types/file-explorer'
+import { isDirectory, hasNoteContent } from '@/types/file-explorer'
 import {
   Folder,
   FolderOpen,
@@ -125,15 +125,15 @@ async function handleClick(e: MouseEvent) {
 
   filesStore.selectFolder(null)
   filesStore.selectSingle(props.entry.id)
-  // md and web docs both keep their notes in `content`, so both open through the preview flow (a
-  // web doc's page loads separately, in WebView).
-  if (props.entry.type === 'md' || props.entry.type === 'web') {
+  // md, web and pdf docs all keep their notes in `content`, so all open through the preview flow
+  // (a web page or PDF loads separately, in its viewer).
+  if (hasNoteContent(props.entry.type)) {
     await editorStore.openEntry(props.entry.id, { preview: true })
   }
 }
 
 function handleDblClick() {
-  if (!isDirectory(props.entry) && (props.entry.type === 'md' || props.entry.type === 'web')) {
+  if (!isDirectory(props.entry) && hasNoteContent(props.entry.type)) {
     editorStore.promotePreview(props.entry.id)
   }
 }
@@ -294,6 +294,7 @@ function onPendingDragEnd() {
             : '',
         ]"
         :style="{ paddingLeft: depth * 24 + 12 + 'px' }"
+        :data-entry-id="entry.id"
         draggable="true"
         @dragstart="onDragStart"
         @dragend="onDragEnd"

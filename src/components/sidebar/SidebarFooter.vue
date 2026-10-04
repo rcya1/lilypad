@@ -6,7 +6,7 @@ import { LogOut, Settings } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
-import { useWebAnnotationsStore } from '@/stores/webAnnotations'
+import { useAnnotationsStore } from '@/stores/annotations'
 import { useSyncStore } from '@/stores/sync'
 import { useConfirm } from '@/composables/useConfirm'
 import { wipeUser } from '@/lib/offline'
@@ -16,7 +16,7 @@ import SyncStatusPill from './SyncStatusPill.vue'
 const auth = useAuthStore()
 const editorStore = useEditorStore()
 const filesStore = useFilesStore()
-const webAnnotationsStore = useWebAnnotationsStore()
+const annotationsStore = useAnnotationsStore()
 const syncStore = useSyncStore()
 const router = useRouter()
 const { confirm } = useConfirm()
@@ -46,7 +46,7 @@ async function signOut() {
   const userId = auth.user?.id
   editorStore.$reset()
   filesStore.$reset()
-  webAnnotationsStore.$reset()
+  annotationsStore.$reset()
   syncStore.$reset()
   if (userId) await wipeUser(userId)
   await auth.signOut()

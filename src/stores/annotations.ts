@@ -1,5 +1,5 @@
-// Pinia store for web-page highlights, plus the cross-pane state (active/hovered highlight, scroll
-// requests) linking the captured page with its notes. Offline-first, like notes.
+// Pinia store for highlights on web pages and PDFs, plus the cross-pane state (active/hovered
+// highlight, scroll requests) linking the page or PDF with its notes. Offline-first, like notes.
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
@@ -21,7 +21,7 @@ export interface Highlight {
   createdAt: string
 }
 
-/** Applied inside the page iframe via the Custom Highlight API. */
+/** Web pages paint these with the Custom Highlight API; PDFs with divs over the page. */
 export const HIGHLIGHT_COLORS: Record<
   HighlightColor,
   { base: string; active: string; swatch: string }
@@ -49,6 +49,21 @@ export const HIGHLIGHT_COLORS: Record<
 }
 
 export const HIGHLIGHT_COLOR_KEYS = Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]
+
+/**
+ * What a viewer (web page or PDF) reports for the leader line: a highlight's box on screen, plus
+ * the viewer's visible band so the line can be clamped when the highlight is scrolled out of view.
+ */
+export interface ViewerHighlightRect {
+  left: number
+  top: number
+  right: number
+  bottom: number
+  frameTop: number
+  frameBottom: number
+  frameLeft: number
+  frameRight: number
+}
 
 function highlightToRow(h: Highlight, userId: string): AnnotationRow {
   return {
@@ -85,7 +100,7 @@ function nextLocalId(existing: Highlight[]): string {
   return `hl-${max + 1}`
 }
 
-export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
+export const useAnnotationsStore = defineStore('annotations', () => {
   const auth = useAuthStore()
   const toast = useToastStore()
   const sync = useSyncStore()
@@ -99,7 +114,7 @@ export const useWebAnnotationsStore = defineStore('webAnnotations', () => {
   const activeHighlightId = ref<string | null>(null)
   /** Under the pointer, in the page or the notes. */
   const hoveredHighlightId = ref<string | null>(null)
-  /** For WebView: scroll the page to this highlight. */
+  /** For the viewer: scroll to this highlight. */
   const scrollToHighlightRequest = ref<string | null>(null)
   /** For the notes: scroll to the highlight's first reference. */
   const scrollToNoteRequest = ref<{ entryId: string; localId: string } | null>(null)

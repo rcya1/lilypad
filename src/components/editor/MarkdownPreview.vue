@@ -4,7 +4,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount, useTemplate
 import { useEditorStore } from '@/stores/editor'
 import { useFilesStore } from '@/stores/files'
 import { useUiStore } from '@/stores/ui'
-import { useWebAnnotationsStore } from '@/stores/webAnnotations'
+import { useAnnotationsStore } from '@/stores/annotations'
 import { parseMarkdown } from '@/lib/markdown'
 import 'katex/dist/katex.min.css'
 // Shared with the reader; the editor-sync styles and card shadow are scoped below.
@@ -15,7 +15,7 @@ const props = defineProps<{ documentId: string }>()
 const store = useEditorStore()
 const filesStore = useFilesStore()
 const uiStore = useUiStore()
-const anno = useWebAnnotationsStore()
+const anno = useAnnotationsStore()
 const html = ref('')
 const scrollContainer = useTemplateRef<HTMLDivElement>('scrollContainer')
 

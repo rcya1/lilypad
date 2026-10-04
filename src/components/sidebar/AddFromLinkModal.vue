@@ -1,7 +1,8 @@
-<!-- Modal for capturing a URL as a web page. -->
+<!-- Modal for adding a URL: a link to a PDF imports the PDF; anything else is captured as a web
+     page. -->
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Globe, X, Loader2 } from 'lucide-vue-next'
+import { Link, X, Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import type { EntryRow } from '@/types/database'
 
@@ -16,7 +17,7 @@ const emit = defineEmits<{
 
 const filesStore = useFilesStore()
 const url = ref('')
-const capturing = ref(false)
+const status = ref<'idle' | 'fetching' | 'capturing'>('idle')
 const error = ref<string | null>(null)
 
 /** Adds https:// if there's no scheme; '' for blank input. */
@@ -26,24 +27,51 @@ function normalizeUrl(raw: string): string {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
-/** While capturing, the backdrop can't close the modal. */
+/** arXiv abstract pages → the PDF itself (`/abs/2401.01234v2` → `/pdf/2401.01234v2`). */
+function rewriteKnownLandingPages(target: string): string {
+  return target.replace(/^(https?:\/\/(?:www\.)?arxiv\.org)\/abs\//i, '$1/pdf/')
+}
+
+function looksLikePdfUrl(target: string): boolean {
+  try {
+    return /\.pdf$/i.test(new URL(target).pathname)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Tries the URL as a PDF first (the server bails after the first bytes if it isn't one). If that
+ * fails for a URL that doesn't look like a PDF, the web capture gets a go, since headless Chromium
+ * gets past some sites that turn away a plain fetch.
+ */
 async function submit() {
-  if (capturing.value) return
+  if (status.value !== 'idle') return
   const target = normalizeUrl(url.value)
   if (!target) {
     error.value = 'Enter a URL.'
     return
   }
-  capturing.value = true
   error.value = null
   try {
-    const entry = await filesStore.createWebDocument(target, props.parentId)
+    status.value = 'fetching'
+    const pdfTarget = rewriteKnownLandingPages(target)
+    let entry: EntryRow | null = null
+    try {
+      entry = await filesStore.importPdfFromUrl(pdfTarget, props.parentId)
+    } catch (err) {
+      if (pdfTarget !== target || looksLikePdfUrl(target)) throw err
+    }
+    if (!entry) {
+      status.value = 'capturing'
+      entry = await filesStore.createWebDocument(target, props.parentId)
+    }
     if (entry) emit('created', entry)
-    else error.value = 'Could not create the web document.'
+    else error.value = 'Could not add this link.'
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Capture failed.'
+    error.value = err instanceof Error ? err.message : 'Adding the link failed.'
   } finally {
-    capturing.value = false
+    status.value = 'idle'
   }
 }
 </script>
@@ -52,17 +80,17 @@ async function submit() {
   <Teleport to="body">
     <div
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-      @click.self="!capturing && emit('cancel')"
+      @click.self="status === 'idle' && emit('cancel')"
     >
       <div class="bg-surface border border-border rounded-lg shadow-xl w-96 flex flex-col">
         <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
           <span class="flex items-center gap-2 text-sm font-medium text-text-primary font-ui">
-            <Globe :size="15" class="text-accent" />
-            New web page
+            <Link :size="15" class="text-accent" />
+            Add from link
           </span>
           <button
             class="text-text-muted hover:text-text-primary cursor-pointer disabled:opacity-40"
-            :disabled="capturing"
+            :disabled="status !== 'idle'"
             @click="emit('cancel')"
           >
             <X :size="15" />
@@ -71,38 +99,41 @@ async function submit() {
 
         <div class="px-4 py-4 space-y-2">
           <label class="block text-xs font-medium text-text-muted uppercase tracking-widest">
-            Page URL
+            URL
           </label>
           <input
             v-model="url"
             type="url"
-            placeholder="https://example.com/article"
+            placeholder="https://example.com/article or …/paper.pdf"
             class="w-full px-2.5 py-1.5 text-sm bg-bg border border-border rounded outline-none focus:border-accent text-text-primary font-ui disabled:opacity-60"
-            :disabled="capturing"
+            :disabled="status !== 'idle'"
             @keydown.enter="submit"
             v-focus
           />
           <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
           <p v-else class="text-xs text-text-muted">
-            We capture a static snapshot of the page so you can annotate it.
+            Links to PDFs are imported as PDFs. Other pages are saved as a static snapshot. Either
+            way, you can annotate it.
           </p>
         </div>
 
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-border-subtle">
           <button
             class="px-3 py-1.5 text-xs font-ui text-text-secondary hover:text-text-primary hover:bg-surface-elevated rounded transition-colors duration-75 cursor-pointer disabled:opacity-40"
-            :disabled="capturing"
+            :disabled="status !== 'idle'"
             @click="emit('cancel')"
           >
             Cancel
           </button>
           <button
             class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-ui bg-accent text-white rounded hover:bg-accent-hover transition-colors duration-75 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
-            :disabled="capturing"
+            :disabled="status !== 'idle'"
             @click="submit"
           >
-            <Loader2 v-if="capturing" :size="13" class="animate-spin" />
-            {{ capturing ? 'Capturing…' : 'Capture' }}
+            <Loader2 v-if="status !== 'idle'" :size="13" class="animate-spin" />
+            {{
+              status === 'fetching' ? 'Fetching…' : status === 'capturing' ? 'Capturing…' : 'Add'
+            }}
           </button>
         </div>
       </div>

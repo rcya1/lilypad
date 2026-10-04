@@ -13,6 +13,11 @@ export interface Directory {
 
 export type DocumentType = 'pdf' | 'md' | 'image' | 'web'
 
+/** Types with markdown notes in `entries.content`: an md file is its notes; web and pdf carry them. */
+export function hasNoteContent(type: DocumentType | null | undefined): boolean {
+  return type === 'md' || type === 'web' || type === 'pdf'
+}
+
 /** `type` mirrors the DB `document_type`. */
 export interface Document {
   kind: 'document'
