@@ -158,6 +158,16 @@ export async function serializeSnapshot(page) {
       style.textContent = inlinedCss.join('\n\n')
       document.head.appendChild(style)
 
+      // `font-display: optional` (and `fallback`) give up on a web font that isn't there almost
+      // immediately. The original page preloads its fonts; the snapshot loads them cross-origin
+      // and late, so they'd lose that race and the page would render in the fallback font.
+      document.querySelectorAll('style').forEach((el) => {
+        el.textContent = el.textContent.replace(
+          /font-display\s*:\s*(?:optional|fallback)/gi,
+          'font-display: swap',
+        )
+      })
+
       return '<!DOCTYPE html>\n' + document.documentElement.outerHTML
     },
     { baseUrl: finalUrl, inlinedCss: inlined },

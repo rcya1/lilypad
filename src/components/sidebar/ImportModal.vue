@@ -1,8 +1,8 @@
-<!-- Modal for adding a URL: a link to a PDF imports the PDF; anything else is captured as a web
-     page. -->
+<!-- Modal for importing a document, either from a URL (a link to a PDF imports the PDF; anything
+     else is captured as a web page) or from PDFs on the computer. -->
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Link, X, Loader2 } from 'lucide-vue-next'
+import { ref, useTemplateRef } from 'vue'
+import { Import, Link, FileUp, X, Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import type { EntryRow } from '@/types/database'
 
@@ -12,10 +12,13 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   created: [entry: EntryRow]
+  /** PDFs picked or dropped; the parent uploads them so the modal can close right away. */
+  upload: [files: File[]]
   cancel: []
 }>()
 
 const filesStore = useFilesStore()
+const mode = ref<'link' | 'file'>('link')
 const url = ref('')
 const status = ref<'idle' | 'fetching' | 'capturing'>('idle')
 const error = ref<string | null>(null)
@@ -74,6 +77,27 @@ async function submit() {
     status.value = 'idle'
   }
 }
+
+const pdfInput = useTemplateRef<HTMLInputElement>('pdfInput')
+const isDropTarget = ref(false)
+
+function onPdfInputChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const list = Array.from(input.files ?? [])
+  input.value = ''
+  if (list.length) emit('upload', list)
+}
+
+function onDrop(e: DragEvent) {
+  isDropTarget.value = false
+  const list = Array.from(e.dataTransfer?.files ?? [])
+  if (list.length) emit('upload', list)
+}
+
+function setMode(next: 'link' | 'file') {
+  mode.value = next
+  error.value = null
+}
 </script>
 
 <template>
@@ -85,8 +109,8 @@ async function submit() {
       <div class="bg-surface border border-border rounded-lg shadow-xl w-96 flex flex-col">
         <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
           <span class="flex items-center gap-2 text-sm font-medium text-text-primary font-ui">
-            <Link :size="15" class="text-accent" />
-            Add from link
+            <Import :size="15" class="text-accent" />
+            Import
           </span>
           <button
             class="text-text-muted hover:text-text-primary cursor-pointer disabled:opacity-40"
@@ -97,24 +121,65 @@ async function submit() {
           </button>
         </div>
 
-        <div class="px-4 py-4 space-y-2">
-          <label class="block text-xs font-medium text-text-muted uppercase tracking-widest">
-            URL
-          </label>
+        <div class="px-4 py-4 space-y-3">
+          <div class="flex p-0.5 bg-bg border border-border rounded text-xs font-ui">
+            <button
+              v-for="option in [
+                { value: 'link', label: 'From link', icon: Link },
+                { value: 'file', label: 'Upload PDF', icon: FileUp },
+              ] as const"
+              :key="option.value"
+              class="flex-1 flex items-center justify-center gap-1.5 py-1 rounded transition-colors duration-75 cursor-pointer disabled:cursor-not-allowed"
+              :class="
+                mode === option.value
+                  ? 'bg-surface-overlay text-text-primary'
+                  : 'text-text-secondary hover:text-text-primary'
+              "
+              :disabled="status !== 'idle'"
+              @click="setMode(option.value)"
+            >
+              <component :is="option.icon" :size="13" />
+              {{ option.label }}
+            </button>
+          </div>
+
+          <template v-if="mode === 'link'">
+            <input
+              v-model="url"
+              type="url"
+              placeholder="https://example.com/article or …/paper.pdf"
+              class="w-full px-2.5 py-1.5 text-sm bg-bg border border-border rounded outline-none focus:border-accent text-text-primary font-ui disabled:opacity-60"
+              :disabled="status !== 'idle'"
+              @keydown.enter="submit"
+              v-focus
+            />
+            <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
+          </template>
+
+          <button
+            v-else
+            class="w-full flex flex-col items-center gap-1.5 px-3 py-6 border border-dashed rounded text-xs font-ui transition-colors duration-75 cursor-pointer"
+            :class="
+              isDropTarget
+                ? 'border-accent bg-surface-elevated text-text-primary'
+                : 'border-border text-text-secondary hover:border-accent hover:text-text-primary'
+            "
+            @click="pdfInput?.click()"
+            @dragover.prevent="isDropTarget = true"
+            @dragleave="isDropTarget = false"
+            @drop.prevent="onDrop"
+          >
+            <FileUp :size="18" class="text-text-muted" />
+            Choose PDFs or drop them here
+          </button>
           <input
-            v-model="url"
-            type="url"
-            placeholder="https://example.com/article or …/paper.pdf"
-            class="w-full px-2.5 py-1.5 text-sm bg-bg border border-border rounded outline-none focus:border-accent text-text-primary font-ui disabled:opacity-60"
-            :disabled="status !== 'idle'"
-            @keydown.enter="submit"
-            v-focus
+            ref="pdfInput"
+            type="file"
+            accept="application/pdf,.pdf"
+            multiple
+            class="hidden"
+            @change="onPdfInputChange"
           />
-          <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
-          <p v-else class="text-xs text-text-muted">
-            Links to PDFs are imported as PDFs. Other pages are saved as a static snapshot. Either
-            way, you can annotate it.
-          </p>
         </div>
 
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-border-subtle">
@@ -126,6 +191,7 @@ async function submit() {
             Cancel
           </button>
           <button
+            v-if="mode === 'link'"
             class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-ui bg-accent text-white rounded hover:bg-accent-hover transition-colors duration-75 cursor-pointer disabled:opacity-60 disabled:cursor-wait"
             :disabled="status !== 'idle'"
             @click="submit"

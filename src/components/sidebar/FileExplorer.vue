@@ -1,19 +1,18 @@
-<!-- Sidebar file tree: create files and folders, add links (web pages or PDFs), upload PDFs (button
-     or drop from the computer); top-level drop zone; expand all. -->
+<!-- Sidebar file tree: create files and folders, import (web pages or PDFs from a link, or PDFs from
+     the computer, also by dropping them on the tree); top-level drop zone; expand all. -->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, useTemplateRef } from 'vue'
 import {
   FilePlus,
   FolderPlus,
-  Link,
-  FileUp,
+  Import,
   Loader2,
   ChevronsDownUp,
   ChevronsUpDown,
 } from 'lucide-vue-next'
 import FileExplorerNode from './FileExplorerNode.vue'
 import PendingInputRow from './PendingInputRow.vue'
-import AddFromLinkModal from './AddFromLinkModal.vue'
+import ImportModal from './ImportModal.vue'
 import { useFilesStore } from '@/stores/files'
 import { useEditorStore } from '@/stores/editor'
 import { draggingEntry, PENDING_ID } from '@/composables/useDragDrop'
@@ -184,17 +183,17 @@ function startNewFolder() {
   }
 }
 
-const showLinkModal = ref(false)
-const linkModalParentId = ref<string | null>(null)
+const showImportModal = ref(false)
+const importModalParentId = ref<string | null>(null)
 
 /** Parent chosen as in startNewFile. */
 function defaultParentId(): string | null {
   return files.selectedFolderId ?? getInsertBelowActive()?.parentId ?? null
 }
 
-function startAddFromLink() {
-  linkModalParentId.value = defaultParentId()
-  showLinkModal.value = true
+function startImport() {
+  importModalParentId.value = defaultParentId()
+  showImportModal.value = true
 }
 
 function openCreated(entry: EntryRow) {
@@ -203,12 +202,16 @@ function openCreated(entry: EntryRow) {
 }
 
 function onLinkAdded(entry: EntryRow) {
-  showLinkModal.value = false
+  showImportModal.value = false
   openCreated(entry)
 }
 
-// PDF uploads: the button's file picker, or files dropped from the computer onto the tree.
-const pdfInput = useTemplateRef<HTMLInputElement>('pdfInput')
+function onImportUpload(list: File[]) {
+  showImportModal.value = false
+  void uploadPdfs(list, importModalParentId.value)
+}
+
+// PDF uploads: from the import modal, or files dropped from the computer onto the tree.
 const uploadingCount = ref(0)
 const isFileDropTarget = ref(false)
 
@@ -233,17 +236,6 @@ async function uploadPdfs(list: File[], parentId: string | null) {
     }
   }
   if (last) openCreated(last)
-}
-
-function startUploadPdf() {
-  pdfInput.value?.click()
-}
-
-function onPdfInputChange(e: Event) {
-  const input = e.target as HTMLInputElement
-  const list = Array.from(input.files ?? [])
-  input.value = ''
-  if (list.length) void uploadPdfs(list, defaultParentId())
 }
 
 /** Only drags of files from the computer; tree rows use their own drag and drop. */
@@ -377,48 +369,27 @@ function onPendingDragEnd() {
             style="animation-delay: 80ms"
             class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer"
             :title="
-              files.selectedFolderId
-                ? 'Add a web page or PDF from a link, in selected folder'
-                : 'Add a web page or PDF from a link'
-            "
-            @click="startAddFromLink"
-          >
-            <Link :size="16" />
-          </button>
-          <button
-            :class="{ 'animate-icon-pop': growActionsIn }"
-            style="animation-delay: 120ms"
-            class="flex items-center justify-center w-5 h-5 rounded text-text-muted hover:text-text-primary hover:bg-surface-elevated transition-colors duration-100 cursor-pointer disabled:cursor-wait"
-            :title="
               uploadingCount
                 ? 'Uploading…'
                 : files.selectedFolderId
-                  ? 'Upload a PDF into selected folder (or drop PDFs onto the tree)'
-                  : 'Upload a PDF (or drop PDFs onto the tree)'
+                  ? 'Import a web page or PDF into selected folder'
+                  : 'Import a web page or PDF'
             "
-            :disabled="uploadingCount > 0"
-            @click="startUploadPdf"
+            @click="startImport"
           >
             <Loader2 v-if="uploadingCount" :size="16" class="animate-spin" />
-            <FileUp v-else :size="16" />
+            <Import v-else :size="16" />
           </button>
-          <input
-            ref="pdfInput"
-            type="file"
-            accept="application/pdf,.pdf"
-            multiple
-            class="hidden"
-            @change="onPdfInputChange"
-          />
         </span>
       </div>
     </div>
 
-    <AddFromLinkModal
-      v-if="showLinkModal"
-      :parent-id="linkModalParentId"
+    <ImportModal
+      v-if="showImportModal"
+      :parent-id="importModalParentId"
       @created="onLinkAdded"
-      @cancel="showLinkModal = false"
+      @upload="onImportUpload"
+      @cancel="showImportModal = false"
     />
 
     <div v-if="files.loading" class="px-3 space-y-2">

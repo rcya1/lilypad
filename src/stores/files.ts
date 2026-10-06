@@ -762,7 +762,12 @@ export const useFilesStore = defineStore('files', () => {
       showError('Failed to load captured page.')
       return null
     }
-    return await data.text()
+    // Pages captured before tools/capture.mjs rewrote this keep `font-display: optional`, which
+    // gives up on late-loading web fonts and renders the fallback.
+    return (await data.text()).replace(
+      /font-display\s*:\s*(?:optional|fallback)/gi,
+      'font-display: swap',
+    )
   }
 
   /** The PDF's bytes (the notes are `content`). */
