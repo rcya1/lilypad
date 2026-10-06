@@ -3,7 +3,7 @@
 <script setup lang="ts">
 import { computed, onMounted, useTemplateRef } from 'vue'
 import { ref } from 'vue'
-import { ChevronsDownUp, ChevronsUpDown, FilePlus, FolderPlus, Import } from 'lucide-vue-next'
+import { ChevronsDownUp, ChevronsUpDown, FilePlus, FolderPlus, Download } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import { useUiStore } from '@/stores/ui'
 import SidebarHeader from '@/components/sidebar/SidebarHeader.vue'
@@ -97,7 +97,7 @@ onMounted(() => {
                   <FolderPlus :size="16" />
                 </span>
                 <span class="flex h-5 w-5 shrink-0 items-center justify-center text-text-muted">
-                  <Import :size="16" />
+                  <Download :size="16" />
                 </span>
               </span>
             </div>

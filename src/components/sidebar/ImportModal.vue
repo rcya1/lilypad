@@ -2,7 +2,7 @@
      else is captured as a web page) or from PDFs on the computer. -->
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
-import { Import, Link, FileUp, X, Loader2 } from 'lucide-vue-next'
+import { Download, Link, FileUp, X, Loader2 } from 'lucide-vue-next'
 import { useFilesStore } from '@/stores/files'
 import type { EntryRow } from '@/types/database'
 
@@ -109,7 +109,7 @@ function setMode(next: 'link' | 'file') {
       <div class="bg-surface border border-border rounded-lg shadow-xl w-96 flex flex-col">
         <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
           <span class="flex items-center gap-2 text-sm font-medium text-text-primary font-ui">
-            <Import :size="15" class="text-accent" />
+            <Download :size="15" class="text-accent" />
             Import
           </span>
           <button

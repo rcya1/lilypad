@@ -1,6 +1,7 @@
-// Headless-Chromium page capture: loads a URL, inlines stylesheets (url()/@import made absolute),
-// injects a <base href> so images and fonts resolve, strips scripts, and returns one inert HTML
-// string. Outside src/ so the client bundle never imports Playwright.
+// Headless-Chromium page capture: loads a URL, inlines stylesheets in place (url()/@import made
+// absolute), keeps shadow DOM as declarative shadow roots, injects a <base href> so images and
+// fonts resolve, strips scripts, and returns one inert HTML string. Outside src/ so the client
+// bundle never imports Playwright.
 
 import { isIP } from 'node:net'
 import { lookup } from 'node:dns/promises'
@@ -126,49 +127,74 @@ export async function serializeSnapshot(page) {
   const sheetHrefs = await page.$$eval('link[rel~="stylesheet"][href]', (els) =>
     els.map((e) => e.href),
   )
-  const inlined = []
-  for (const href of sheetHrefs) {
+  /** href → its CSS, for the stylesheets we could fetch. */
+  const inlined = {}
+  for (const href of new Set(sheetHrefs)) {
     try {
       const res = await page.request.get(href)
       if (!res.ok()) throw new Error(`HTTP ${res.status()}`)
-      inlined.push(absolutizeCss(await res.text(), href))
+      // A leading BOM is fine at the start of a file but not inside a <style>, where it makes the
+      // first rule invalid (e.g. a site's main @font-face, so the whole page loses its font).
+      inlined[href] = absolutizeCss((await res.text()).replace(/^\uFEFF/, ''), href)
     } catch {
-      // Skip stylesheets we can't fetch; the page still renders with what's left.
+      // Left as a <link>; with the <base href> it may still load.
     }
   }
 
   const html = await page.evaluate(
     ({ baseUrl, inlinedCss }) => {
-      document.querySelectorAll('script').forEach((s) => s.remove())
-      document.querySelectorAll('*').forEach((el) => {
-        for (const attr of [...el.attributes]) {
-          if (attr.name.startsWith('on')) el.removeAttribute(attr.name)
-        }
-      })
-      document
-        .querySelectorAll('link[rel~="stylesheet"], link[rel="preload"], link[rel="modulepreload"]')
-        .forEach((l) => l.remove())
+      // Shadow roots (custom elements like distill's <d-math>) are serialized as declarative
+      // shadow DOM, since the scripts that would rebuild them are stripped.
+      const roots = [document]
+      for (let i = 0; i < roots.length; i++) {
+        roots[i].querySelectorAll('*').forEach((el) => {
+          if (el.shadowRoot) roots.push(el.shadowRoot)
+        })
+      }
+
+      for (const root of roots) {
+        root.querySelectorAll('script').forEach((s) => s.remove())
+        root.querySelectorAll('*').forEach((el) => {
+          for (const attr of [...el.attributes]) {
+            if (attr.name.startsWith('on')) el.removeAttribute(attr.name)
+          }
+        })
+        root.querySelectorAll('link[rel="preload"], link[rel="modulepreload"]').forEach((l) => {
+          l.remove()
+        })
+        // In place, so the cascade order matches the original page.
+        root.querySelectorAll('link[rel~="stylesheet"][href]').forEach((link) => {
+          const css = inlinedCss[link.href]
+          if (css == null) return
+          const style = document.createElement('style')
+          style.setAttribute('data-lily-inlined', link.href)
+          if (link.media) style.media = link.media
+          style.textContent = css
+          link.replaceWith(style)
+        })
+        // `font-display: optional` (and `fallback`) give up on a web font that isn't there almost
+        // immediately. The original page preloads its fonts; the snapshot loads them cross-origin
+        // and late, so they'd lose that race and the page would render in the fallback font.
+        root.querySelectorAll('style').forEach((el) => {
+          el.textContent = el.textContent.replace(
+            /font-display\s*:\s*(?:optional|fallback)/gi,
+            'font-display: swap',
+          )
+        })
+      }
 
       const base = document.createElement('base')
       base.href = baseUrl
       document.head.prepend(base)
 
-      const style = document.createElement('style')
-      style.setAttribute('data-lily-inlined', '')
-      style.textContent = inlinedCss.join('\n\n')
-      document.head.appendChild(style)
-
-      // `font-display: optional` (and `fallback`) give up on a web font that isn't there almost
-      // immediately. The original page preloads its fonts; the snapshot loads them cross-origin
-      // and late, so they'd lose that race and the page would render in the fallback font.
-      document.querySelectorAll('style').forEach((el) => {
-        el.textContent = el.textContent.replace(
-          /font-display\s*:\s*(?:optional|fallback)/gi,
-          'font-display: swap',
-        )
-      })
-
-      return '<!DOCTYPE html>\n' + document.documentElement.outerHTML
+      const html = document.documentElement
+      const shadowRoots = roots.slice(1)
+      const inner =
+        typeof html.getHTML === 'function'
+          ? html.getHTML({ serializableShadowRoots: true, shadowRoots })
+          : html.innerHTML
+      const [openTag] = html.cloneNode(false).outerHTML.split('</html>')
+      return `<!DOCTYPE html>\n${openTag}${inner}</html>`
     },
     { baseUrl: finalUrl, inlinedCss: inlined },
   )

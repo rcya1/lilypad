@@ -5,7 +5,7 @@ import { ref, computed, watch, onMounted, useTemplateRef } from 'vue'
 import {
   FilePlus,
   FolderPlus,
-  Import,
+  Download,
   Loader2,
   ChevronsDownUp,
   ChevronsUpDown,
@@ -378,7 +378,7 @@ function onPendingDragEnd() {
             @click="startImport"
           >
             <Loader2 v-if="uploadingCount" :size="16" class="animate-spin" />
-            <Import v-else :size="16" />
+            <Download v-else :size="16" />
           </button>
         </span>
       </div>
